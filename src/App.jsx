@@ -1,1058 +1,2005 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Circle, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-const HASTINGS_CENTER = [40.5863, -98.3899];
-const CATEGORIES = ['All', 'Roads', 'Drainage', 'Traffic', 'Parks', 'Gas / Sewer', 'General'];
+const CITY_NAME = "Hastings";
 
-const seedIssues = [
-  {
-    id: 101,
-    title: 'Flooding is worsening on Burlington Ave.',
-    description: 'Water pooling near curb after recent rain.',
-    locationName: 'Burlington Ave & W 2nd St',
-    category: 'Drainage',
-    status: 'Responding',
-    department: 'Hastings Utilities',
-    reports: 18,
-    traffic: 'High',
-    safety: 'Moderate',
-    lat: 40.5858,
-    lng: -98.3818,
-    updatedAt: Date.now() - 1000 * 60 * 18,
-    source: 'city',
-    requiresApproval: true,
-    estimatedCost: '$$',
-    delayCost: '$$$',
-    lastCost: '$12,000',
-    flagship: true,
-    recommendation: {
-      title: 'Inspect drainage and clear storm intake',
-      reasons: ['Repeat issue', 'High traffic area', 'Lower-cost first step'],
-      delay: 'If delayed, roadway damage and repair cost will increase.'
-    }
-  },
-  {
-    id: 102,
-    title: 'Traffic is backing up near the middle school.',
-    description: 'Pickup traffic is spilling into through lanes.',
-    locationName: 'Middle school pickup lane',
-    category: 'Traffic',
-    status: 'Under Review',
-    department: 'Hastings Police',
-    reports: 11,
-    traffic: 'High',
-    safety: 'Moderate',
-    lat: 40.5796,
-    lng: -98.3977,
-    updatedAt: Date.now() - 1000 * 60 * 42,
-    source: 'resident',
-    requiresApproval: true,
-    estimatedCost: '$',
-    delayCost: '$$',
-    lastCost: '$0',
-    flagship: true,
-    recommendation: {
-      title: 'Adjust traffic flow at pickup time',
-      reasons: ['Peak-hour backup', 'School zone safety', 'Fast operational fix'],
-      delay: 'If delayed, congestion is likely to worsen tomorrow.'
-    }
-  },
-  {
-    id: 103,
-    title: "Lighting is out at Lib's Park.",
-    description: 'Several lights are out after dark.',
-    locationName: "Lib's Park",
-    category: 'Parks',
-    status: 'In Progress',
-    department: 'City Parks',
-    reports: 6,
-    traffic: 'Low',
-    safety: 'Low',
-    lat: 40.5901,
-    lng: -98.3776,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24,
-    source: 'city',
-    requiresApproval: false,
-    estimatedCost: '$',
-    delayCost: '$$',
-    lastCost: '$800',
-    flagship: true,
-    recommendation: {
-      title: 'Replace failed lighting fixture',
-      reasons: ['Visible after dark', 'Repeated resident concern', 'Low-cost fix'],
-      delay: 'If delayed, park visibility remains poor after dark.'
-    }
-  },
-  {
-    id: 104,
-    title: 'Pothole reports are increasing on the north side.',
-    description: 'Road surface is breaking up near lane center.',
-    locationName: 'N Denver Ave',
-    category: 'Roads',
-    status: 'Concern Received',
-    department: 'Public Works',
-    reports: 9,
-    traffic: 'Moderate',
-    safety: 'Moderate',
-    lat: 40.5948,
-    lng: -98.3920,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 2,
-    source: 'resident',
-    requiresApproval: false,
-    estimatedCost: '$',
-    delayCost: '$$',
-    lastCost: '$2,500',
-    flagship: false,
-    recommendation: {
-      title: 'Patch damaged roadway section',
-      reasons: ['Growing damage', 'Moderate traffic', 'Visible issue'],
-      delay: 'If delayed, roadway damage and resident complaints will increase.'
-    }
-  }
+const PERSONAS = {
+  PUBLIC: "public",
+  DEPARTMENT: "department",
+  ADMIN: "admin",
+};
+
+const TABS = {
+  HOME: "home",
+  REPORT: "report",
+  COMMAND: "command",
+  BUDGET: "budget",
+};
+
+const DEPARTMENTS = [
+  "Street Department",
+  "Utilities",
+  "Parks & Recreation",
+  "Police",
+  "Hastings Fire",
+  "Code Enforcement",
+  "Administration",
 ];
 
-function toUpdatedLabel(ts) {
-  const hours = Math.round((Date.now() - ts) / (1000 * 60 * 60));
-  if (hours < 24) return 'Updated today';
-  if (hours < 48) return 'Updated 1 day ago';
-  return `Updated ${Math.round(hours / 24)} days ago`;
+const CATEGORY_CONFIG = {
+  roads: {
+    label: "Roads",
+    department: "Street Department",
+    fund: "Street Fund",
+    icon: "🛣️",
+    estimatedCost: 1800,
+    strategicTag: "Infrastructure reliability",
+  },
+  utilities: {
+    label: "Utilities",
+    department: "Utilities",
+    fund: "Utility Fund",
+    icon: "💧",
+    estimatedCost: 4200,
+    strategicTag: "Core service continuity",
+  },
+  parks: {
+    label: "Parks",
+    department: "Parks & Recreation",
+    fund: "Parks / Keno",
+    icon: "🌳",
+    estimatedCost: 1200,
+    strategicTag: "Quality of life",
+  },
+  safety: {
+    label: "Public Safety",
+    department: "Police",
+    fund: "General Fund",
+    icon: "🚓",
+    estimatedCost: 2000,
+    strategicTag: "Public safety",
+  },
+  fire: {
+    label: "Fire",
+    department: "Hastings Fire",
+    fund: "General Fund",
+    icon: "🚒",
+    estimatedCost: 2000,
+    strategicTag: "Public safety",
+  },
+  code: {
+    label: "Code / Property",
+    department: "Code Enforcement",
+    fund: "General Fund",
+    icon: "🏚️",
+    estimatedCost: 800,
+    strategicTag: "Neighborhood condition",
+  },
+  admin: {
+    label: "Administration",
+    department: "Administration",
+    fund: "General Fund",
+    icon: "🏛️",
+    estimatedCost: 950,
+    strategicTag: "Operational awareness",
+  },
+  other: {
+    label: "Other",
+    department: "Administration",
+    fund: "General Fund",
+    icon: "📌",
+    estimatedCost: 950,
+    strategicTag: "Operational awareness",
+  },
+};
+
+const INITIAL_BUDGETS = [
+  { fund: "General Fund", budgeted: 5600000, spent: 3985000 },
+  { fund: "Street Fund", budgeted: 2400000, spent: 1735000 },
+  { fund: "Utility Fund", budgeted: 4200000, spent: 2875000 },
+  { fund: "Parks / Keno", budgeted: 1450000, spent: 910000 },
+];
+
+const INITIAL_FEED = [
+  {
+    id: "feed-1",
+    source: "City of Hastings Facebook",
+    text: "Road work expected near Burlington and 3rd this week. Please use caution.",
+    timestamp: "2026-03-31T08:30:00",
+  },
+  {
+    id: "feed-2",
+    source: "Hastings Utilities Department Facebook",
+    text: "Water main break reported near 7th and Lincoln. Crews are responding.",
+    timestamp: "2026-03-31T09:10:00",
+  },
+  {
+    id: "feed-3",
+    source: "Hastings Parks & Recreation Facebook",
+    text: "Mowing schedule and spring cleanup activities continue across city parks.",
+    timestamp: "2026-03-31T10:00:00",
+  },
+  {
+    id: "feed-4",
+    source: "City of Hastings Facebook",
+    text: "City Council meeting tonight at City Hall.",
+    timestamp: "2026-03-31T11:15:00",
+  },
+];
+
+const INITIAL_ISSUES = [
+  {
+    id: "issue-1",
+    title: "Pothole cluster reported",
+    description: "Multiple potholes causing rough driving conditions.",
+    x: 28,
+    y: 43,
+    category: "roads",
+    department: "Street Department",
+    fund: "Street Fund",
+    status: "Under Review",
+    source: "Resident",
+    confidence: 72,
+    urgency: 66,
+    impact: 62,
+    affectedCount: 4,
+    visibleOnMap: true,
+    locationLabel: "Near south central Hastings",
+    specialInstructions: "",
+    estimatedCost: 1800,
+    strategicTag: "Infrastructure reliability",
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: "issue-2",
+    title: "Playground equipment concern",
+    description: "Possible damage to a ladder on a park structure.",
+    x: 63,
+    y: 31,
+    category: "parks",
+    department: "Parks & Recreation",
+    fund: "Parks / Keno",
+    status: "Assigned",
+    source: "Resident",
+    confidence: 61,
+    urgency: 42,
+    impact: 50,
+    affectedCount: 2,
+    visibleOnMap: true,
+    locationLabel: "Neighborhood park",
+    specialInstructions: "",
+    estimatedCost: 1200,
+    strategicTag: "Quality of life",
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: "issue-3",
+    title: "Water leak near intersection",
+    description: "Standing water observed along curb line.",
+    x: 49,
+    y: 55,
+    category: "utilities",
+    department: "Utilities",
+    fund: "Utility Fund",
+    status: "Work in Progress",
+    source: "Department",
+    confidence: 87,
+    urgency: 84,
+    impact: 72,
+    affectedCount: 1,
+    visibleOnMap: true,
+    locationLabel: "Central corridor",
+    specialInstructions: "Monitor adjacent properties for additional pooling.",
+    estimatedCost: 4200,
+    strategicTag: "Core service continuity",
+    lastUpdated: new Date().toISOString(),
+  },
+];
+
+function clamp(num, min, max) {
+  return Math.min(Math.max(num, min), max);
 }
 
-function statusColor(status) {
-  if (status === 'Concern Received') return '#d92d20';
-  if (status === 'Under Review') return '#f59e0b';
-  if (status === 'Responding') return '#2563eb';
-  if (status === 'Scheduled') return '#7c3aed';
-  if (status === 'In Progress') return '#0ea5e9';
-  if (status === 'Resolved') return '#16a34a';
-  return '#64748b';
+function makeId(prefix = "id") {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function statusLine(issue) {
-  if (issue.status === 'Concern Received') return 'Concern has been received.';
-  if (issue.status === 'Under Review') return 'Area is under review.';
-  if (issue.status === 'Responding') return `${issue.department} is responding.`;
-  if (issue.status === 'Scheduled') return `${issue.department} has scheduled work.`;
-  if (issue.status === 'In Progress') return `${issue.department} is working on repairs.`;
-  if (issue.status === 'Resolved') return 'Issue resolved.';
-  return 'Area is under review.';
+function formatMoney(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
-function iconFactory(color) {
-  return L.divIcon({
-    className: 'custom-div-icon',
-    html: `<div style="background:${color}; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,.18);"></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9]
-  });
+function inferCategory(text) {
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("water") ||
+    lower.includes("sewer") ||
+    lower.includes("power") ||
+    lower.includes("utility") ||
+    lower.includes("outage") ||
+    lower.includes("main break")
+  ) {
+    return "utilities";
+  }
+
+  if (
+    lower.includes("pothole") ||
+    lower.includes("road") ||
+    lower.includes("street") ||
+    lower.includes("intersection") ||
+    lower.includes("traffic")
+  ) {
+    return "roads";
+  }
+
+  if (
+    lower.includes("park") ||
+    lower.includes("playground") ||
+    lower.includes("mowing") ||
+    lower.includes("trail")
+  ) {
+    return "parks";
+  }
+
+  if (lower.includes("fire")) return "fire";
+  if (lower.includes("police")) return "safety";
+
+  if (
+    lower.includes("property") ||
+    lower.includes("trash") ||
+    lower.includes("code")
+  ) {
+    return "code";
+  }
+
+  if (lower.includes("city hall") || lower.includes("council")) {
+    return "admin";
+  }
+
+  return "other";
 }
 
-function Haptics() {
-  const tap = () => {
-    try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
-  };
-  const success = () => {
-    try { if (navigator.vibrate) navigator.vibrate([12, 24, 12]); } catch {}
-  };
-  return { tap, success };
-}
+function inferLocationFromText(text) {
+  const lower = text.toLowerCase();
 
-function FlyToTarget({ target }) {
-  const map = useMap();
-  useEffect(() => {
-    if (target) map.flyTo(target, 15, { duration: 0.6 });
-  }, [target, map]);
+  if (lower.includes("burlington") && lower.includes("3rd")) {
+    return { x: 35, y: 46, label: "3rd & Burlington" };
+  }
+
+  if (lower.includes("7th") && lower.includes("lincoln")) {
+    return { x: 58, y: 44, label: "7th & Lincoln" };
+  }
+
+  if (lower.includes("city hall")) {
+    return { x: 51, y: 50, label: "City Hall" };
+  }
+
   return null;
 }
 
-function MapTapLayer({ onTap }) {
-  useMapEvents({
-    click(e) {
-      if (onTap) onTap(e.latlng);
+function scoreSignal(text, source) {
+  const lower = text.toLowerCase();
+
+  let urgency = 34;
+  let impact = 34;
+  let confidence = source.includes("Facebook") ? 58 : 64;
+
+  if (
+    lower.includes("break") ||
+    lower.includes("crews are responding") ||
+    lower.includes("downed") ||
+    lower.includes("closed") ||
+    lower.includes("flood")
+  ) {
+    urgency += 34;
+    impact += 22;
+    confidence += 18;
+  }
+
+  if (
+    lower.includes("reported") ||
+    lower.includes("observed") ||
+    lower.includes("confirmed")
+  ) {
+    confidence += 10;
+  }
+
+  if (
+    lower.includes("reminder") ||
+    lower.includes("meeting") ||
+    lower.includes("schedule")
+  ) {
+    urgency -= 18;
+    impact -= 10;
+  }
+
+  if (
+    lower.includes("this week") ||
+    lower.includes("ongoing") ||
+    lower.includes("continue")
+  ) {
+    impact += 4;
+  }
+
+  return {
+    urgency: clamp(urgency, 0, 100),
+    impact: clamp(impact, 0, 100),
+    confidence: clamp(confidence, 0, 100),
+  };
+}
+
+function primaryButtonStyle() {
+  return {
+    border: "none",
+    borderRadius: 12,
+    padding: "11px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    background: "#0f6ab7",
+    color: "white",
+  };
+}
+
+function secondaryButtonStyle() {
+  return {
+    border: "1px solid #cfe0f0",
+    borderRadius: 12,
+    padding: "11px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    background: "white",
+    color: "#24527a",
+  };
+}
+
+function softDangerButtonStyle() {
+  return {
+    border: "1px solid #ffd7d3",
+    borderRadius: 12,
+    padding: "11px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    background: "#fff4f2",
+    color: "#a64337",
+  };
+}
+
+function panelStyle(sticky = false) {
+  return {
+    background: "#fff",
+    borderRadius: 18,
+    padding: 16,
+    boxShadow: "0 10px 28px rgba(25,42,70,0.08)",
+    border: "1px solid #e7edf5",
+    ...(sticky ? { position: "sticky", top: 16 } : {}),
+  };
+}
+
+function listItemStyle() {
+  return {
+    background: "#f8fbfe",
+    border: "1px solid #e5edf6",
+    borderRadius: 14,
+    padding: 12,
+  };
+}
+
+function buttonRowStyle() {
+  return {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+    marginTop: 12,
+  };
+}
+
+function inputStyle() {
+  return {
+    width: "100%",
+    borderRadius: 12,
+    border: "1px solid #d7e4f0",
+    padding: "12px 12px",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+    background: "white",
+  };
+}
+
+function progressTrackStyle() {
+  return {
+    width: "100%",
+    height: 10,
+    borderRadius: 999,
+    background: "#e8f0f7",
+    overflow: "hidden",
+    marginTop: 8,
+  };
+}
+
+function progressBarStyle(pct) {
+  return {
+    width: `${pct}%`,
+    height: "100%",
+    background: pct > 85 ? "#d84315" : pct > 65 ? "#ef6c00" : "#0f6ab7",
+    borderRadius: 999,
+  };
+}
+
+function getSpeechRecognition() {
+  if (typeof window === "undefined") return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function MicButton({ onClick, listening }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Use microphone"
+      style={{
+        border: "1px solid #cfe0f0",
+        borderRadius: 12,
+        padding: "10px 12px",
+        fontWeight: 700,
+        cursor: "pointer",
+        background: listening ? "#eef6ff" : "white",
+        color: listening ? "#0f6ab7" : "#24527a",
+        minWidth: 48,
+      }}
+    >
+      {listening ? "🎙️…" : "🎙️"}
+    </button>
+  );
+}
+
+function TextInputWithMic({
+  value,
+  onChange,
+  placeholder,
+  listening,
+  onMicClick,
+}) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+      <input
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={inputStyle()}
+      />
+      <MicButton onClick={onMicClick} listening={listening} />
+    </div>
+  );
+}
+
+function TextareaWithMic({
+  value,
+  onChange,
+  placeholder,
+  listening,
+  onMicClick,
+  minHeight = 96,
+}) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+      <textarea
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={{
+          ...inputStyle(),
+          minHeight,
+          resize: "vertical",
+        }}
+      />
+      <MicButton onClick={onMicClick} listening={listening} />
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const styles = {
+    "Under Review": {
+      background: "#FFF4DB",
+      color: "#7A5600",
+      border: "1px solid #F3DE9C",
     },
+    Assigned: {
+      background: "#EAF2FF",
+      color: "#1F4E9D",
+      border: "1px solid #CDE0FF",
+    },
+    "Work in Progress": {
+      background: "#E8F7EC",
+      color: "#146C2E",
+      border: "1px solid #BFE3C9",
+    },
+    Resolved: {
+      background: "#EEF0F2",
+      color: "#495057",
+      border: "1px solid #D9E0E5",
+    },
+  };
+
+  const style = styles[status] || styles["Under Review"];
+
+  return (
+    <span
+      style={{
+        padding: "6px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 700,
+        ...style,
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 980 : false
+  );
+
+  useEffect(() => {
+    function onResize() {
+      setIsMobile(window.innerWidth < 980);
+    }
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return isMobile;
+}
+
+export default function App() {
+  const isMobile = useIsMobile();
+  const mapRef = useRef(null);
+
+  const [activeTab, setActiveTab] = useState(TABS.HOME);
+  const [persona, setPersona] = useState(PERSONAS.PUBLIC);
+  const [issues, setIssues] = useState(INITIAL_ISSUES);
+  const [budgets, setBudgets] = useState(INITIAL_BUDGETS);
+  const [intelligenceItems, setIntelligenceItems] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [selectedIssueId, setSelectedIssueId] = useState(INITIAL_ISSUES[0]?.id ?? null);
+  const [reportMode, setReportMode] = useState(false);
+  const [reportPoint, setReportPoint] = useState(null);
+  const [rotationIndex, setRotationIndex] = useState(0);
+  const [listeningField, setListeningField] = useState(null);
+
+  const [reportForm, setReportForm] = useState({
+    description: "",
+    categoryChoice: "ai",
+    routeMode: "standard",
+    chosenDepartment: "Administration",
+    specialInstructions: "",
   });
 
-  return null;
-}
+  const [adminDraft, setAdminDraft] = useState({
+    updateNote: "",
+    specialInstructions: "",
+  });
 
-function SwipeShell({ page, setPage, children }) {
-  const startX = useRef(null);
-  return (
-    <div
-      className="app-shell"
-      onTouchStart={(e) => { startX.current = e.changedTouches[0].clientX; }}
-      onTouchEnd={(e) => {
-        if (startX.current == null) return;
-        const delta = e.changedTouches[0].clientX - startX.current;
-        if (delta < -70 && page === 'home') setPage('command');
-        if (delta > 70 && page === 'command') setPage('home');
-        startX.current = null;
-      }}
-    >
-      {children}
-    </div>
+  const visibleIssues = useMemo(
+    () => issues.filter((issue) => issue.visibleOnMap),
+    [issues]
   );
-}
 
-function HomeMap({ issues, filter, setFilter, setSelectedIssue, mapMode, onMapTap, target }) {
-  const visible = filter === 'All' ? issues : issues.filter((issue) => issue.category === filter);
-
-  return (
-    <div className="map-wrap">
-      <div className="weather-corner">☀️ 75°</div>
-
-      <div className="legend-inline">
-        {CATEGORIES.map((category) => (
-          <button
-            key={category}
-            className={`legend-chip ${filter === category ? 'active' : ''}`}
-            onClick={() => setFilter(category)}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
-
-      <MapContainer
-        center={HASTINGS_CENTER}
-        zoom={14}
-        className="map-container"
-        style={{ height: '420px', width: '100%' }}
-      >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <FlyToTarget target={target} />
-        <MapTapLayer onTap={onMapTap} />
-
-        {visible.map((issue) => (
-          <React.Fragment key={issue.id}>
-            <Circle
-              center={[issue.lat, issue.lng]}
-              radius={issue.status === 'Resolved' ? 46 : 60}
-              pathOptions={{
-                color: statusColor(issue.status),
-                fillColor: statusColor(issue.status),
-                fillOpacity: issue.status === 'Resolved' ? 0.12 : 0.18,
-                weight: 0,
-              }}
-            />
-            <Marker
-              position={[issue.lat, issue.lng]}
-              icon={iconFactory(statusColor(issue.status))}
-              eventHandlers={{
-                click: () => setSelectedIssue(issue),
-              }}
-            >
-              <Popup>{issue.title}</Popup>
-            </Marker>
-          </React.Fragment>
-        ))}
-      </MapContainer>
-
-      <div className="map-hint">
-        {mapMode === 'report' && 'Tap where the problem is'}
-        {mapMode === 'update' && 'Tap a location or pin to update status'}
-        {mapMode === 'view' && 'Tap a pin to view details'}
-      </div>
-    </div>
+  const selectedIssue = useMemo(
+    () =>
+      issues.find((issue) => issue.id === selectedIssueId) ||
+      visibleIssues[0] ||
+      null,
+    [issues, selectedIssueId, visibleIssues]
   );
-}
 
-function SummaryBox({ issues }) {
-  const lines = useMemo(() => {
-    const flagship = issues.filter((issue) => issue.flagship).slice(0, 3);
-    if (flagship.length) return flagship.map((issue) => `${issue.title} ${statusLine(issue)}`);
-    return ['Most areas look stable right now.', 'One issue is under review.', 'The city is updating work as it happens.'];
-  }, [issues]);
+  const rotatingIssue = useMemo(() => {
+    if (!visibleIssues.length) return null;
+    return visibleIssues[rotationIndex % visibleIssues.length];
+  }, [visibleIssues, rotationIndex]);
 
-  return (
-    <div className="ai-summary-clean">
-      <div className="summary-label">Right Now in Hastings</div>
-      {lines.map((line) => <div key={line} className="summary-line">{line}</div>)}
-    </div>
-  );
-}
+  const budgetInsights = useMemo(() => {
+    return budgets.map((fund) => {
+      const remaining = fund.budgeted - fund.spent;
+      const usedPct = clamp((fund.spent / fund.budgeted) * 100, 0, 100);
+      return {
+        ...fund,
+        remaining,
+        usedPct,
+      };
+    });
+  }, [budgets]);
 
-function Rolodex({ issues, active, setActive, onExpand }) {
-  const touchStart = useRef(null);
+  const summary = useMemo(() => {
+    const open = issues.filter((issue) => issue.status !== "Resolved").length;
+    const highPriority = issues.filter(
+      (issue) => issue.urgency >= 70 || issue.impact >= 70
+    ).length;
 
-  if (!active || !issues.length) return null;
-
-  const index = issues.findIndex((issue) => issue.id === active.id);
-  if (index < 0) return null;
-
-  const current = issues[index];
-  const prev = issues[(index - 1 + issues.length) % issues.length];
-  const next = issues[(index + 1) % issues.length];
-
-  return (
-    <div
-      className="rolodex-wrap"
-      onTouchStart={(e) => { touchStart.current = e.changedTouches[0].clientX; }}
-      onTouchEnd={(e) => {
-        if (touchStart.current == null) return;
-        const delta = e.changedTouches[0].clientX - touchStart.current;
-        if (delta < -40) setActive(next);
-        if (delta > 40) setActive(prev);
-        touchStart.current = null;
-      }}
-    >
-      <div className="stack-card behind">{prev.title}</div>
-      <div className="stack-card behind right">{next.title}</div>
-      <div className="stack-card front" onClick={() => onExpand(current)}>
-        <div className="stack-status" style={{ color: statusColor(current.status) }}>{current.status}</div>
-        <div className="stack-title">{current.title}</div>
-        <div className="stack-line">{statusLine(current)}</div>
-        <div className="stack-foot">{toUpdatedLabel(current.updatedAt)}</div>
-      </div>
-    </div>
-  );
-}
-
-function DetailSheet({ issue, onClose }) {
-  if (!issue) return null;
-
-  return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet-card" onClick={(e) => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}>×</button>
-        <div className="sheet-image">{issue.locationName}</div>
-        <div className="sheet-title">{issue.title}</div>
-        <div className="sheet-status" style={{ color: statusColor(issue.status) }}>{issue.status}</div>
-        <div className="sheet-body">{issue.description}</div>
-        <div className="sheet-body">{statusLine(issue)}</div>
-        <div className="sheet-body subtle">{toUpdatedLabel(issue.updatedAt)}</div>
-      </div>
-    </div>
-  );
-}
-
-function ReportFlow({ open, point, setPoint, onClose, onSubmit }) {
-  const { tap, success } = Haptics();
-  const [step, setStep] = useState(0);
-  const [category, setCategory] = useState('');
-  const [text, setText] = useState('');
-  const [photoName, setPhotoName] = useState('');
-  const [voiceError, setVoiceError] = useState('');
+    return {
+      total: issues.length,
+      open,
+      highPriority,
+      intelligence: intelligenceItems.length,
+      notifications: notifications.length,
+    };
+  }, [issues, intelligenceItems, notifications]);
 
   useEffect(() => {
-    if (!open) {
-      setStep(0);
-      setCategory('');
-      setText('');
-      setPhotoName('');
-      setVoiceError('');
-    }
-  }, [open]);
+    if (!visibleIssues.length) return undefined;
+
+    const timer = window.setInterval(() => {
+      setRotationIndex((prev) => (prev + 1) % visibleIssues.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, [visibleIssues.length]);
 
   useEffect(() => {
-    if (open && point && step === 0) {
-      tap();
-      setStep(1);
-    }
-  }, [open, point, step]);
+    ingestFeedItems(INITIAL_FEED);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  if (!open) return null;
+  function startVoiceInput(fieldName, getValue, setValue) {
+    const SpeechRecognition = getSpeechRecognition();
 
-  const startVoice = () => {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Recognition) {
-      setVoiceError('Voice input is not available on this browser.');
+    if (!SpeechRecognition) {
+      window.alert("Microphone input is not supported in this browser.");
       return;
     }
 
-    const rec = new Recognition();
-    rec.lang = 'en-US';
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.onresult = (event) => {
-      setText(event.results[0][0].transcript || '');
-      tap();
-    };
-    rec.onerror = () => setVoiceError('Voice input did not work. You can type instead.');
-    rec.start();
-  };
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
-  return (
-    <div
-      onClick={() => {
-        setPoint(null);
-        onClose();
-      }}
-      style={{
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        background: 'rgba(15, 23, 42, 0.45)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 99999,
-        padding: '20px',
-      }}
-    >
+    setListeningField(fieldName);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript || "";
+      const currentValue = getValue();
+      const nextValue = currentValue
+        ? `${currentValue} ${transcript}`.trim()
+        : transcript.trim();
+
+      setValue(nextValue);
+    };
+
+    recognition.onerror = () => {
+      setListeningField(null);
+    };
+
+    recognition.onend = () => {
+      setListeningField(null);
+    };
+
+    recognition.start();
+  }
+
+  function addNotification(type, message, department = "Administration", severity = "info") {
+    setNotifications((prev) => [
+      {
+        id: makeId("note"),
+        type,
+        message,
+        department,
+        severity,
+        timestamp: new Date().toISOString(),
+        read: false,
+      },
+      ...prev,
+    ]);
+  }
+
+  function ingestFeedItems(items) {
+    const intelligenceAdds = [];
+    const mapAdds = [];
+    const boostIds = [];
+    const currentIssues = [...issues];
+
+    items.forEach((item) => {
+      const category = inferCategory(item.text);
+      const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.other;
+      const location = inferLocationFromText(item.text);
+      const score = scoreSignal(item.text, item.source);
+
+      const mapLevel =
+        Boolean(location) &&
+        score.urgency >= 55 &&
+        score.impact >= 45 &&
+        score.confidence >= 58;
+
+      if (mapLevel) {
+        const similar = currentIssues.find(
+          (issue) =>
+            issue.locationLabel === location.label && issue.category === category
+        );
+
+        if (similar) {
+          boostIds.push(similar.id);
+        } else {
+          const newIssue = {
+            id: makeId("issue"),
+            title:
+              item.text.length > 58
+                ? `${config.label}: ${item.text.slice(0, 58)}…`
+                : `${config.label}: ${item.text}`,
+            description: item.text,
+            x: location.x,
+            y: location.y,
+            category,
+            department: config.department,
+            fund: config.fund,
+            status: "Under Review",
+            source: item.source,
+            confidence: score.confidence,
+            urgency: score.urgency,
+            impact: score.impact,
+            affectedCount: 0,
+            visibleOnMap: true,
+            locationLabel: location.label,
+            specialInstructions: "",
+            estimatedCost: config.estimatedCost,
+            strategicTag: config.strategicTag,
+            lastUpdated: item.timestamp,
+          };
+
+          mapAdds.push(newIssue);
+          currentIssues.unshift(newIssue);
+
+          if (score.urgency >= 70 || score.impact >= 70) {
+            addNotification(
+              "important_concern",
+              `${config.department} should review: ${item.text}`,
+              config.department,
+              "high"
+            );
+          }
+        }
+      } else {
+        intelligenceAdds.push({
+          id: makeId("intel"),
+          source: item.source,
+          text: item.text,
+          category: config.label,
+          recommendedUse:
+            score.confidence >= 58
+              ? "Supports confidence and decision making"
+              : "Informational only",
+          timestamp: item.timestamp,
+        });
+      }
+    });
+
+    if (boostIds.length) {
+      const boostedIssues = currentIssues.filter((issue) => boostIds.includes(issue.id));
+
+      setIssues((prev) =>
+        prev.map((issue) =>
+          boostIds.includes(issue.id)
+            ? {
+                ...issue,
+                confidence: clamp(issue.confidence + 8, 0, 100),
+                urgency: clamp(issue.urgency + 4, 0, 100),
+                impact: clamp(issue.impact + 4, 0, 100),
+                lastUpdated: new Date().toISOString(),
+              }
+            : issue
+        )
+      );
+
+      boostedIssues.forEach((issue) => {
+        addNotification(
+          "confidence_update",
+          `Confidence increased for ${issue.title}.`,
+          issue.department,
+          "medium"
+        );
+      });
+    }
+
+    if (mapAdds.length) {
+      setIssues((prev) => [...mapAdds, ...prev]);
+      if (!selectedIssueId && mapAdds[0]) {
+        setSelectedIssueId(mapAdds[0].id);
+      }
+    }
+
+    if (intelligenceAdds.length) {
+      setIntelligenceItems((prev) => [...intelligenceAdds, ...prev]);
+    }
+  }
+
+  function handleMapClick(event) {
+    if (!reportMode || !mapRef.current) return;
+
+    const rect = mapRef.current.getBoundingClientRect();
+    const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 4, 96);
+    const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 8, 94);
+
+    setReportPoint({ x, y });
+  }
+
+  function handleSubmitReport() {
+    if (!reportPoint || !reportForm.description.trim()) return;
+
+    const aiCategory = inferCategory(reportForm.description);
+    const category =
+      reportForm.categoryChoice === "ai" ? aiCategory : reportForm.categoryChoice;
+    const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.other;
+
+    const department =
+      category === "other" || reportForm.routeMode === "manual"
+        ? reportForm.chosenDepartment
+        : config.department;
+
+    const newIssue = {
+      id: makeId("issue"),
+      title:
+        reportForm.description.length > 52
+          ? `${reportForm.description.slice(0, 52)}…`
+          : reportForm.description,
+      description: reportForm.description,
+      x: reportPoint.x,
+      y: reportPoint.y,
+      category,
+      department,
+      fund: config.fund,
+      status: "Assigned",
+      source: "Resident",
+      confidence: reportForm.categoryChoice === "ai" ? 68 : 76,
+      urgency: category === "utilities" ? 74 : 58,
+      impact: 56,
+      affectedCount: 1,
+      visibleOnMap: true,
+      locationLabel: "Resident-selected location",
+      specialInstructions: reportForm.specialInstructions,
+      estimatedCost: config.estimatedCost,
+      strategicTag: config.strategicTag,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    setIssues((prev) => [newIssue, ...prev]);
+    setSelectedIssueId(newIssue.id);
+
+    setBudgets((prev) =>
+      prev.map((fund) =>
+        fund.fund === newIssue.fund
+          ? { ...fund, spent: fund.spent + newIssue.estimatedCost }
+          : fund
+      )
+    );
+
+    addNotification(
+      "new_issue",
+      `New issue routed to ${department}: ${newIssue.title}`,
+      department,
+      newIssue.urgency >= 70 ? "high" : "medium"
+    );
+
+    setReportMode(false);
+    setReportPoint(null);
+    setActiveTab(TABS.HOME);
+    setReportForm({
+      description: "",
+      categoryChoice: "ai",
+      routeMode: "standard",
+      chosenDepartment: "Administration",
+      specialInstructions: "",
+    });
+  }
+
+  function handleAffected(issueId) {
+    const issue = issues.find((item) => item.id === issueId);
+
+    setIssues((prev) =>
+      prev.map((entry) =>
+        entry.id === issueId
+          ? {
+              ...entry,
+              affectedCount: entry.affectedCount + 1,
+              confidence: clamp(entry.confidence + 3, 0, 100),
+              impact: clamp(entry.impact + 2, 0, 100),
+              lastUpdated: new Date().toISOString(),
+            }
+          : entry
+      )
+    );
+
+    if (issue) {
+      addNotification(
+        "affected_update",
+        `More residents are affected by ${issue.title}.`,
+        issue.department,
+        issue.affectedCount + 1 >= 5 ? "high" : "medium"
+      );
+    }
+  }
+
+  function updateIssueStatus(issueId, status) {
+    const issue = issues.find((item) => item.id === issueId);
+
+    setIssues((prev) =>
+      prev.map((entry) =>
+        entry.id === issueId
+          ? { ...entry, status, lastUpdated: new Date().toISOString() }
+          : entry
+      )
+    );
+
+    if (issue) {
+      addNotification(
+        "status_update",
+        `${issue.title} updated to ${status}.`,
+        issue.department,
+        "medium"
+      );
+    }
+  }
+
+  function routeIssue(issueId, department) {
+    const issue = issues.find((item) => item.id === issueId);
+
+    setIssues((prev) =>
+      prev.map((entry) =>
+        entry.id === issueId
+          ? { ...entry, department, lastUpdated: new Date().toISOString() }
+          : entry
+      )
+    );
+
+    if (issue) {
+      addNotification(
+        "routing_update",
+        `${issue.title} routed to ${department}.`,
+        department,
+        "medium"
+      );
+    }
+  }
+
+  function markNotificationRead(notificationId) {
+    setNotifications((prev) =>
+      prev.map((note) =>
+        note.id === notificationId ? { ...note, read: true } : note
+      )
+    );
+  }
+
+  function addAdminUpdateToIssue() {
+    if (!selectedIssue || !adminDraft.updateNote.trim()) return;
+
+    const updatedDescription = `${selectedIssue.description}\n\nUpdate: ${adminDraft.updateNote.trim()}`;
+
+    setIssues((prev) =>
+      prev.map((issue) =>
+        issue.id === selectedIssue.id
+          ? {
+              ...issue,
+              description: updatedDescription,
+              specialInstructions: adminDraft.specialInstructions.trim()
+                ? adminDraft.specialInstructions.trim()
+                : issue.specialInstructions,
+              lastUpdated: new Date().toISOString(),
+            }
+          : issue
+      )
+    );
+
+    addNotification(
+      "admin_update",
+      `Administrative update added to ${selectedIssue.title}.`,
+      selectedIssue.department,
+      "medium"
+    );
+
+    setAdminDraft({
+      updateNote: "",
+      specialInstructions: "",
+    });
+  }
+
+  function unreadNotificationsForPersona() {
+    if (persona === PERSONAS.PUBLIC) return [];
+
+    if (persona === PERSONAS.ADMIN) {
+      return notifications.filter((note) => !note.read);
+    }
+
+    if (!selectedIssue) return [];
+
+    return notifications.filter(
+      (note) => !note.read && note.department === selectedIssue.department
+    );
+  }
+
+  function renderTopBar() {
+    return (
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%',
-          maxWidth: '520px',
-          background: '#fff',
-          borderRadius: '18px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-          padding: '24px',
-          position: 'relative',
-          maxHeight: '90vh',
-          overflowY: 'auto',
+          background: "linear-gradient(135deg, #0d4d87 0%, #0f6ab7 100%)",
+          color: "#fff",
+          borderRadius: 20,
+          padding: 18,
+          boxShadow: "0 16px 40px rgba(13,77,135,0.22)",
+          marginBottom: 16,
         }}
       >
-        <button
-          onClick={() => {
-            setPoint(null);
-            onClose();
-          }}
+        <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>
+          PublicPulse
+        </div>
+        <div style={{ fontSize: 14, opacity: 0.95, lineHeight: 1.45 }}>
+          We care, we listen, we act. A live city decision platform for residents,
+          departments, and leadership.
+        </div>
+
+        <div
           style={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            width: '36px',
-            height: '36px',
-            borderRadius: '999px',
-            border: 'none',
-            background: '#e2e8f0',
-            cursor: 'pointer',
-            fontSize: '22px',
-            lineHeight: '36px',
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            marginTop: 14,
           }}
         >
-          ×
-        </button>
-
-        {step === 0 && (
-          <>
-            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
-              Tap where the problem is
-            </div>
-            <div style={{ color: '#475569' }}>Tap the map to place a pin.</div>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
-              What’s happening here?
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setCategory(cat);
-                    tap();
-                    setStep(2);
-                  }}
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: '12px',
-                    border: '1px solid #cbd5e1',
-                    background: category === cat ? '#0f172a' : '#fff',
-                    color: category === cat ? '#fff' : '#0f172a',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
-              Describe briefly
-            </div>
-            <button
-              onClick={startVoice}
-              style={{
-                border: 'none',
-                background: '#e2e8f0',
-                borderRadius: '999px',
-                width: '52px',
-                height: '52px',
-                fontSize: '22px',
-                cursor: 'pointer',
-                marginBottom: '12px',
-              }}
-            >
-              🎤
-            </button>
+          {[
+            `City: ${CITY_NAME}`,
+            `Mode: ${persona}`,
+            `${summary.open} open issues`,
+            `${summary.highPriority} important concerns`,
+            `${summary.notifications} notifications`,
+          ].map((item) => (
             <div
-              onClick={() => document.getElementById('report-text')?.focus()}
-              style={{ marginBottom: '12px', color: '#2563eb', cursor: 'pointer' }}
-            >
-              or type instead
-            </div>
-            <textarea
-              id="report-text"
-              placeholder="Describe briefly…"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
+              key={item}
               style={{
-                width: '100%',
-                minHeight: '120px',
-                borderRadius: '12px',
-                border: '1px solid #cbd5e1',
-                padding: '12px',
-                fontSize: '16px',
-                marginBottom: '12px',
-                boxSizing: 'border-box',
-              }}
-            />
-            {voiceError && <div style={{ color: '#dc2626', marginBottom: '12px' }}>{voiceError}</div>}
-            <button
-              disabled={!text.trim()}
-              onClick={() => {
-                tap();
-                setStep(3);
-              }}
-              style={{
-                padding: '12px 18px',
-                borderRadius: '12px',
-                border: 'none',
-                background: !text.trim() ? '#cbd5e1' : '#0f172a',
-                color: '#ffffff',
-                cursor: !text.trim() ? 'not-allowed' : 'pointer',
+                background: "rgba(255,255,255,0.14)",
+                border: "1px solid rgba(255,255,255,0.22)",
+                color: "white",
+                padding: "8px 12px",
+                borderRadius: 999,
+                fontSize: 13,
               }}
             >
-              Continue
-            </button>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
-              Add a photo (optional)
+              {item}
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                setPhotoName(e.target.files?.[0]?.name || '');
-                tap();
-              }}
-              style={{ marginBottom: '12px' }}
-            />
-            {photoName && <div style={{ color: '#475569', marginBottom: '12px' }}>{photoName}</div>}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => setStep(4)}
-                style={{
-                  padding: '12px 18px',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  background: '#ffffff',
-                  cursor: 'pointer',
-                }}
-              >
-                Skip
-              </button>
-              <button
-                onClick={() => setStep(4)}
-                style={{
-                  padding: '12px 18px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: '#0f172a',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                }}
-              >
-                Continue
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 4 && (
-          <>
-            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
-              Confirm & submit
-            </div>
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                padding: '14px',
-                marginBottom: '16px',
-              }}
-            >
-              <div><strong>Category:</strong> {category}</div>
-              <div><strong>Description:</strong> {text}</div>
-              <div><strong>Location:</strong> {point ? `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}` : 'Map pin selected'}</div>
-            </div>
-            <button
-              onClick={() => {
-                success();
-                onSubmit({ category, text, point, photoName });
-                setStep(5);
-              }}
-              style={{
-                padding: '12px 18px',
-                borderRadius: '12px',
-                border: 'none',
-                background: '#0f172a',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              Submit
-            </button>
-          </>
-        )}
-
-        {step === 5 && (
-          <>
-            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
-              Thanks—your report helps improve Hastings
-            </div>
-            <div style={{ color: '#475569', marginBottom: '16px' }}>Report received</div>
-            <button
-              onClick={() => {
-                setPoint(null);
-                onClose();
-              }}
-              style={{
-                padding: '12px 18px',
-                borderRadius: '12px',
-                border: 'none',
-                background: '#0f172a',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              Done
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UpdateFlow({ open, point, selectedIssue, setPoint, onClose, onSubmit }) {
-  const { tap, success } = Haptics();
-  const [status, setStatus] = useState('');
-  const [note, setNote] = useState('');
-
-  useEffect(() => {
-    if (!open) {
-      setStatus('');
-      setNote('');
-    }
-  }, [open]);
-
-  if (!open) return null;
-
-  return (
-    <div className="sheet-backdrop">
-      <div className="report-card">
-        <button className="close-btn" onClick={() => { setPoint(null); onClose(); }}>×</button>
-        <div className="report-title">Update what’s happening</div>
-        <div className="report-sub">
-          {selectedIssue ? selectedIssue.title : 'Tap a location or pin, then choose a status.'}
-        </div>
-
-        <div className="tile-grid">
-          {['Responding', 'In Progress', 'Resolved'].map((itemStatus) => (
-            <button
-              key={itemStatus}
-              className={`tile ${status === itemStatus ? 'active' : ''}`}
-              onClick={() => {
-                setStatus(itemStatus);
-                tap();
-              }}
-            >
-              {itemStatus}
-            </button>
           ))}
-        </div>
-
-        <textarea
-          className="text-input"
-          placeholder="Add note (optional)…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-
-        <button
-          className="primary-btn"
-          disabled={!status}
-          onClick={() => {
-            success();
-            onSubmit({ point, selectedIssue, status, note });
-            setPoint(null);
-            onClose();
-          }}
-        >
-          Update city now
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CommandCenter({ issuesNeedingReview, onApprove, onHold, onBack }) {
-  const [selected, setSelected] = useState(issuesNeedingReview[0] || null);
-
-  useEffect(() => {
-    if (!selected && issuesNeedingReview.length) setSelected(issuesNeedingReview[0]);
-    if (selected && !issuesNeedingReview.find((i) => i.id === selected.id)) {
-      setSelected(issuesNeedingReview[0] || null);
-    }
-  }, [issuesNeedingReview, selected]);
-
-  if (!selected) {
-    return (
-      <div className="command-screen">
-        <div className="topbar">
-          <div className="brand-title">Hastings Community Pulse</div>
-          <div className="brand-sub">Powered by PublicPulse • Pilot</div>
-        </div>
-        <div className="command-header">
-          <div>
-            <div className="panel-kicker">Command Center</div>
-            <div className="panel-title">Nothing needs review right now</div>
-          </div>
-          <button className="back-pill" onClick={onBack}>Back to map</button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="command-screen">
-      <div className="topbar">
-        <div className="brand-title">Hastings Community Pulse</div>
-        <div className="brand-sub">Powered by PublicPulse • Pilot</div>
-      </div>
-
-      <div className="command-header">
-        <div>
-          <div className="panel-kicker">Command Center</div>
-          <div className="panel-title">Next best decision</div>
+  function renderMapSection() {
+    return (
+      <div style={panelStyle()}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
+          What’s going on in {CITY_NAME} right now
         </div>
-        <button className="back-pill" onClick={onBack}>Back to map</button>
-      </div>
+        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
+          Residents, departments, and city signals feed the same live picture.
+        </div>
 
-      <div className="command-grid">
-        <section className="panel">
-          <div className="panel-kicker">What needs attention</div>
-          {issuesNeedingReview.map((issue) => (
-            <button
-              key={issue.id}
-              className={`issue-row ${selected.id === issue.id ? 'active' : ''}`}
-              onClick={() => setSelected(issue)}
-            >
-              <div className="issue-row-title">{issue.title}</div>
-              <div className="issue-row-meta">{issue.reports} reports • {issue.traffic} traffic • {issue.safety} risk</div>
-            </button>
-          ))}
-        </section>
+        <div
+          ref={mapRef}
+          onClick={handleMapClick}
+          style={{
+            position: "relative",
+            height: 560,
+            borderRadius: 18,
+            overflow: "hidden",
+            marginTop: 14,
+            background:
+              "radial-gradient(circle at 20% 20%, #cfe9ff 0, #dcefff 26%, #eef6ff 55%, #f6fbff 100%)",
+            border: "1px solid #dbe8f4",
+            cursor: reportMode ? "crosshair" : "default",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage:
+                "linear-gradient(rgba(13,106,183,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(13,106,183,0.06) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+              pointerEvents: "none",
+            }}
+          />
 
-        <section className="panel center-panel">
-          <div className="panel-kicker">Next move</div>
-          <div className="decision-note">Based on current conditions</div>
-          <div className="decision-option">
-            <div className="decision-option-title">{selected.recommendation.title}</div>
-            <div className="decision-option-sub">{selected.locationName}</div>
-          </div>
-          <div className="reason-list">
-            {selected.recommendation.reasons.map((r) => <div key={r} className="reason-pill">{r}</div>)}
-          </div>
-          <div className="delay-box">{selected.recommendation.delay}</div>
-          <div className="row-actions">
-            <button className="primary-btn compact" onClick={() => onApprove(selected.id)}>Approve</button>
-            <button className="ghost-btn compact" onClick={() => onHold(selected.id)}>Hold</button>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-kicker">Budget impact</div>
-          <div className="budget-line"><span>Estimated cost</span><strong>{selected.estimatedCost}</strong></div>
-          <div className="budget-line"><span>If delayed</span><strong>{selected.delayCost}</strong></div>
-          <div className="budget-line"><span>Last similar repair</span><strong>{selected.lastCost}</strong></div>
-          <div className="budget-box">
-            <div className="budget-box-kicker">Needs review</div>
-            <div className="budget-box-value">{selected.department}</div>
-            <div className="budget-box-sub">Approve work or hold for later.</div>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-export default function App() {
-  const [page, setPage] = useState('home');
-  const [issues, setIssues] = useState(seedIssues);
-  const [filter, setFilter] = useState('All');
-  const [selectedIssue, setSelectedIssue] = useState(null);
-  const [detailIssue, setDetailIssue] = useState(null);
-  const [mapMode, setMapMode] = useState('view');
-  const [mapTarget, setMapTarget] = useState(null);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportPoint, setReportPoint] = useState(null);
-  const [updateOpen, setUpdateOpen] = useState(false);
-  const [updatePoint, setUpdatePoint] = useState(null);
-  const [updateIssue, setUpdateIssue] = useState(null);
-  const [toast, setToast] = useState('');
-
-  const visibleIssues = filter === 'All'
-    ? issues
-    : issues.filter((issue) => issue.category === filter);
-
-  const issuesNeedingReview = useMemo(
-    () => issues.filter(
-      (issue) => issue.requiresApproval && (
-        issue.status === 'Concern Received' || issue.status === 'Under Review'
-      )
-    ),
-    [issues]
-  );
-
-  const showToast = (message) => {
-    setToast(message);
-    clearTimeout(window.__pp_toast);
-    window.__pp_toast = setTimeout(() => setToast(''), 2200);
-  };
-
-  const handleMapTap = (latlng) => {
-    if (mapMode === 'report') {
-      setReportPoint(latlng);
-      setMapTarget([latlng.lat, latlng.lng]);
-      setReportOpen(true);
-      showToast('Location selected');
-    } else if (mapMode === 'update') {
-      setUpdatePoint(latlng);
-      setMapTarget([latlng.lat, latlng.lng]);
-      setUpdateIssue(null);
-      setUpdateOpen(true);
-    }
-  };
-
-  const handleReportSubmit = ({ category, text, point }) => {
-    const department =
-      category === 'Drainage' || category === 'Gas / Sewer'
-        ? 'Hastings Utilities'
-        : category === 'Traffic'
-          ? 'Hastings Police'
-          : category === 'Parks'
-            ? 'City Parks'
-            : 'Public Works';
-
-    const newIssue = {
-      id: Date.now(),
-      title: text.charAt(0).toUpperCase() + text.slice(1),
-      description: text,
-      locationName: 'New report location',
-      category,
-      status: 'Concern Received',
-      department,
-      reports: 1,
-      traffic: 'Low',
-      safety: 'Low',
-      lat: point?.lat ?? HASTINGS_CENTER[0],
-      lng: point?.lng ?? HASTINGS_CENTER[1],
-      updatedAt: Date.now(),
-      source: 'resident',
-      requiresApproval: true,
-      estimatedCost: '$',
-      delayCost: '$$',
-      lastCost: '$0',
-      flagship: false,
-      recommendation: {
-        title: 'Review reported concern',
-        reasons: ['New report', 'Needs verification', 'Public-facing issue'],
-        delay: 'If delayed, resident frustration and repeat reports will increase.'
-      }
-    };
-
-    setIssues((prev) => [newIssue, ...prev]);
-    setSelectedIssue(newIssue);
-    setMapMode('view');
-    setReportOpen(false);
-    showToast('Report received.');
-  };
-
-  const handleDepartmentUpdate = ({ point, selectedIssue: chosenIssue, status, note }) => {
-    if (chosenIssue) {
-      setIssues((prev) => prev.map((issue) => (
-        issue.id === chosenIssue.id
-          ? {
-              ...issue,
-              status,
-              updatedAt: Date.now(),
-              description: note?.trim() ? note : issue.description
-            }
-          : issue
-      )));
-      showToast('City update posted.');
-      return;
-    }
-
-    const newUpdate = {
-      id: Date.now(),
-      title: note?.trim() ? note : 'City work is underway in this area.',
-      description: note?.trim() ? note : 'Visible city work has been posted.',
-      locationName: 'City update',
-      category: 'General',
-      status,
-      department: 'City team',
-      reports: 0,
-      traffic: 'Low',
-      safety: 'Low',
-      lat: point?.lat ?? HASTINGS_CENTER[0],
-      lng: point?.lng ?? HASTINGS_CENTER[1],
-      updatedAt: Date.now(),
-      source: 'department',
-      requiresApproval: status === 'Under Review',
-      estimatedCost: '$$',
-      delayCost: '$$$',
-      lastCost: '$0',
-      flagship: false,
-      recommendation: {
-        title: 'Review department update',
-        reasons: ['Department-initiated', 'Visible city work', 'Needs city awareness'],
-        delay: 'If delayed, public confusion and duplicate reports may increase.'
-      }
-    };
-
-    setIssues((prev) => [newUpdate, ...prev]);
-    setSelectedIssue(newUpdate);
-    showToast('City update posted.');
-  };
-
-  const handleApprove = (issueId) => {
-    setIssues((prev) => prev.map((issue) => (
-      issue.id === issueId
-        ? {
-            ...issue,
-            status: issue.status === 'Concern Received' ? 'Under Review' : 'Responding',
-            updatedAt: Date.now(),
-            requiresApproval: false
-          }
-        : issue
-    )));
-    showToast('Approved.');
-  };
-
-  const handleHold = (issueId) => {
-    setIssues((prev) => prev.map((issue) => (
-      issue.id === issueId ? { ...issue, updatedAt: Date.now() } : issue
-    )));
-    showToast('Held for later review.');
-  };
-
-  return (
-    <SwipeShell page={page} setPage={setPage}>
-      {page === 'home' ? (
-        <div className="home-screen">
-          <div className="topbar home-topbar">
-            <div className="brand-title">Hastings Community Pulse</div>
-            <div className="brand-sub">Powered by PublicPulse • Pilot</div>
-          </div>
-
-          <div className="homepage-map-shell">
-            <HomeMap
-              issues={issues.map((issue) => ({ ...issue, updatedLabel: toUpdatedLabel(issue.updatedAt) }))}
-              filter={filter}
-              setFilter={setFilter}
-              setSelectedIssue={(issue) => {
-                setSelectedIssue(issue);
-                if (mapMode === 'update') {
-                  setUpdateIssue(issue);
-                  setUpdateOpen(true);
-                }
+          {[
+            { label: "North Hastings", left: "10%", top: "12%" },
+            { label: "Downtown", left: "44%", top: "48%" },
+            { label: "Parks Corridor", left: "72%", top: "22%" },
+          ].map((label) => (
+            <div
+              key={label.label}
+              style={{
+                position: "absolute",
+                left: label.left,
+                top: label.top,
+                padding: "6px 10px",
+                background: "rgba(255,255,255,0.84)",
+                border: "1px solid #d9e6f3",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#28537b",
               }}
-              mapMode={mapMode}
-              onMapTap={handleMapTap}
-              target={mapTarget}
+            >
+              {label.label}
+            </div>
+          ))}
+
+          {visibleIssues.map((issue) => (
+            <div
+              key={issue.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedIssueId(issue.id);
+              }}
+              title={issue.title}
+              style={{
+                position: "absolute",
+                left: `${issue.x}%`,
+                top: `${issue.y}%`,
+                transform: "translate(-50%, -100%)",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 999,
+                  background: selectedIssueId === issue.id ? "#0f6ab7" : "#f44336",
+                  border: "3px solid white",
+                  boxShadow: "0 8px 18px rgba(244,67,54,0.28)",
+                }}
+              />
+              <div
+                style={{
+                  width: 4,
+                  height: 16,
+                  background: selectedIssueId === issue.id ? "#0f6ab7" : "#f44336",
+                  margin: "0 auto",
+                  borderRadius: "0 0 5px 5px",
+                  marginTop: -2,
+                }}
+              />
+            </div>
+          ))}
+
+          {reportMode && reportPoint && (
+            <div
+              style={{
+                position: "absolute",
+                left: `${reportPoint.x}%`,
+                top: `${reportPoint.y}%`,
+                transform: "translate(-50%, -100%)",
+              }}
+            >
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 999,
+                  background: "#0f6ab7",
+                  border: "3px solid white",
+                  boxShadow: "0 8px 18px rgba(15,106,183,0.28)",
+                }}
+              />
+              <div
+                style={{
+                  width: 4,
+                  height: 16,
+                  background: "#0f6ab7",
+                  margin: "0 auto",
+                  borderRadius: "0 0 5px 5px",
+                  marginTop: -2,
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div style={buttonRowStyle()}>
+          <button
+            onClick={() => {
+              setActiveTab(TABS.REPORT);
+              setReportMode(true);
+            }}
+            style={primaryButtonStyle()}
+          >
+            Report an issue
+          </button>
+
+          <button onClick={() => setPersona(PERSONAS.PUBLIC)} style={secondaryButtonStyle()}>
+            Public view
+          </button>
+          <button
+            onClick={() => setPersona(PERSONAS.DEPARTMENT)}
+            style={secondaryButtonStyle()}
+          >
+            Department view
+          </button>
+          <button onClick={() => setPersona(PERSONAS.ADMIN)} style={secondaryButtonStyle()}>
+            City admin view
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #e5edf6",
+            padding: 14,
+            minHeight: 148,
+            boxShadow: "0 8px 22px rgba(25,42,70,0.06)",
+          }}
+        >
+          {rotatingIssue ? (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "flex-start",
+                  marginBottom: 8,
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 17 }}>
+                    {rotatingIssue.title}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#67819a" }}>
+                    {rotatingIssue.locationLabel} • {rotatingIssue.department}
+                  </div>
+                </div>
+                <StatusBadge status={rotatingIssue.status} />
+              </div>
+
+              <div style={{ marginBottom: 10, lineHeight: 1.45 }}>
+                {rotatingIssue.description}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {[
+                  ["Confidence", `${rotatingIssue.confidence}%`],
+                  ["Urgency", `${rotatingIssue.urgency}%`],
+                  ["Affected", `${rotatingIssue.affectedCount}`],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      background: "#f8fbfe",
+                      border: "1px solid #e5edf6",
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 4 }}>
+                      {label}
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 16 }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ color: "#63809b" }}>No active issues yet.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderIssueDetails() {
+    if (!selectedIssue) {
+      return (
+        <div style={panelStyle()}>
+          <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
+            Issue details
+          </div>
+          <div style={{ color: "#63809b", fontSize: 13 }}>
+            Select a map issue to see details.
+          </div>
+        </div>
+      );
+    }
+
+    const fund = budgetInsights.find((item) => item.fund === selectedIssue.fund);
+
+    return (
+      <div style={panelStyle()}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            alignItems: "flex-start",
+            marginBottom: 8,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4 }}>
+              {selectedIssue.title}
+            </div>
+            <div style={{ fontSize: 12, color: "#67819a" }}>
+              {selectedIssue.locationLabel} • {selectedIssue.source}
+            </div>
+          </div>
+          <StatusBadge status={selectedIssue.status} />
+        </div>
+
+        <div style={{ marginBottom: 12, lineHeight: 1.5 }}>
+          {selectedIssue.description}
+        </div>
+
+        <div style={{ display: "grid", gap: 10 }}>
+          <div style={listItemStyle()}>
+            <strong>Department:</strong> {selectedIssue.department}
+            <br />
+            <strong>Fund:</strong> {selectedIssue.fund}
+            <br />
+            <strong>Strategic focus:</strong> {selectedIssue.strategicTag}
+          </div>
+
+          <div style={listItemStyle()}>
+            <strong>Confidence:</strong> {selectedIssue.confidence}%
+            <br />
+            <strong>Urgency:</strong> {selectedIssue.urgency}%
+            <br />
+            <strong>Impact:</strong> {selectedIssue.impact}%
+            <br />
+            <strong>I’m Affected:</strong> {selectedIssue.affectedCount}
+          </div>
+
+          <div style={listItemStyle()}>
+            <strong>Special Instructions:</strong>
+            <div style={{ marginTop: 6 }}>
+              {selectedIssue.specialInstructions || "None provided"}
+            </div>
+          </div>
+
+          {fund && (
+            <div style={listItemStyle()}>
+              <strong>Budget intelligence</strong>
+              <div style={{ marginTop: 8 }}>
+                {fund.fund}: {formatMoney(fund.spent)} spent of{" "}
+                {formatMoney(fund.budgeted)}
+              </div>
+              <div style={progressTrackStyle()}>
+                <div style={progressBarStyle(fund.usedPct)} />
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
+                Remaining: {formatMoney(fund.remaining)}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={buttonRowStyle()}>
+          <button
+            style={primaryButtonStyle()}
+            onClick={() => handleAffected(selectedIssue.id)}
+          >
+            I’m Affected
+          </button>
+
+          {(persona === PERSONAS.ADMIN || persona === PERSONAS.DEPARTMENT) && (
+            <>
+              <button
+                style={secondaryButtonStyle()}
+                onClick={() => updateIssueStatus(selectedIssue.id, "Under Review")}
+              >
+                Under Review
+              </button>
+              <button
+                style={secondaryButtonStyle()}
+                onClick={() => updateIssueStatus(selectedIssue.id, "Assigned")}
+              >
+                Assigned
+              </button>
+              <button
+                style={secondaryButtonStyle()}
+                onClick={() => updateIssueStatus(selectedIssue.id, "Work in Progress")}
+              >
+                Work in Progress
+              </button>
+              <button
+                style={softDangerButtonStyle()}
+                onClick={() => updateIssueStatus(selectedIssue.id, "Resolved")}
+              >
+                Resolved
+              </button>
+            </>
+          )}
+        </div>
+
+        {persona === PERSONAS.ADMIN && (
+          <div style={{ marginTop: 14 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#355a7f",
+                marginBottom: 6,
+              }}
+            >
+              Route this issue
+            </div>
+            <div style={buttonRowStyle()}>
+              {DEPARTMENTS.map((department) => (
+                <button
+                  key={department}
+                  style={secondaryButtonStyle()}
+                  onClick={() => routeIssue(selectedIssue.id, department)}
+                >
+                  {department}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(persona === PERSONAS.ADMIN || persona === PERSONAS.DEPARTMENT) && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 10 }}>
+              Add update
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#355a7f",
+                  marginBottom: 6,
+                }}
+              >
+                Update note
+              </div>
+              <TextareaWithMic
+                value={adminDraft.updateNote}
+                onChange={(e) =>
+                  setAdminDraft((prev) => ({ ...prev, updateNote: e.target.value }))
+                }
+                placeholder="Enter an update for this issue."
+                listening={listeningField === "admin-update-note"}
+                onMicClick={() =>
+                  startVoiceInput(
+                    "admin-update-note",
+                    () => adminDraft.updateNote,
+                    (nextValue) =>
+                      setAdminDraft((prev) => ({ ...prev, updateNote: nextValue }))
+                  )
+                }
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#355a7f",
+                  marginBottom: 6,
+                }}
+              >
+                Special instructions
+              </div>
+              <TextareaWithMic
+                value={adminDraft.specialInstructions}
+                onChange={(e) =>
+                  setAdminDraft((prev) => ({
+                    ...prev,
+                    specialInstructions: e.target.value,
+                  }))
+                }
+                placeholder="Enter additional operational instructions."
+                listening={listeningField === "admin-special-instructions"}
+                onMicClick={() =>
+                  startVoiceInput(
+                    "admin-special-instructions",
+                    () => adminDraft.specialInstructions,
+                    (nextValue) =>
+                      setAdminDraft((prev) => ({
+                        ...prev,
+                        specialInstructions: nextValue,
+                      }))
+                  )
+                }
+              />
+            </div>
+
+            <button style={primaryButtonStyle()} onClick={addAdminUpdateToIssue}>
+              Save update
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderReportPanel() {
+    return (
+      <div style={panelStyle(true)}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
+          Report an issue
+        </div>
+        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
+          Tap the map to set the location. AI can categorize the issue for the resident.
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#355a7f",
+                marginBottom: 6,
+              }}
+            >
+              Location
+            </div>
+            <div style={listItemStyle()}>
+              {reportPoint
+                ? `Selected at ${reportPoint.x.toFixed(1)}%, ${reportPoint.y.toFixed(1)}%`
+                : "Tap the map to choose the location."}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#355a7f",
+                marginBottom: 6,
+              }}
+            >
+              What’s happening?
+            </div>
+            <TextareaWithMic
+              value={reportForm.description}
+              onChange={(e) =>
+                setReportForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+              placeholder="Describe the issue in your own words."
+              listening={listeningField === "report-description"}
+              onMicClick={() =>
+                startVoiceInput(
+                  "report-description",
+                  () => reportForm.description,
+                  (nextValue) =>
+                    setReportForm((prev) => ({ ...prev, description: nextValue }))
+                )
+              }
             />
           </div>
 
-          <SummaryBox issues={issues} />
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#355a7f",
+                marginBottom: 6,
+              }}
+            >
+              Category
+            </div>
+            <select
+              value={reportForm.categoryChoice}
+              onChange={(e) =>
+                setReportForm((prev) => ({ ...prev, categoryChoice: e.target.value }))
+              }
+              style={inputStyle()}
+            >
+              <option value="ai">Let AI categorize it</option>
+              <option value="roads">Roads</option>
+              <option value="utilities">Utilities</option>
+              <option value="parks">Parks</option>
+              <option value="safety">Public Safety</option>
+              <option value="fire">Fire</option>
+              <option value="code">Code / Property</option>
+              <option value="admin">Administration</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
 
-          {selectedIssue && mapMode === 'view' && (
-            <Rolodex
-              issues={visibleIssues}
-              active={selectedIssue}
-              setActive={setSelectedIssue}
-              onExpand={setDetailIssue}
-            />
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#355a7f",
+                marginBottom: 6,
+              }}
+            >
+              Routing
+            </div>
+            <select
+              value={reportForm.routeMode}
+              onChange={(e) =>
+                setReportForm((prev) => ({ ...prev, routeMode: e.target.value }))
+              }
+              style={inputStyle()}
+            >
+              <option value="standard">Standard routing</option>
+              <option value="manual">Manual routing</option>
+            </select>
+          </div>
+
+          {(reportForm.categoryChoice === "other" ||
+            reportForm.routeMode === "manual") && (
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#355a7f",
+                  marginBottom: 6,
+                }}
+              >
+                Choose department
+              </div>
+              <select
+                value={reportForm.chosenDepartment}
+                onChange={(e) =>
+                  setReportForm((prev) => ({
+                    ...prev,
+                    chosenDepartment: e.target.value,
+                  }))
+                }
+                style={inputStyle()}
+              >
+                {DEPARTMENTS.map((department) => (
+                  <option key={department} value={department}>
+                    {department}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
-          <div className="home-footer">
-            <button
-              className={`nav-pill report ${mapMode === 'report' ? 'active-alt' : ''}`}
-              onClick={() => {
-                setMapMode('report');
-                setReportOpen(false);
-                setReportPoint(null);
-                setSelectedIssue(null);
-                showToast('Tap the map to place a pin.');
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#355a7f",
+                marginBottom: 6,
               }}
             >
-              Report
+              Special instructions
+            </div>
+            <TextareaWithMic
+              value={reportForm.specialInstructions}
+              onChange={(e) =>
+                setReportForm((prev) => ({
+                  ...prev,
+                  specialInstructions: e.target.value,
+                }))
+              }
+              placeholder="Anything city staff should know?"
+              listening={listeningField === "report-special-instructions"}
+              onMicClick={() =>
+                startVoiceInput(
+                  "report-special-instructions",
+                  () => reportForm.specialInstructions,
+                  (nextValue) =>
+                    setReportForm((prev) => ({
+                      ...prev,
+                      specialInstructions: nextValue,
+                    }))
+                )
+              }
+            />
+          </div>
+
+          <div style={buttonRowStyle()}>
+            <button style={primaryButtonStyle()} onClick={handleSubmitReport}>
+              Submit report
+            </button>
+            <button
+              style={secondaryButtonStyle()}
+              onClick={() => {
+                setReportMode(false);
+                setReportPoint(null);
+                setActiveTab(TABS.HOME);
+              }}
+            >
+              Cancel
             </button>
           </div>
         </div>
-      ) : (
-        <CommandCenter
-          issuesNeedingReview={issuesNeedingReview.map((issue) => ({ ...issue, updatedLabel: toUpdatedLabel(issue.updatedAt) }))}
-          onApprove={handleApprove}
-          onHold={handleHold}
-          onBack={() => setPage('home')}
-        />
-      )}
+      </div>
+    );
+  }
 
-      <ReportFlow
-        open={reportOpen}
-        point={reportPoint}
-        setPoint={setReportPoint}
-        onClose={() => {
-          setReportOpen(false);
-          setMapMode('view');
+  function renderCommandCenter() {
+    return (
+      <div style={panelStyle()}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
+          Command center
+        </div>
+        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
+          Budget-aware, strategic, and operational view for admins and departments.
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 10 }}>
+            Recommended actions
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={listItemStyle()}>
+              Prioritize utility response near 7th & Lincoln due to high urgency and
+              confirmed department signal.
+            </div>
+            <div style={listItemStyle()}>
+              Monitor recurring road reports and prepare a streets package for the next
+              planning cycle.
+            </div>
+            <div style={listItemStyle()}>
+              Use parks trend items as planning support rather than public map clutter.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 10 }}>
+            Important notifications
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {unreadNotificationsForPersona().length ? (
+              unreadNotificationsForPersona().map((note) => (
+                <div key={note.id} style={listItemStyle()}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div>
+                      <strong>{note.department}</strong>
+                      <div style={{ marginTop: 6 }}>{note.message}</div>
+                      <div style={{ fontSize: 12, color: "#67819a", marginTop: 6 }}>
+                        Severity: {note.severity}
+                      </div>
+                    </div>
+                    <button
+                      style={secondaryButtonStyle()}
+                      onClick={() => markNotificationRead(note.id)}
+                    >
+                      Mark read
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={listItemStyle()}>No unread notifications.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderIntelligence() {
+    return (
+      <div style={panelStyle()}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
+          Intelligence layer
+        </div>
+        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
+          Signals that support confidence and decision making without automatically
+          becoming public map pins.
+        </div>
+
+        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+          {intelligenceItems.length ? (
+            intelligenceItems.map((item) => (
+              <div key={item.id} style={listItemStyle()}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <strong>{item.category}</strong>
+                  <span style={{ fontSize: 12, color: "#67819a" }}>
+                    {item.source}
+                  </span>
+                </div>
+                <div style={{ marginTop: 8 }}>{item.text}</div>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
+                  {item.recommendedUse}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={listItemStyle()}>No intelligence items yet.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderBudgetPanel() {
+    return (
+      <div style={panelStyle()}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
+          Budget and planning
+        </div>
+        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
+          Budget-aware decisions, council support, and year-ahead planning live here.
+        </div>
+
+        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+          {budgetInsights.map((fund) => (
+            <div key={fund.fund} style={listItemStyle()}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "flex-start",
+                }}
+              >
+                <strong>{fund.fund}</strong>
+                <span style={{ fontSize: 12, color: "#67819a" }}>
+                  {fund.usedPct.toFixed(0)}% used
+                </span>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                {formatMoney(fund.spent)} of {formatMoney(fund.budgeted)}
+              </div>
+              <div style={progressTrackStyle()}>
+                <div style={progressBarStyle(fund.usedPct)} />
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
+                Remaining: {formatMoney(fund.remaining)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 10 }}>
+            Planning output
+          </div>
+          <div style={listItemStyle()}>
+            AI can use prior budgets, city plans, and live issue activity to produce
+            council-ready summaries, grant support language, year-ahead
+            recommendations, and budget-conscious prioritization.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderBottomNav() {
+    const items = [
+      { key: TABS.HOME, label: "Home" },
+      { key: TABS.REPORT, label: "Report" },
+      { key: TABS.COMMAND, label: "Command" },
+      { key: TABS.BUDGET, label: "Budget" },
+    ];
+
+    return (
+      <div
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(255,255,255,0.96)",
+          backdropFilter: "blur(10px)",
+          borderTop: "1px solid #dfe8f1",
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 8,
+          padding: "10px 12px max(10px, env(safe-area-inset-bottom))",
+          zIndex: 40,
         }}
-        onSubmit={handleReportSubmit}
-      />
+      >
+        {items.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => {
+              setActiveTab(item.key);
+              setReportMode(item.key === TABS.REPORT);
+            }}
+            style={{
+              border: "none",
+              background: activeTab === item.key ? "#eef6ff" : "transparent",
+              color: activeTab === item.key ? "#0f6ab7" : "#54728f",
+              borderRadius: 14,
+              padding: "10px 8px",
+              fontWeight: 800,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
-      <UpdateFlow
-        open={updateOpen}
-        point={updatePoint}
-        selectedIssue={updateIssue}
-        setPoint={setUpdatePoint}
-        onClose={() => {
-          setUpdateOpen(false);
-          setMapMode('view');
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f4f7fb",
+        color: "#15304a",
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        paddingBottom: 88,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          padding: 16,
         }}
-        onSubmit={handleDepartmentUpdate}
-      />
+      >
+        {renderTopBar()}
 
-      <DetailSheet
-        issue={detailIssue ? { ...detailIssue, updatedLabel: toUpdatedLabel(detailIssue.updatedAt) } : null}
-        onClose={() => setDetailIssue(null)}
-      />
+        <div
+          style={
+            isMobile
+              ? { display: "block" }
+              : {
+                  display: "grid",
+                  gridTemplateColumns: "1.45fr 0.85fr",
+                  gap: 16,
+                  alignItems: "start",
+                }
+          }
+        >
+          <div style={{ display: "grid", gap: 16 }}>
+            {renderMapSection()}
+            {(activeTab === TABS.COMMAND || activeTab === TABS.HOME) && renderCommandCenter()}
+            {activeTab === TABS.COMMAND && renderIntelligence()}
+            {activeTab === TABS.BUDGET && renderBudgetPanel()}
+          </div>
 
-      {toast && <div className="toast">{toast}</div>}
-    </SwipeShell>
+          <div
+            style={{
+              display: "grid",
+              gap: 16,
+              marginTop: isMobile ? 16 : 0,
+            }}
+          >
+            {activeTab === TABS.REPORT ? renderReportPanel() : renderIssueDetails()}
+          </div>
+        </div>
+      </div>
+
+      {renderBottomNav()}
+    </div>
   );
 }
