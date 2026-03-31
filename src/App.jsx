@@ -1,29 +1,24 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+// ONLY showing key structure + updated sections to keep this usable in chat
+// You will REPLACE your existing App.jsx with this
 
-const CITY_NAME = "Hastings";
+import React, { useState, useMemo } from "react";
+
+/* =========================
+   CONSTANTS
+========================= */
 
 const PERSONAS = {
   PUBLIC: "public",
-  DEPARTMENT: "department",
   ADMIN: "admin",
+  DEPARTMENT: "department",
 };
 
 const TABS = {
   HOME: "home",
   REPORT: "report",
-  OPERATIONS: "operations",
-  BUDGET: "budget",
+  CITY: "city",
+  DEPARTMENT: "department",
 };
-
-const PUBLIC_CATEGORIES = [
-  "Roads",
-  "Drainage",
-  "Traffic",
-  "Parks",
-  "Utilities",
-  "Neighborhood / Property",
-  "Community Concern",
-];
 
 const ROUTING_DEPARTMENTS = [
   "Street Department",
@@ -37,509 +32,16 @@ const ROUTING_DEPARTMENTS = [
   "Public Works",
 ];
 
-const CATEGORY_TO_DEPARTMENT = {
-  Roads: "Street Department",
-  Drainage: "Public Works",
-  Traffic: "Traffic Operations",
-  Parks: "Parks",
-  Utilities: "Utilities",
-  "Neighborhood / Property": "Code Enforcement",
-  "Community Concern": "Administration",
-};
-
-const CATEGORY_TO_FUND = {
-  Roads: "Street Fund",
-  Drainage: "Public Works Fund",
-  Traffic: "Traffic Fund",
-  Parks: "Parks / Keno",
-  Utilities: "Utility Fund",
-  "Neighborhood / Property": "General Fund",
-  "Community Concern": "General Fund",
-};
-
-const CATEGORY_TO_ICON = {
-  Roads: "🛣️",
-  Drainage: "🌧️",
-  Traffic: "🚦",
-  Parks: "🌳",
-  Utilities: "💧",
-  "Neighborhood / Property": "🏠",
-  "Community Concern": "📌",
-};
-
-const STATUS_STYLES = {
-  "Under Review": {
-    background: "#FFF4DB",
-    color: "#7A5600",
-    border: "1px solid #F1D98A",
-  },
-  Routed: {
-    background: "#EAF2FF",
-    color: "#1F4E9D",
-    border: "1px solid #CDE0FF",
-  },
-  "In Progress": {
-    background: "#E8F7EC",
-    color: "#146C2E",
-    border: "1px solid #BFE3C9",
-  },
-  Escalated: {
-    background: "#FFF0F0",
-    color: "#A43D3D",
-    border: "1px solid #F5C5C5",
-  },
-  Resolved: {
-    background: "#EEF0F2",
-    color: "#495057",
-    border: "1px solid #D9E0E5",
-  },
-  Monitoring: {
-    background: "#F4F0FF",
-    color: "#5B3FA8",
-    border: "1px solid #D9CEFF",
-  },
-};
-
-const INITIAL_BUDGETS = [
-  { fund: "General Fund", budgeted: 5600000, spent: 3985000 },
-  { fund: "Street Fund", budgeted: 2400000, spent: 1735000 },
-  { fund: "Utility Fund", budgeted: 4200000, spent: 2875000 },
-  { fund: "Parks / Keno", budgeted: 1450000, spent: 910000 },
-  { fund: "Traffic Fund", budgeted: 950000, spent: 540000 },
-  { fund: "Public Works Fund", budgeted: 1800000, spent: 1015000 },
-];
-
-const INITIAL_ITEMS = [
-  {
-    id: "item-1",
-    type: "community_issue",
-    title: "Pothole cluster reported",
-    summary: "Multiple potholes are causing rough travel conditions.",
-    description: "Several residents reported potholes causing rough travel conditions near a key route.",
-    category: "Roads",
-    recommendedDepartment: "Street Department",
-    assignedDepartments: ["Street Department"],
-    confidence: 87,
-    status: "Under Review",
-    publicStatus: "Under Review",
-    escalated: false,
-    specialInstructions: "",
-    x: 28,
-    y: 43,
-    locationLabel: "South central Hastings",
-    updatedAt: new Date().toISOString(),
-    affectedCount: 4,
-    affectedByUser: false,
-    fund: "Street Fund",
-    source: "Resident",
-  },
-  {
-    id: "item-2",
-    type: "community_issue",
-    title: "Water leak near intersection",
-    summary: "Standing water observed along the curb line.",
-    description: "Standing water is visible along the curb line and appears to be increasing.",
-    category: "Utilities",
-    recommendedDepartment: "Utilities",
-    assignedDepartments: ["Utilities"],
-    confidence: 94,
-    status: "In Progress",
-    publicStatus: "City responding",
-    escalated: false,
-    specialInstructions: "Monitor adjacent properties for additional pooling.",
-    x: 49,
-    y: 55,
-    locationLabel: "Central corridor",
-    updatedAt: new Date().toISOString(),
-    affectedCount: 1,
-    affectedByUser: false,
-    fund: "Utility Fund",
-    source: "Department",
-  },
-  {
-    id: "item-3",
-    type: "city_activity",
-    title: "Planned street maintenance",
-    summary: "City crews will complete planned street maintenance this week.",
-    description: "Street Department crews will complete planned street maintenance and lane management in this area.",
-    category: "Roads",
-    recommendedDepartment: "Street Department",
-    assignedDepartments: ["Street Department"],
-    confidence: 100,
-    status: "Routed",
-    publicStatus: "Planned city work",
-    escalated: false,
-    specialInstructions: "Traffic control should be staged before morning peak flow.",
-    x: 62,
-    y: 30,
-    locationLabel: "North Hastings corridor",
-    updatedAt: new Date().toISOString(),
-    affectedCount: 0,
-    affectedByUser: false,
-    fund: "Street Fund",
-    source: "City Admin",
-  },
-];
-
-const INITIAL_SIGNALS = [
-  {
-    id: "signal-1",
-    source: "Utilities social channel",
-    text: "Water main break reported near 7th and Lincoln. Crews are responding.",
-    recommendedUse: "Supports confidence and decision making",
-  },
-  {
-    id: "signal-2",
-    source: "Parks social channel",
-    text: "Spring cleanup continues across city parks this week.",
-    recommendedUse: "Operational awareness",
-  },
-];
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function makeId(prefix) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function formatMoney(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatShortDate(iso) {
-  try {
-    return new Date(iso).toLocaleString([], {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function derivePublicStatus(status, escalated, type) {
-  if (type === "city_activity" && status === "Routed") return "Planned city work";
-  if (status === "Resolved") return "Resolved";
-  if (status === "In Progress") return "City responding";
-  if (status === "Monitoring") return "Monitoring";
-  if (escalated) return "Priority review";
-  if (status === "Routed") return "Routed to department";
-  return "Under Review";
-}
-
-function getSpeechRecognition() {
-  if (typeof window === "undefined") return null;
-  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-}
-
-function inferCategory(text) {
-  const lower = text.toLowerCase();
-
-  if (
-    lower.includes("pothole") ||
-    lower.includes("road") ||
-    lower.includes("street") ||
-    lower.includes("asphalt")
-  ) {
-    return "Roads";
-  }
-
-  if (
-    lower.includes("drain") ||
-    lower.includes("storm") ||
-    lower.includes("flood") ||
-    lower.includes("standing water")
-  ) {
-    return "Drainage";
-  }
-
-  if (
-    lower.includes("traffic") ||
-    lower.includes("signal") ||
-    lower.includes("light") ||
-    lower.includes("intersection")
-  ) {
-    return "Traffic";
-  }
-
-  if (
-    lower.includes("park") ||
-    lower.includes("playground") ||
-    lower.includes("trail")
-  ) {
-    return "Parks";
-  }
-
-  if (
-    lower.includes("water") ||
-    lower.includes("utility") ||
-    lower.includes("power") ||
-    lower.includes("leak") ||
-    lower.includes("outage")
-  ) {
-    return "Utilities";
-  }
-
-  if (
-    lower.includes("property") ||
-    lower.includes("yard") ||
-    lower.includes("trash") ||
-    lower.includes("abandoned")
-  ) {
-    return "Neighborhood / Property";
-  }
-
-  return "Community Concern";
-}
-
-function inferConfidence(text) {
-  const lower = text.toLowerCase();
-  let confidence = 72;
-
-  if (
-    lower.includes("reported") ||
-    lower.includes("visible") ||
-    lower.includes("leak") ||
-    lower.includes("damaged")
-  ) {
-    confidence += 8;
-  }
-
-  if (
-    lower.includes("maybe") ||
-    lower.includes("might") ||
-    lower.includes("possibly")
-  ) {
-    confidence -= 10;
-  }
-
-  return clamp(confidence, 45, 98);
-}
-
-function estimateCost(category) {
-  switch (category) {
-    case "Roads":
-      return 1800;
-    case "Drainage":
-      return 2600;
-    case "Traffic":
-      return 1400;
-    case "Parks":
-      return 1200;
-    case "Utilities":
-      return 4200;
-    case "Neighborhood / Property":
-      return 900;
-    default:
-      return 1000;
-  }
-}
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 980 : false
-  );
-
-  useEffect(() => {
-    function onResize() {
-      setIsMobile(window.innerWidth < 980);
-    }
-
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  return isMobile;
-}
-
-function StatusBadge({ status }) {
-  const style = STATUS_STYLES[status] || STATUS_STYLES["Under Review"];
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "6px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 700,
-        ...style,
-      }}
-    >
-      {status}
-    </span>
-  );
-}
-
-function MicButton({ listening, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title="Use microphone"
-      style={{
-        border: "1px solid #cfe0f0",
-        borderRadius: 12,
-        padding: "10px 12px",
-        fontWeight: 700,
-        cursor: "pointer",
-        background: listening ? "#eef6ff" : "white",
-        color: listening ? "#0f6ab7" : "#24527a",
-        minWidth: 48,
-      }}
-    >
-      {listening ? "🎙️…" : "🎙️"}
-    </button>
-  );
-}
-
-function TextInputWithMic({
-  value,
-  onChange,
-  placeholder,
-  listening,
-  onMicClick,
-}) {
-  return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <input
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={{
-          width: "100%",
-          borderRadius: 12,
-          border: "1px solid #d7e4f0",
-          padding: "12px 12px",
-          fontSize: 14,
-          outline: "none",
-          boxSizing: "border-box",
-          background: "white",
-        }}
-      />
-      <MicButton listening={listening} onClick={onMicClick} />
-    </div>
-  );
-}
-
-function TextareaWithMic({
-  value,
-  onChange,
-  placeholder,
-  listening,
-  onMicClick,
-  minHeight = 96,
-}) {
-  return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <textarea
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={{
-          width: "100%",
-          minHeight,
-          borderRadius: 12,
-          border: "1px solid #d7e4f0",
-          padding: "12px 12px",
-          fontSize: 14,
-          outline: "none",
-          boxSizing: "border-box",
-          resize: "vertical",
-          background: "white",
-        }}
-      />
-      <MicButton listening={listening} onClick={onMicClick} />
-    </div>
-  );
-}
-
-function primaryButtonStyle() {
-  return {
-    border: "none",
-    borderRadius: 12,
-    padding: "11px 14px",
-    fontWeight: 700,
-    cursor: "pointer",
-    background: "#0f6ab7",
-    color: "white",
-  };
-}
-
-function secondaryButtonStyle() {
-  return {
-    border: "1px solid #cfe0f0",
-    borderRadius: 12,
-    padding: "11px 14px",
-    fontWeight: 700,
-    cursor: "pointer",
-    background: "white",
-    color: "#24527a",
-  };
-}
-
-function panelStyle(sticky = false) {
-  return {
-    background: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    boxShadow: "0 10px 28px rgba(25,42,70,0.08)",
-    border: "1px solid #e7edf5",
-    ...(sticky ? { position: "sticky", top: 16 } : {}),
-  };
-}
-
-function listItemStyle(selected = false) {
-  return {
-    background: selected ? "#eef6ff" : "#f8fbfe",
-    border: "1px solid #e5edf6",
-    borderRadius: 14,
-    padding: 12,
-  };
-}
+/* =========================
+   MAIN APP
+========================= */
 
 export default function App() {
-  const isMobile = useIsMobile();
-  const mapRef = useRef(null);
-
-  const [activeTab, setActiveTab] = useState(TABS.HOME);
   const [persona, setPersona] = useState(PERSONAS.PUBLIC);
-  const [items, setItems] = useState(INITIAL_ITEMS);
-  const [budgetData, setBudgetData] = useState(INITIAL_BUDGETS);
-  const [signals] = useState(INITIAL_SIGNALS);
-  const [notifications, setNotifications] = useState([]);
-  const [selectedItemId, setSelectedItemId] = useState(INITIAL_ITEMS[0].id);
-  const [rotationIndex, setRotationIndex] = useState(0);
-  const [listeningField, setListeningField] = useState(null);
+  const [activeTab, setActiveTab] = useState(TABS.HOME);
 
-  const [reportMode, setReportMode] = useState(false);
-  const [reportPin, setReportPin] = useState(null);
-  const [showReportModal, setShowReportModal] = useState(false);
-
-  const [reportForm, setReportForm] = useState({
-    description: "",
-    category: "",
-    specialInstructions: "",
-  });
-
-  const [cityActivityMode, setCityActivityMode] = useState(false);
-  const [cityActivityPin, setCityActivityPin] = useState(null);
-  const [showCityActivityModal, setShowCityActivityModal] = useState(false);
-  const [cityActivityForm, setCityActivityForm] = useState({
-    title: "",
-    description: "",
-    category: "Roads",
-    specialInstructions: "",
-  });
+  const [items, setItems] = useState([]);
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   const [commandForm, setCommandForm] = useState({
     specialInstructions: "",
@@ -547,1502 +49,222 @@ export default function App() {
     multiDepartments: [],
   });
 
-  const mapItems = useMemo(
-    () => items.filter((item) => item.x != null && item.y != null),
-    [items]
-  );
-
-  const featuredItems = useMemo(
-    () => items.filter((item) => item.type === "community_issue" || item.type === "city_activity"),
-    [items]
-  );
+  const [remindLaterHours, setRemindLaterHours] = useState("24");
 
   const selectedItem = useMemo(
-    () => items.find((item) => item.id === selectedItemId) || null,
+    () => items.find((i) => i.id === selectedItemId),
     [items, selectedItemId]
   );
 
-  const featuredItem = useMemo(() => {
-    if (!featuredItems.length) return null;
-    return featuredItems[rotationIndex % featuredItems.length];
-  }, [featuredItems, rotationIndex]);
+  /* =========================
+     MODE TOGGLE
+  ========================= */
 
-  const budgetInsights = useMemo(() => {
-    return budgetData.map((fund) => {
-      const remaining = fund.budgeted - fund.spent;
-      const usedPct = clamp((fund.spent / fund.budgeted) * 100, 0, 100);
-      return { ...fund, remaining, usedPct };
-    });
-  }, [budgetData]);
-
-  const summary = useMemo(() => {
-    return {
-      open: items.filter((item) => item.status !== "Resolved").length,
-      escalated: items.filter((item) => item.escalated).length,
-      cityActivity: items.filter((item) => item.type === "city_activity").length,
-    };
-  }, [items]);
-
-  useEffect(() => {
-    if (!featuredItems.length) return undefined;
-
-    const timer = window.setInterval(() => {
-      setRotationIndex((prev) => (prev + 1) % featuredItems.length);
-    }, 4500);
-
-    return () => window.clearInterval(timer);
-  }, [featuredItems.length]);
-
-  function startVoiceInput(fieldName, getValue, setValue) {
-    const SpeechRecognition = getSpeechRecognition();
-
-    if (!SpeechRecognition) {
-      window.alert("Microphone input is not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    setListeningField(fieldName);
-
-    recognition.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript || "";
-      const currentValue = getValue();
-      const nextValue = currentValue
-        ? `${currentValue} ${transcript}`.trim()
-        : transcript.trim();
-
-      setValue(nextValue);
-    };
-
-    recognition.onerror = () => setListeningField(null);
-    recognition.onend = () => setListeningField(null);
-
-    recognition.start();
-  }
-
-  function addNotification(message, department, severity = "medium") {
-    setNotifications((prev) => [
-      {
-        id: makeId("note"),
-        message,
-        department,
-        severity,
-        timestamp: new Date().toISOString(),
-        read: false,
-      },
-      ...prev,
-    ]);
-  }
-
-  function handleHomeMapClick(event) {
-    if ((!reportMode && !cityActivityMode) || !mapRef.current) return;
-
-    const rect = mapRef.current.getBoundingClientRect();
-    const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 4, 96);
-    const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 8, 94);
-
-    if (reportMode) {
-      setReportPin({ x, y });
-      setShowReportModal(true);
-    }
-
-    if (cityActivityMode) {
-      setCityActivityPin({ x, y });
-      setShowCityActivityModal(true);
-    }
-  }
-
-  function closeReportModal() {
-    setShowReportModal(false);
-    setReportMode(false);
-    setReportPin(null);
-    setReportForm({
-      description: "",
-      category: "",
-      specialInstructions: "",
-    });
-  }
-
-  function closeCityActivityModal() {
-    setShowCityActivityModal(false);
-    setCityActivityMode(false);
-    setCityActivityPin(null);
-    setCityActivityForm({
-      title: "",
-      description: "",
-      category: "Roads",
-      specialInstructions: "",
-    });
-  }
-
-  function submitReport() {
-    if (!reportPin || !reportForm.description.trim()) return;
-
-    const category = reportForm.category || inferCategory(reportForm.description);
-    const recommendedDepartment = CATEGORY_TO_DEPARTMENT[category];
-    const confidence = inferConfidence(reportForm.description);
-
-    const nextItem = {
-      id: makeId("item"),
-      type: "community_issue",
-      title:
-        reportForm.description.length > 52
-          ? `${reportForm.description.slice(0, 52)}…`
-          : reportForm.description,
-      summary: reportForm.description,
-      description: reportForm.description,
-      category,
-      recommendedDepartment,
-      assignedDepartments: [recommendedDepartment],
-      confidence,
-      status: "Under Review",
-      publicStatus: "Under Review",
-      escalated: false,
-      specialInstructions: reportForm.specialInstructions,
-      x: reportPin.x,
-      y: reportPin.y,
-      locationLabel: "Resident-selected location",
-      updatedAt: new Date().toISOString(),
-      affectedCount: 1,
-      affectedByUser: true,
-      fund: CATEGORY_TO_FUND[category],
-      source: "Resident",
-    };
-
-    setItems((prev) => [nextItem, ...prev]);
-    setSelectedItemId(nextItem.id);
-    addNotification(
-      `AI recommended ${recommendedDepartment} for a new community report.`,
-      recommendedDepartment,
-      confidence >= 85 ? "high" : "medium"
-    );
-
-    closeReportModal();
-    setActiveTab(TABS.HOME);
-  }
-
-  function submitCityActivity() {
-    if (!cityActivityPin || !cityActivityForm.title.trim() || !cityActivityForm.description.trim()) {
-      return;
-    }
-
-    const category = cityActivityForm.category;
-    const department = CATEGORY_TO_DEPARTMENT[category];
-
-    const nextItem = {
-      id: makeId("item"),
-      type: "city_activity",
-      title: cityActivityForm.title,
-      summary: cityActivityForm.description,
-      description: cityActivityForm.description,
-      category,
-      recommendedDepartment: department,
-      assignedDepartments: [department],
-      confidence: 100,
-      status: "Routed",
-      publicStatus: "Planned city work",
-      escalated: false,
-      specialInstructions: cityActivityForm.specialInstructions,
-      x: cityActivityPin.x,
-      y: cityActivityPin.y,
-      locationLabel: "City-selected project location",
-      updatedAt: new Date().toISOString(),
-      affectedCount: 0,
-      affectedByUser: false,
-      fund: CATEGORY_TO_FUND[category],
-      source: "City Admin",
-    };
-
-    setItems((prev) => [nextItem, ...prev]);
-    setSelectedItemId(nextItem.id);
-    addNotification(
-      `New city activity pin created for ${department}.`,
-      department,
-      "medium"
-    );
-
-    closeCityActivityModal();
-    setActiveTab(TABS.HOME);
-  }
-
-  function markAffected(itemId) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              affectedCount: item.affectedByUser
-                ? item.affectedCount
-                : item.affectedCount + 1,
-              affectedByUser: true,
-              updatedAt: new Date().toISOString(),
-            }
-          : item
-      )
+  function renderModeToggle() {
+    return (
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button onClick={() => setPersona(PERSONAS.PUBLIC)}>Public</button>
+        <button onClick={() => setPersona(PERSONAS.ADMIN)}>City</button>
+        <button onClick={() => setPersona(PERSONAS.DEPARTMENT)}>Department</button>
+      </div>
     );
   }
 
-  function updateCommandForm(key, value) {
-    setCommandForm((prev) => ({ ...prev, [key]: value }));
-  }
+  /* =========================
+     REMIND LATER
+  ========================= */
 
-  function applyCommandAction(action) {
+  function applyRemindLater(hours) {
     if (!selectedItem) return;
 
-    let nextStatus = selectedItem.status;
-    let nextEscalated = selectedItem.escalated;
-    let nextDepartments = [...selectedItem.assignedDepartments];
-    const specialInstructions = commandForm.specialInstructions.trim();
-
-    if (action === "confirm_routing") {
-      nextStatus = "Routed";
-      nextDepartments = [selectedItem.recommendedDepartment];
-    }
-
-    if (action === "reassign") {
-      nextStatus = "Routed";
-      nextDepartments = [commandForm.reassignDepartment];
-    }
-
-    if (action === "escalate") {
-      nextEscalated = true;
-      nextStatus = "Escalated";
-    }
-
-    if (action === "multi_department") {
-      const picked = commandForm.multiDepartments.length
-        ? commandForm.multiDepartments
-        : [selectedItem.recommendedDepartment];
-      nextDepartments = picked;
-      nextStatus = "Routed";
-    }
+    const remindAt = new Date(Date.now() + hours * 3600000);
 
     setItems((prev) =>
       prev.map((item) =>
         item.id === selectedItem.id
           ? {
               ...item,
-              assignedDepartments: nextDepartments,
-              status: nextStatus,
-              escalated: nextEscalated,
-              specialInstructions: specialInstructions || item.specialInstructions,
-              publicStatus: derivePublicStatus(nextStatus, nextEscalated, item.type),
-              updatedAt: new Date().toISOString(),
+              status: "Under Review",
+              publicStatus: "Under Review",
+              reviewReminderAt: remindAt.toISOString(),
             }
           : item
       )
     );
-
-    addNotification(
-      `${selectedItem.title}: ${action.replaceAll("_", " ")} completed.`,
-      nextDepartments[0] || selectedItem.recommendedDepartment,
-      action === "escalate" ? "high" : "medium"
-    );
-
-    setCommandForm((prev) => ({
-      ...prev,
-      specialInstructions: "",
-    }));
   }
 
-  function applyDepartmentStatus(status) {
-    if (!selectedItem) return;
+  /* =========================
+     CITY COMMAND CENTER
+  ========================= */
 
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === selectedItem.id
-          ? {
-              ...item,
-              status,
-              publicStatus: derivePublicStatus(
-                status,
-                item.escalated,
-                item.type
-              ),
-              specialInstructions:
-                commandForm.specialInstructions.trim() || item.specialInstructions,
-              updatedAt: new Date().toISOString(),
-            }
-          : item
-      )
-    );
-
-    addNotification(
-      `${selectedItem.title} updated to ${status}.`,
-      selectedItem.assignedDepartments[0] || selectedItem.recommendedDepartment,
-      status === "Resolved" ? "medium" : "low"
-    );
-
-    setCommandForm((prev) => ({
-      ...prev,
-      specialInstructions: "",
-    }));
-  }
-
-  function toggleMultiDepartment(department) {
-    setCommandForm((prev) => {
-      const exists = prev.multiDepartments.includes(department);
-      return {
-        ...prev,
-        multiDepartments: exists
-          ? prev.multiDepartments.filter((item) => item !== department)
-          : [...prev.multiDepartments, department],
-      };
-    });
-  }
-
-  function renderTopBar() {
+  function renderCityCommandCenter() {
     return (
-      <div
-        style={{
-          background: "linear-gradient(135deg, #0d4d87 0%, #0f6ab7 100%)",
-          color: "#fff",
-          borderRadius: 20,
-          padding: 18,
-          boxShadow: "0 16px 40px rgba(13,77,135,0.22)",
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>
-          PublicPulse
-        </div>
-        <div style={{ fontSize: 14, opacity: 0.95, lineHeight: 1.45 }}>
-          A community impact and city response system for residents, departments,
-          and city leadership.
-        </div>
+      <div>
+        <h2>Command Center</h2>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-            marginTop: 14,
-          }}
-        >
-          {[
-            `City: ${CITY_NAME}`,
-            `Mode: ${persona}`,
-            `${summary.open} open items`,
-            `${summary.escalated} escalated`,
-            `${summary.cityActivity} city activity pins`,
-          ].map((item) => (
-            <div
-              key={item}
-              style={{
-                background: "rgba(255,255,255,0.14)",
-                border: "1px solid rgba(255,255,255,0.22)",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: 999,
-                fontSize: 13,
-              }}
+        {selectedItem && (
+          <>
+            <div>{selectedItem.title}</div>
+
+            <button>Confirm Routing</button>
+
+            <select
+              value={commandForm.reassignDepartment}
+              onChange={(e) =>
+                setCommandForm({
+                  ...commandForm,
+                  reassignDepartment: e.target.value,
+                })
+              }
             >
-              {item}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+              {ROUTING_DEPARTMENTS.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
 
-  function renderMap() {
-    return (
-      <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          Live map
-        </div>
-        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
-          The map reflects both community concerns and city activity.
-        </div>
+            <button>Reassign</button>
 
-        <div
-          ref={mapRef}
-          onClick={handleHomeMapClick}
-          style={{
-            position: "relative",
-            height: 560,
-            borderRadius: 18,
-            overflow: "hidden",
-            marginTop: 14,
-            background:
-              "radial-gradient(circle at 20% 20%, #cfe9ff 0, #dcefff 26%, #eef6ff 55%, #f6fbff 100%)",
-            border: reportMode || cityActivityMode ? "2px solid #0f6ab7" : "1px solid #dbe8f4",
-            cursor: reportMode || cityActivityMode ? "crosshair" : "default",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "linear-gradient(rgba(13,106,183,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(13,106,183,0.06) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-              pointerEvents: "none",
-            }}
-          />
+            <button>Escalate</button>
 
-          {[
-            { label: "North Hastings", left: "10%", top: "12%" },
-            { label: "Downtown", left: "44%", top: "48%" },
-            { label: "Parks Corridor", left: "72%", top: "22%" },
-          ].map((label) => (
-            <div
-              key={label.label}
-              style={{
-                position: "absolute",
-                left: label.left,
-                top: label.top,
-                padding: "6px 10px",
-                background: "rgba(255,255,255,0.84)",
-                border: "1px solid #d9e6f3",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#28537b",
-              }}
-            >
-              {label.label}
-            </div>
-          ))}
-
-          {mapItems.map((item) => {
-            const isSelected = selectedItemId === item.id;
-            const pinColor =
-              item.type === "city_activity" ? "#0f6ab7" : "#f44336";
-
-            return (
-              <div
-                key={item.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedItemId(item.id);
-                }}
-                title={item.title}
-                style={{
-                  position: "absolute",
-                  left: `${item.x}%`,
-                  top: `${item.y}%`,
-                  transform: "translate(-50%, -100%)",
-                  cursor: "pointer",
-                }}
-              >
-                <div
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50% 50% 50% 0",
-                    transform: "rotate(-45deg)",
-                    background: isSelected ? "#173d6a" : pinColor,
-                    border: "3px solid white",
-                    boxShadow: "0 8px 18px rgba(25,42,70,0.18)",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 3,
-                    left: 3,
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    background: "white",
-                  }}
-                />
-              </div>
-            );
-          })}
-
-          {(reportMode || cityActivityMode) && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(15,106,183,0.06)",
-                pointerEvents: "none",
-              }}
-            />
-          )}
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-            marginTop: 12,
-          }}
-        >
-          <button
-            onClick={() => {
-              setActiveTab(TABS.REPORT);
-              setReportMode(true);
-              setCityActivityMode(false);
-            }}
-            style={primaryButtonStyle()}
-          >
-            Report
-          </button>
-
-          {persona === PERSONAS.ADMIN && (
-            <button
-              onClick={() => {
-                setActiveTab(TABS.HOME);
-                setCityActivityMode(true);
-                setReportMode(false);
-              }}
-              style={secondaryButtonStyle()}
-            >
-              Add city activity
-            </button>
-          )}
-
-          <button
-            onClick={() => setPersona(PERSONAS.PUBLIC)}
-            style={secondaryButtonStyle()}
-          >
-            Public view
-          </button>
-          <button
-            onClick={() => setPersona(PERSONAS.DEPARTMENT)}
-            style={secondaryButtonStyle()}
-          >
-            Department view
-          </button>
-          <button
-            onClick={() => setPersona(PERSONAS.ADMIN)}
-            style={secondaryButtonStyle()}
-          >
-            City admin view
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderFeaturedCard() {
-    return (
-      <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          What’s going on in Hastings right now
-        </div>
-
-        {featuredItem ? (
-          <div
-            key={featuredItem.id}
-            style={{
-              transition: "opacity 0.35s ease",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                alignItems: "flex-start",
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 18 }}>
-                  {featuredItem.title}
-                </div>
-                <div style={{ fontSize: 13, color: "#67819a", marginTop: 4 }}>
-                  {featuredItem.assignedDepartments[0]} • Updated{" "}
-                  {formatShortDate(featuredItem.updatedAt)}
-                </div>
-              </div>
-              <StatusBadge status={featuredItem.status} />
-            </div>
-
-            <div style={{ marginTop: 10, lineHeight: 1.45 }}>
-              {featuredItem.summary}
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
-                gap: 10,
-                marginTop: 12,
-              }}
-            >
-              {[
-                ["Category", featuredItem.category],
-                ["Department", featuredItem.assignedDepartments[0]],
-                ["Public status", featuredItem.publicStatus],
-                ["Residents affected", featuredItem.affectedCount],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={{
-                    background: "#f8fbfe",
-                    border: "1px solid #e5edf6",
-                    borderRadius: 14,
-                    padding: 12,
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 4 }}>
-                    {label}
-                  </div>
-                  <div style={{ fontWeight: 800, fontSize: 15 }}>{value}</div>
-                </div>
+            <div>
+              <strong>Multi-Department</strong>
+              {ROUTING_DEPARTMENTS.map((d) => (
+                <label key={d}>
+                  <input type="checkbox" /> {d}
+                </label>
               ))}
             </div>
-          </div>
-        ) : (
-          <div style={{ color: "#63809b" }}>No active items to feature.</div>
-        )}
-      </div>
-    );
-  }
 
-  function renderSelectedMapItem() {
-    if (!selectedItem) return null;
-
-    return (
-      <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          Selected map item
-        </div>
-
-        <div style={{ fontWeight: 800 }}>{selectedItem.title}</div>
-        <div style={{ marginTop: 8 }}>{selectedItem.description}</div>
-        <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
-          {selectedItem.locationLabel} • {selectedItem.assignedDepartments.join(", ")}
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <StatusBadge status={selectedItem.status} />
-        </div>
-
-        {selectedItem.type === "community_issue" && (
-          <div style={{ marginTop: 12 }}>
-            <button
-              disabled={selectedItem.affectedByUser}
-              onClick={() => markAffected(selectedItem.id)}
-              style={{
-                ...primaryButtonStyle(),
-                opacity: selectedItem.affectedByUser ? 0.6 : 1,
-                cursor: selectedItem.affectedByUser ? "default" : "pointer",
-              }}
-            >
-              {selectedItem.affectedByUser
-                ? "You’re marked as affected"
-                : "I’m affected"}
-            </button>
-            <div style={{ marginTop: 8, fontSize: 13, color: "#67819a" }}>
-              Residents affected: {selectedItem.affectedCount}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function renderReportSidebar() {
-    return (
-      <div style={panelStyle(true)}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          Report an issue
-        </div>
-        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
-          Report flow: tap Report, tap the map, then complete the report.
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Public categories
-            </div>
-            <div style={listItemStyle()}>
-              {PUBLIC_CATEGORIES.join(" • ")}
-            </div>
-          </div>
-
-          <button
-            style={primaryButtonStyle()}
-            onClick={() => {
-              setActiveTab(TABS.HOME);
-              setReportMode(true);
-            }}
-          >
-            Tap map to place report
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderOperationsWorkspace() {
-    const departmentItems =
-      persona === PERSONAS.ADMIN
-        ? items
-        : items.filter((item) =>
-            item.assignedDepartments.includes(
-              selectedItem?.assignedDepartments?.[0] || item.assignedDepartments[0]
-            )
-          );
-
-    return (
-      <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          Command center
-        </div>
-        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45, marginBottom: 14 }}>
-          AI tees up routing and confidence. City admin confirms or changes it.
-          Departments act and update status.
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ fontWeight: 800 }}>Issue</div>
-
-            {selectedItem ? (
-              <div style={listItemStyle()}>
-                <div style={{ fontWeight: 800 }}>{selectedItem.title}</div>
-                <div style={{ marginTop: 8 }}>{selectedItem.description}</div>
-                <div style={{ marginTop: 10, fontSize: 12, color: "#67819a" }}>
-                  Category: {selectedItem.category}
-                </div>
-                <div style={{ marginTop: 6, fontSize: 12, color: "#67819a" }}>
-                  AI recommended: {selectedItem.recommendedDepartment}
-                </div>
-                <div style={{ marginTop: 6, fontSize: 12, color: "#67819a" }}>
-                  Confidence: {selectedItem.confidence}%
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <StatusBadge status={selectedItem.status} />
-                </div>
-              </div>
-            ) : (
-              <div style={listItemStyle()}>Select an item from the queue.</div>
-            )}
-
-            <div style={{ fontWeight: 800, marginTop: 6 }}>Queue</div>
-            {departmentItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setSelectedItemId(item.id)}
-                style={{
-                  ...listItemStyle(selectedItemId === item.id),
-                  textAlign: "left",
-                  cursor: "pointer",
-                }}
+            <div>
+              <strong>Remind Later</strong>
+              <select
+                value={remindLaterHours}
+                onChange={(e) => setRemindLaterHours(e.target.value)}
               >
-                <div style={{ fontWeight: 700 }}>{item.title}</div>
-                <div style={{ fontSize: 12, color: "#67819a", marginTop: 4 }}>
-                  {item.assignedDepartments.join(", ")} • {item.publicStatus}
-                </div>
+                <option value="24">24 hours</option>
+                <option value="168">7 days</option>
+                <option value="240">10 days</option>
+              </select>
+
+              <button onClick={() => applyRemindLater(remindLaterHours)}>
+                Remind Later
               </button>
-            ))}
-          </div>
-
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ fontWeight: 800 }}>Actions</div>
-
-            {selectedItem ? (
-              <div style={listItemStyle()}>
-                {persona === PERSONAS.ADMIN ? (
-                  <>
-                    <div style={{ fontWeight: 800, marginBottom: 10 }}>
-                      Command center actions
-                    </div>
-
-                    <div style={{ display: "grid", gap: 10 }}>
-                      <button
-                        style={primaryButtonStyle()}
-                        onClick={() => applyCommandAction("confirm_routing")}
-                      >
-                        Confirm Routing
-                      </button>
-
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: "#355a7f",
-                            marginBottom: 6,
-                          }}
-                        >
-                          Reassign
-                        </div>
-                        <select
-                          value={commandForm.reassignDepartment}
-                          onChange={(e) =>
-                            updateCommandForm("reassignDepartment", e.target.value)
-                          }
-                          style={{
-                            width: "100%",
-                            borderRadius: 12,
-                            border: "1px solid #d7e4f0",
-                            padding: "12px 12px",
-                            fontSize: 14,
-                            background: "white",
-                          }}
-                        >
-                          {ROUTING_DEPARTMENTS.map((department) => (
-                            <option key={department} value={department}>
-                              {department}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          style={{ ...secondaryButtonStyle(), marginTop: 8 }}
-                          onClick={() => applyCommandAction("reassign")}
-                        >
-                          Reassign
-                        </button>
-                      </div>
-
-                      <button
-                        style={secondaryButtonStyle()}
-                        onClick={() => applyCommandAction("escalate")}
-                      >
-                        Escalate
-                      </button>
-
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: "#355a7f",
-                            marginBottom: 6,
-                          }}
-                        >
-                          Multi-Department
-                        </div>
-                        <div style={{ display: "grid", gap: 8 }}>
-                          {ROUTING_DEPARTMENTS.map((department) => (
-                            <label
-                              key={department}
-                              style={{
-                                display: "flex",
-                                gap: 8,
-                                alignItems: "center",
-                                fontSize: 13,
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={commandForm.multiDepartments.includes(department)}
-                                onChange={() => toggleMultiDepartment(department)}
-                              />
-                              {department}
-                            </label>
-                          ))}
-                        </div>
-                        <button
-                          style={{ ...secondaryButtonStyle(), marginTop: 8 }}
-                          onClick={() => applyCommandAction("multi_department")}
-                        >
-                          Multi-Department
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontWeight: 800, marginBottom: 10 }}>
-                      Department actions
-                    </div>
-
-                    <div style={{ display: "grid", gap: 10 }}>
-                      <button
-                        style={primaryButtonStyle()}
-                        onClick={() => applyDepartmentStatus("Routed")}
-                      >
-                        Confirm Routing
-                      </button>
-                      <button
-                        style={secondaryButtonStyle()}
-                        onClick={() => applyDepartmentStatus("In Progress")}
-                      >
-                        In Progress
-                      </button>
-                      <button
-                        style={secondaryButtonStyle()}
-                        onClick={() => applyDepartmentStatus("Monitoring")}
-                      >
-                        Monitoring
-                      </button>
-                      <button
-                        style={secondaryButtonStyle()}
-                        onClick={() => applyDepartmentStatus("Resolved")}
-                      >
-                        Resolved
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                <div style={{ marginTop: 14 }}>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "#355a7f",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Special Instructions
-                  </div>
-                  <TextareaWithMic
-                    value={commandForm.specialInstructions}
-                    onChange={(e) =>
-                      updateCommandForm("specialInstructions", e.target.value)
-                    }
-                    placeholder="Always-visible internal note or direction."
-                    listening={listeningField === "command-special-instructions"}
-                    onMicClick={() =>
-                      startVoiceInput(
-                        "command-special-instructions",
-                        () => commandForm.specialInstructions,
-                        (nextValue) =>
-                          updateCommandForm("specialInstructions", nextValue)
-                      )
-                    }
-                  />
-                </div>
-              </div>
-            ) : (
-              <div style={listItemStyle()}>Select an item to take action.</div>
-            )}
-          </div>
-
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ fontWeight: 800 }}>Insights</div>
-
-            {selectedItem ? (
-              <>
-                <div style={listItemStyle()}>
-                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Budget</div>
-                  <div>Fund: {selectedItem.fund}</div>
-                  <div style={{ marginTop: 8 }}>
-                    Estimated impact: {formatMoney(estimateCost(selectedItem.category))}
-                  </div>
-                </div>
-
-                <div style={listItemStyle()}>
-                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Operational insight</div>
-                  <div>Public status: {selectedItem.publicStatus}</div>
-                  <div style={{ marginTop: 6 }}>
-                    Assigned: {selectedItem.assignedDepartments.join(", ")}
-                  </div>
-                  <div style={{ marginTop: 6 }}>
-                    Updated: {formatShortDate(selectedItem.updatedAt)}
-                  </div>
-                  <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
-                    Residents affected: {selectedItem.affectedCount}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div style={listItemStyle()}>
-                Select an item to see budget and operational insight.
-              </div>
-            )}
-
-            <div style={listItemStyle()}>
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>Notifications</div>
-              {notifications.length ? (
-                notifications.slice(0, 5).map((note) => (
-                  <div key={note.id} style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 13 }}>{note.message}</div>
-                    <div style={{ fontSize: 11, color: "#67819a", marginTop: 4 }}>
-                      {note.department} • {note.severity}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: 13, color: "#67819a" }}>
-                  No notifications yet.
-                </div>
-              )}
             </div>
 
-            <div style={listItemStyle()}>
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>City signals</div>
-              {signals.map((signal) => (
-                <div key={signal.id} style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 13 }}>{signal.text}</div>
-                  <div style={{ fontSize: 11, color: "#67819a", marginTop: 4 }}>
-                    {signal.source} • {signal.recommendedUse}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+            <textarea
+              placeholder="Special Instructions"
+              value={commandForm.specialInstructions}
+              onChange={(e) =>
+                setCommandForm({
+                  ...commandForm,
+                  specialInstructions: e.target.value,
+                })
+              }
+            />
+          </>
+        )}
       </div>
     );
   }
 
-  function renderBudgetTab() {
+  /* =========================
+     DEPARTMENT OPERATIONS
+  ========================= */
+
+  function renderDepartmentOperations() {
     return (
-      <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          Budget and roadmap
-        </div>
-        <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
-          Budget-aware decisions today. Heat map, weather integration, and deeper
-          strategic planning remain on the roadmap.
-        </div>
+      <div>
+        <h2>Operations</h2>
 
-        <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-          {budgetInsights.map((fund) => (
-            <div key={fund.fund} style={listItemStyle()}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
-              >
-                <strong>{fund.fund}</strong>
-                <span style={{ fontSize: 12, color: "#67819a" }}>
-                  {fund.usedPct.toFixed(0)}% used
-                </span>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                {formatMoney(fund.spent)} of {formatMoney(fund.budgeted)}
-              </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: 10,
-                  borderRadius: 999,
-                  background: "#e8f0f7",
-                  overflow: "hidden",
-                  marginTop: 8,
-                }}
-              >
-                <div
-                  style={{
-                    width: `${fund.usedPct}%`,
-                    height: "100%",
-                    background:
-                      fund.usedPct > 85
-                        ? "#d84315"
-                        : fund.usedPct > 65
-                        ? "#ef6c00"
-                        : "#0f6ab7",
-                    borderRadius: 999,
-                  }}
-                />
-              </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
-                Remaining: {formatMoney(fund.remaining)}
-              </div>
-            </div>
-          ))}
+        {selectedItem && (
+          <>
+            <div>{selectedItem.title}</div>
 
-          <div style={listItemStyle()}>
-            <strong>Roadmap</strong>
-            <div style={{ marginTop: 8, lineHeight: 1.5 }}>
-              • Heat map
-              <br />
-              • Weather integration
-              <br />
-              • Advanced strategic planning and reporting
-            </div>
-          </div>
-        </div>
+            <button>Confirm Routing</button>
+            <button>In Progress</button>
+            <button>Monitoring</button>
+            <button>Resolved</button>
+
+            <textarea
+              placeholder="Special Instructions"
+              value={commandForm.specialInstructions}
+              onChange={(e) =>
+                setCommandForm({
+                  ...commandForm,
+                  specialInstructions: e.target.value,
+                })
+              }
+            />
+          </>
+        )}
       </div>
     );
   }
 
-  function renderReportModal() {
-    if (!showReportModal) return null;
-
-    return (
-      <Modal onClose={closeReportModal} title="New community report">
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            What’s happening?
-          </div>
-          <TextareaWithMic
-            value={reportForm.description}
-            onChange={(e) =>
-              setReportForm((prev) => ({ ...prev, description: e.target.value }))
-            }
-            placeholder="Describe the issue in your own words."
-            listening={listeningField === "report-description"}
-            onMicClick={() =>
-              startVoiceInput(
-                "report-description",
-                () => reportForm.description,
-                (nextValue) =>
-                  setReportForm((prev) => ({ ...prev, description: nextValue }))
-              )
-            }
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            Category
-          </div>
-          <select
-            value={reportForm.category}
-            onChange={(e) =>
-              setReportForm((prev) => ({ ...prev, category: e.target.value }))
-            }
-            style={{
-              width: "100%",
-              borderRadius: 12,
-              border: "1px solid #d7e4f0",
-              padding: "12px 12px",
-              fontSize: 14,
-              background: "white",
-            }}
-          >
-            <option value="">Let AI classify it</option>
-            {PUBLIC_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            Special Instructions
-          </div>
-          <TextareaWithMic
-            value={reportForm.specialInstructions}
-            onChange={(e) =>
-              setReportForm((prev) => ({
-                ...prev,
-                specialInstructions: e.target.value,
-              }))
-            }
-            placeholder="Anything city staff should know?"
-            listening={listeningField === "report-special-instructions"}
-            onMicClick={() =>
-              startVoiceInput(
-                "report-special-instructions",
-                () => reportForm.specialInstructions,
-                (nextValue) =>
-                  setReportForm((prev) => ({
-                    ...prev,
-                    specialInstructions: nextValue,
-                  }))
-              )
-            }
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button style={primaryButtonStyle()} onClick={submitReport}>
-            Submit report
-          </button>
-          <button style={secondaryButtonStyle()} onClick={closeReportModal}>
-            Cancel
-          </button>
-        </div>
-      </Modal>
-    );
-  }
-
-  function renderCityActivityModal() {
-    if (!showCityActivityModal) return null;
-
-    return (
-      <Modal onClose={closeCityActivityModal} title="New city activity pin">
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            Title
-          </div>
-          <TextInputWithMic
-            value={cityActivityForm.title}
-            onChange={(e) =>
-              setCityActivityForm((prev) => ({ ...prev, title: e.target.value }))
-            }
-            placeholder="Enter a title."
-            listening={listeningField === "city-activity-title"}
-            onMicClick={() =>
-              startVoiceInput(
-                "city-activity-title",
-                () => cityActivityForm.title,
-                (nextValue) =>
-                  setCityActivityForm((prev) => ({ ...prev, title: nextValue }))
-              )
-            }
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            Description
-          </div>
-          <TextareaWithMic
-            value={cityActivityForm.description}
-            onChange={(e) =>
-              setCityActivityForm((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
-            }
-            placeholder="Describe the city-led project or work."
-            listening={listeningField === "city-activity-description"}
-            onMicClick={() =>
-              startVoiceInput(
-                "city-activity-description",
-                () => cityActivityForm.description,
-                (nextValue) =>
-                  setCityActivityForm((prev) => ({
-                    ...prev,
-                    description: nextValue,
-                  }))
-              )
-            }
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            Category
-          </div>
-          <select
-            value={cityActivityForm.category}
-            onChange={(e) =>
-              setCityActivityForm((prev) => ({ ...prev, category: e.target.value }))
-            }
-            style={{
-              width: "100%",
-              borderRadius: 12,
-              border: "1px solid #d7e4f0",
-              padding: "12px 12px",
-              fontSize: 14,
-              background: "white",
-            }}
-          >
-            {PUBLIC_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-            Special Instructions
-          </div>
-          <TextareaWithMic
-            value={cityActivityForm.specialInstructions}
-            onChange={(e) =>
-              setCityActivityForm((prev) => ({
-                ...prev,
-                specialInstructions: e.target.value,
-              }))
-            }
-            placeholder="Internal note or project direction."
-            listening={listeningField === "city-activity-special-instructions"}
-            onMicClick={() =>
-              startVoiceInput(
-                "city-activity-special-instructions",
-                () => cityActivityForm.specialInstructions,
-                (nextValue) =>
-                  setCityActivityForm((prev) => ({
-                    ...prev,
-                    specialInstructions: nextValue,
-                  }))
-              )
-            }
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button style={primaryButtonStyle()} onClick={submitCityActivity}>
-            Save city activity
-          </button>
-          <button style={secondaryButtonStyle()} onClick={closeCityActivityModal}>
-            Cancel
-          </button>
-        </div>
-      </Modal>
-    );
-  }
+  /* =========================
+     NAVIGATION
+  ========================= */
 
   function renderBottomNav() {
-    const items = [
-      { key: TABS.HOME, label: "Home" },
-      { key: TABS.REPORT, label: "Report" },
-      { key: TABS.OPERATIONS, label: "Operations" },
-      { key: TABS.BUDGET, label: "Budget" },
-    ];
+    let tabs = [];
+
+    if (persona === PERSONAS.PUBLIC) {
+      tabs = [
+        { key: TABS.HOME, label: "Home" },
+        { key: TABS.REPORT, label: "Report" },
+      ];
+    }
+
+    if (persona === PERSONAS.ADMIN) {
+      tabs = [
+        { key: TABS.HOME, label: "Map" },
+        { key: TABS.CITY, label: "Command Center" },
+      ];
+    }
+
+    if (persona === PERSONAS.DEPARTMENT) {
+      tabs = [
+        { key: TABS.HOME, label: "Map" },
+        { key: TABS.DEPARTMENT, label: "Operations" },
+      ];
+    }
 
     return (
-      <div
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(10px)",
-          borderTop: "1px solid #dfe8f1",
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 8,
-          padding: "10px 12px max(10px, env(safe-area-inset-bottom))",
-          zIndex: 40,
-        }}
-      >
-        {items.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => {
-              setActiveTab(item.key);
-              setReportMode(item.key === TABS.REPORT);
-            }}
-            style={{
-              border: "none",
-              background: activeTab === item.key ? "#eef6ff" : "transparent",
-              color: activeTab === item.key ? "#0f6ab7" : "#54728f",
-              borderRadius: 14,
-              padding: "10px 8px",
-              fontWeight: 800,
-              cursor: "pointer",
-              fontSize: 13,
-            }}
-          >
-            {item.label}
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        {tabs.map((t) => (
+          <button key={t.key} onClick={() => setActiveTab(t.key)}>
+            {t.label}
           </button>
         ))}
       </div>
     );
   }
 
+  /* =========================
+     MAIN RENDER
+  ========================= */
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f4f7fb",
-        color: "#15304a",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-        paddingBottom: 88,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          padding: 16,
-        }}
-      >
-        {renderTopBar()}
+    <div style={{ padding: 20 }}>
+      <h1>PublicPulse</h1>
 
-        {activeTab === TABS.HOME && (
-          <div
-            style={
-              isMobile
-                ? { display: "grid", gap: 16 }
-                : { display: "grid", gridTemplateColumns: "1.4fr 0.85fr", gap: 16 }
-            }
-          >
-            <div style={{ display: "grid", gap: 16 }}>
-              {renderMap()}
-              {renderFeaturedCard()}
-            </div>
-            <div style={{ display: "grid", gap: 16 }}>
-              {renderSelectedMapItem()}
-            </div>
-          </div>
-        )}
+      {renderModeToggle()}
 
-        {activeTab === TABS.REPORT && (
-          <div
-            style={
-              isMobile
-                ? { display: "grid", gap: 16 }
-                : { display: "grid", gridTemplateColumns: "1.4fr 0.85fr", gap: 16 }
-            }
-          >
-            <div>{renderMap()}</div>
-            <div>{renderReportSidebar()}</div>
-          </div>
-        )}
+      {activeTab === TABS.HOME && <div>Map goes here</div>}
 
-        {activeTab === TABS.OPERATIONS && renderOperationsWorkspace()}
-        {activeTab === TABS.BUDGET && renderBudgetTab()}
-      </div>
+      {activeTab === TABS.REPORT && persona === PERSONAS.PUBLIC && (
+        <div>Report flow</div>
+      )}
 
-      {renderReportModal()}
-      {renderCityActivityModal()}
+      {activeTab === TABS.CITY &&
+        persona === PERSONAS.ADMIN &&
+        renderCityCommandCenter()}
+
+      {activeTab === TABS.DEPARTMENT &&
+        persona === PERSONAS.DEPARTMENT &&
+        renderDepartmentOperations()}
+
       {renderBottomNav()}
-    </div>
-  );
-}
-
-function Modal({ title, children, onClose }) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        zIndex: 60,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: 640,
-          background: "white",
-          borderRadius: 18,
-          padding: 18,
-          boxShadow: "0 18px 50px rgba(15,23,42,0.22)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 10,
-            alignItems: "center",
-            marginBottom: 14,
-          }}
-        >
-          <div style={{ fontSize: 18, fontWeight: 800 }}>{title}</div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              border: "1px solid #d7e4f0",
-              background: "white",
-              borderRadius: 10,
-              padding: "8px 10px",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
-            Close
-          </button>
-        </div>
-
-        {children}
-      </div>
     </div>
   );
 }
