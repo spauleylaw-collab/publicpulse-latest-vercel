@@ -61,6 +61,16 @@ const CATEGORY_TO_FUND = {
   "Community Concern": "General Fund",
 };
 
+const CATEGORY_TO_ICON = {
+  Roads: "🛣️",
+  Drainage: "🌧️",
+  Traffic: "🚦",
+  Parks: "🌳",
+  Utilities: "💧",
+  "Neighborhood / Property": "🏠",
+  "Community Concern": "📌",
+};
+
 const STATUS_STYLES = {
   "Under Review": {
     background: "#FFF4DB",
@@ -109,7 +119,8 @@ const INITIAL_ITEMS = [
     type: "community_issue",
     title: "Pothole on Burlington",
     summary: "Large pothole causing traffic issues",
-    description: "Large pothole causing traffic issues",
+    description:
+      "A large pothole is causing repeated traffic issues and rough driving conditions along Burlington.",
     category: "Roads",
     recommendedDepartment: "Street Department",
     assignedDepartments: ["Street Department"],
@@ -127,6 +138,102 @@ const INITIAL_ITEMS = [
     fund: "Street Fund",
     source: "Resident",
   },
+  {
+    id: "item-2",
+    type: "community_issue",
+    title: "Standing water near storm inlet",
+    summary: "Drainage concern reported after recent rain.",
+    description:
+      "Standing water is collecting near a storm inlet and may require inspection or clearing.",
+    category: "Drainage",
+    recommendedDepartment: "Public Works",
+    assignedDepartments: ["Public Works"],
+    confidence: 82,
+    status: "Routed",
+    publicStatus: "Routed to department",
+    escalated: false,
+    specialInstructions: "",
+    x: 27,
+    y: 62,
+    locationLabel: "Southwest residential area",
+    updatedAt: new Date().toISOString(),
+    affectedCount: 2,
+    affectedByUser: false,
+    fund: "Public Works Fund",
+    source: "Resident",
+  },
+  {
+    id: "item-3",
+    type: "community_issue",
+    title: "Traffic signal timing issue",
+    summary: "Signal timing may be creating backups at peak hours.",
+    description:
+      "Residents have reported traffic signal timing problems leading to backups during the afternoon rush.",
+    category: "Traffic",
+    recommendedDepartment: "Traffic Operations",
+    assignedDepartments: ["Traffic Operations"],
+    confidence: 79,
+    status: "Monitoring",
+    publicStatus: "Monitoring",
+    escalated: false,
+    specialInstructions: "",
+    x: 56,
+    y: 45,
+    locationLabel: "Downtown intersection",
+    updatedAt: new Date().toISOString(),
+    affectedCount: 4,
+    affectedByUser: false,
+    fund: "Traffic Fund",
+    source: "Resident",
+  },
+  {
+    id: "item-4",
+    type: "city_activity",
+    title: "Planned park maintenance",
+    summary: "City crews will perform scheduled maintenance in this park area.",
+    description:
+      "Parks staff will be completing scheduled maintenance and cleanup work in this park area.",
+    category: "Parks",
+    recommendedDepartment: "Parks",
+    assignedDepartments: ["Parks"],
+    confidence: 100,
+    status: "Routed",
+    publicStatus: "Planned city work",
+    escalated: false,
+    specialInstructions: "Routine spring maintenance.",
+    x: 72,
+    y: 28,
+    locationLabel: "North park zone",
+    updatedAt: new Date().toISOString(),
+    affectedCount: 0,
+    affectedByUser: false,
+    fund: "Parks / Keno",
+    source: "City Admin",
+  },
+  {
+    id: "item-5",
+    type: "community_issue",
+    title: "Water leak near curb line",
+    summary: "Possible utility leak observed near the curb.",
+    description:
+      "A possible water leak has been observed near the curb line and appears to be expanding.",
+    category: "Utilities",
+    recommendedDepartment: "Utilities",
+    assignedDepartments: ["Utilities"],
+    confidence: 93,
+    status: "In Progress",
+    publicStatus: "City responding",
+    escalated: false,
+    specialInstructions: "Check nearby service lines while on site.",
+    x: 63,
+    y: 58,
+    locationLabel: "East utility corridor",
+    updatedAt: new Date().toISOString(),
+    affectedCount: 1,
+    affectedByUser: false,
+    fund: "Utility Fund",
+    source: "Department",
+  },
 ];
 
 const INITIAL_SIGNALS = [
@@ -141,6 +248,12 @@ const INITIAL_SIGNALS = [
     source: "Parks social channel",
     text: "Spring cleanup continues across city parks this week.",
     recommendedUse: "Operational awareness",
+  },
+  {
+    id: "signal-3",
+    source: "City social channel",
+    text: "Street maintenance activity planned in the north corridor this week.",
+    recommendedUse: "Planned city activity signal",
   },
 ];
 
@@ -505,7 +618,7 @@ function Modal({ title, children, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxWidth: 640,
+          maxWidth: 680,
           background: "white",
           borderRadius: 18,
           padding: 18,
@@ -733,8 +846,8 @@ export default function App() {
       id: makeId("item"),
       type: "community_issue",
       title:
-        reportForm.description.length > 52
-          ? `${reportForm.description.slice(0, 52)}…`
+        reportForm.description.length > 56
+          ? `${reportForm.description.slice(0, 56)}…`
           : reportForm.description,
       summary: reportForm.description,
       description: reportForm.description,
@@ -903,11 +1016,7 @@ export default function App() {
           ? {
               ...item,
               status,
-              publicStatus: derivePublicStatus(
-                status,
-                item.escalated,
-                item.type
-              ),
+              publicStatus: derivePublicStatus(status, item.escalated, item.type),
               specialInstructions:
                 commandForm.specialInstructions.trim() || item.specialInstructions,
               updatedAt: new Date().toISOString(),
@@ -1086,7 +1195,8 @@ export default function App() {
             borderRadius: 20,
             position: "relative",
             cursor: reportMode || cityActivityMode ? "crosshair" : "default",
-            background: "linear-gradient(180deg, #dfeaf5 0%, #eef6ff 100%)",
+            background:
+              "linear-gradient(180deg, #cfe6fb 0%, #deefff 35%, #ecf6e6 35%, #f3f8ff 100%)",
             border:
               reportMode || cityActivityMode
                 ? "2px solid #0f6ab7"
@@ -1099,11 +1209,91 @@ export default function App() {
           <div
             style={{
               position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "linear-gradient(rgba(13,106,183,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(13,106,183,0.06) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-              pointerEvents: "none",
+              left: "0%",
+              top: "0%",
+              width: "100%",
+              height: "100%",
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)",
+              backgroundSize: "42px 42px",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              left: "8%",
+              top: "10%",
+              width: "18%",
+              height: "18%",
+              borderRadius: 18,
+              background: "rgba(76, 175, 80, 0.12)",
+              border: "1px solid rgba(76, 175, 80, 0.25)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "35%",
+              top: "38%",
+              width: "24%",
+              height: "22%",
+              borderRadius: 18,
+              background: "rgba(255, 193, 7, 0.12)",
+              border: "1px solid rgba(255, 193, 7, 0.25)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "66%",
+              top: "48%",
+              width: "22%",
+              height: "22%",
+              borderRadius: 18,
+              background: "rgba(33, 150, 243, 0.12)",
+              border: "1px solid rgba(33, 150, 243, 0.25)",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              left: "0%",
+              top: "48%",
+              width: "100%",
+              height: 8,
+              background: "rgba(120, 144, 156, 0.35)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "49%",
+              top: "0%",
+              width: 8,
+              height: "100%",
+              background: "rgba(120, 144, 156, 0.35)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "18%",
+              top: "0%",
+              width: 6,
+              height: "100%",
+              background: "rgba(120, 144, 156, 0.2)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "74%",
+              top: "0%",
+              width: 6,
+              height: "100%",
+              background: "rgba(120, 144, 156, 0.2)",
             }}
           />
 
@@ -1148,9 +1338,10 @@ export default function App() {
           )}
 
           {[
-            { label: "North Hastings", left: "10%", top: "12%" },
-            { label: "Downtown", left: "44%", top: "48%" },
-            { label: "Parks Corridor", left: "72%", top: "22%" },
+            { label: "North Hastings", left: "10%", top: "8%" },
+            { label: "Downtown", left: "43%", top: "42%" },
+            { label: "Parks Corridor", left: "68%", top: "18%" },
+            { label: "Utilities East", left: "72%", top: "62%" },
           ].map((label) => (
             <div
               key={label.label}
@@ -1159,7 +1350,7 @@ export default function App() {
                 left: label.left,
                 top: label.top,
                 padding: "6px 10px",
-                background: "rgba(255,255,255,0.84)",
+                background: "rgba(255,255,255,0.9)",
                 border: "1px solid #d9e6f3",
                 borderRadius: 999,
                 fontSize: 12,
@@ -1190,23 +1381,72 @@ export default function App() {
                   top: `${item.y}%`,
                   transform: "translate(-50%, -100%)",
                   cursor: "pointer",
+                  zIndex: isSelected ? 5 : 4,
                 }}
               >
                 <div
                   style={{
-                    width: 14,
-                    height: 14,
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50% 50% 50% 0",
+                    transform: "rotate(-45deg)",
                     background: isSelected ? "#173d6a" : pinColor,
-                    borderRadius: "50%",
                     boxShadow:
                       isSelected
-                        ? "0 0 0 4px rgba(23,61,106,0.18)"
-                        : "0 0 0 4px rgba(229,57,53,0.15)",
+                        ? "0 0 0 6px rgba(23,61,106,0.18)"
+                        : "0 0 0 6px rgba(229,57,53,0.12)",
+                    border: "2px solid white",
                   }}
                 />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 4,
+                    left: 4,
+                    width: 6,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "white",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -24,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    fontSize: 16,
+                  }}
+                >
+                  {CATEGORY_TO_ICON[item.category] || "📌"}
+                </div>
               </div>
             );
           })}
+
+          {selectedItem && (
+            <div
+              style={{
+                position: "absolute",
+                left: `${selectedItem.x}%`,
+                top: `calc(${selectedItem.y}% + 18px)`,
+                transform: "translateX(-50%)",
+                background: "rgba(255,255,255,0.95)",
+                border: "1px solid #d7e4f0",
+                borderRadius: 12,
+                padding: "8px 10px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#234763",
+                pointerEvents: "none",
+                boxShadow: "0 8px 18px rgba(15,23,42,0.1)",
+                maxWidth: 180,
+                textAlign: "center",
+              }}
+            >
+              {selectedItem.title}
+            </div>
+          )}
         </div>
 
         <div
@@ -1283,7 +1523,7 @@ export default function App() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+                gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, minmax(0, 1fr))",
                 gap: 10,
                 marginTop: 12,
               }}
@@ -1293,6 +1533,7 @@ export default function App() {
                 ["Department", featuredItem.assignedDepartments[0]],
                 ["Public status", featuredItem.publicStatus],
                 ["Residents affected", featuredItem.affectedCount],
+                ["Confidence", `${featuredItem.confidence}%`],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -1695,6 +1936,18 @@ export default function App() {
                     Residents affected: {selectedItem.affectedCount}
                   </div>
                 </div>
+
+                <div style={listItemStyle()}>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Budget snapshot</div>
+                  {budgetInsights.slice(0, 3).map((fund) => (
+                    <div key={fund.fund} style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{fund.fund}</div>
+                      <div style={{ fontSize: 12, color: "#67819a" }}>
+                        {fund.usedPct.toFixed(0)}% used • {formatMoney(fund.remaining)} remaining
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </>
             )}
 
@@ -1869,6 +2122,16 @@ export default function App() {
                   <div>Public status: {selectedItem.publicStatus}</div>
                   <div style={{ marginTop: 6 }}>
                     Updated: {formatShortDate(selectedItem.updatedAt)}
+                  </div>
+                </div>
+
+                <div style={listItemStyle()}>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Department snapshot</div>
+                  <div style={{ fontSize: 13 }}>
+                    Assigned: {selectedItem.assignedDepartments.join(", ")}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: "#67819a" }}>
+                    Residents affected: {selectedItem.affectedCount}
                   </div>
                 </div>
               </>
