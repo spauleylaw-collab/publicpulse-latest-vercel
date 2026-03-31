@@ -379,29 +379,91 @@ function ReportFlow({ open, point, setPoint, onClose, onSubmit }) {
   };
 
   return (
-    <div className="sheet-backdrop">
-      <div className="report-card">
-        <button className="close-btn" onClick={() => { setPoint(null); onClose(); }}>×</button>
+    <div
+      onClick={() => {
+        setPoint(null);
+        onClose();
+      }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        background: 'rgba(15, 23, 42, 0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 99999,
+        padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          background: '#fff',
+          borderRadius: '18px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          padding: '24px',
+          position: 'relative',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+        }}
+      >
+        <button
+          onClick={() => {
+            setPoint(null);
+            onClose();
+          }}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '999px',
+            border: 'none',
+            background: '#e2e8f0',
+            cursor: 'pointer',
+            fontSize: '22px',
+            lineHeight: '36px',
+          }}
+        >
+          ×
+        </button>
 
         {step === 0 && (
           <>
-            <div className="report-title">Tap where the problem is</div>
-            <div className="report-sub">Tap the map to place a pin.</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
+              Tap where the problem is
+            </div>
+            <div style={{ color: '#475569' }}>Tap the map to place a pin.</div>
           </>
         )}
 
         {step === 1 && (
           <>
-            <div className="report-title">What’s happening here?</div>
-            <div className="tile-grid">
+            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
+              What’s happening here?
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
               {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
                 <button
                   key={cat}
-                  className={`tile ${category === cat ? 'active' : ''}`}
                   onClick={() => {
                     setCategory(cat);
                     tap();
                     setStep(2);
+                  }}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e1',
+                    background: category === cat ? '#0f172a' : '#fff',
+                    color: category === cat ? '#fff' : '#0f172a',
+                    cursor: 'pointer',
                   }}
                 >
                   {cat}
@@ -413,25 +475,60 @@ function ReportFlow({ open, point, setPoint, onClose, onSubmit }) {
 
         {step === 2 && (
           <>
-            <div className="report-title">Describe briefly</div>
-            <button className="mic-btn" onClick={startVoice}>🎤</button>
-            <button className="ghost-link" onClick={() => document.getElementById('report-text')?.focus()}>
-              or type instead
+            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
+              Describe briefly
+            </div>
+            <button
+              onClick={startVoice}
+              style={{
+                border: 'none',
+                background: '#e2e8f0',
+                borderRadius: '999px',
+                width: '52px',
+                height: '52px',
+                fontSize: '22px',
+                cursor: 'pointer',
+                marginBottom: '12px',
+              }}
+            >
+              🎤
             </button>
+            <div
+              onClick={() => document.getElementById('report-text')?.focus()}
+              style={{ marginBottom: '12px', color: '#2563eb', cursor: 'pointer' }}
+            >
+              or type instead
+            </div>
             <textarea
               id="report-text"
-              className="text-input"
               placeholder="Describe briefly…"
               value={text}
               onChange={(e) => setText(e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: '120px',
+                borderRadius: '12px',
+                border: '1px solid #cbd5e1',
+                padding: '12px',
+                fontSize: '16px',
+                marginBottom: '12px',
+                boxSizing: 'border-box',
+              }}
             />
-            {voiceError && <div className="error-text">{voiceError}</div>}
+            {voiceError && <div style={{ color: '#dc2626', marginBottom: '12px' }}>{voiceError}</div>}
             <button
-              className="primary-btn"
               disabled={!text.trim()}
               onClick={() => {
                 tap();
                 setStep(3);
+              }}
+              style={{
+                padding: '12px 18px',
+                borderRadius: '12px',
+                border: 'none',
+                background: !text.trim() ? '#cbd5e1' : '#0f172a',
+                color: '#ffffff',
+                cursor: !text.trim() ? 'not-allowed' : 'pointer',
               }}
             >
               Continue
@@ -441,7 +538,9 @@ function ReportFlow({ open, point, setPoint, onClose, onSubmit }) {
 
         {step === 3 && (
           <>
-            <div className="report-title">Add a photo (optional)</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
+              Add a photo (optional)
+            </div>
             <input
               type="file"
               accept="image/*"
@@ -449,29 +548,70 @@ function ReportFlow({ open, point, setPoint, onClose, onSubmit }) {
                 setPhotoName(e.target.files?.[0]?.name || '');
                 tap();
               }}
+              style={{ marginBottom: '12px' }}
             />
-            {photoName && <div className="sheet-body subtle">{photoName}</div>}
-            <div className="row-actions">
-              <button className="ghost-btn" onClick={() => setStep(4)}>Skip</button>
-              <button className="primary-btn" onClick={() => setStep(4)}>Continue</button>
+            {photoName && <div style={{ color: '#475569', marginBottom: '12px' }}>{photoName}</div>}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setStep(4)}
+                style={{
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => setStep(4)}
+                style={{
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: '#0f172a',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                Continue
+              </button>
             </div>
           </>
         )}
 
         {step === 4 && (
           <>
-            <div className="report-title">Confirm & submit</div>
-            <div className="confirm-card">
+            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
+              Confirm & submit
+            </div>
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '14px',
+                marginBottom: '16px',
+              }}
+            >
               <div><strong>Category:</strong> {category}</div>
               <div><strong>Description:</strong> {text}</div>
               <div><strong>Location:</strong> {point ? `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}` : 'Map pin selected'}</div>
             </div>
             <button
-              className="primary-btn"
               onClick={() => {
                 success();
                 onSubmit({ category, text, point, photoName });
                 setStep(5);
+              }}
+              style={{
+                padding: '12px 18px',
+                borderRadius: '12px',
+                border: 'none',
+                background: '#0f172a',
+                color: '#ffffff',
+                cursor: 'pointer',
               }}
             >
               Submit
@@ -481,13 +621,22 @@ function ReportFlow({ open, point, setPoint, onClose, onSubmit }) {
 
         {step === 5 && (
           <>
-            <div className="report-title">Thanks—your report helps improve Hastings</div>
-            <div className="sheet-body">Report received</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
+              Thanks—your report helps improve Hastings
+            </div>
+            <div style={{ color: '#475569', marginBottom: '16px' }}>Report received</div>
             <button
-              className="primary-btn"
               onClick={() => {
                 setPoint(null);
                 onClose();
+              }}
+              style={{
+                padding: '12px 18px',
+                borderRadius: '12px',
+                border: 'none',
+                background: '#0f172a',
+                color: '#ffffff',
+                cursor: 'pointer',
               }}
             >
               Done
