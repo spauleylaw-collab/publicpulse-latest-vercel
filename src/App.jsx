@@ -4,13 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
    VERSION
 ========================= */
 
-const BUILD_VERSION = "full-build-report-forward-5";
+const BUILD_VERSION = "full-build-forward-6";
 
 /* =========================
    CONSTANTS
 ========================= */
 
 const CITY_NAME = "Hastings";
+const LAST_COUNCIL_MEETING = new Date("2026-03-15T18:00:00");
 
 const PERSONAS = {
   PUBLIC: "public",
@@ -55,6 +56,7 @@ const ROUTING_DEPARTMENTS = [
 const REPORT_TYPES = [
   "Selected Issue Report",
   "Council Report",
+  "Since Last Council Meeting",
   "Department Summary",
   "Budget Impact Summary",
   "Grant Support Summary",
@@ -162,6 +164,7 @@ const INITIAL_ITEMS = [
     y: 50,
     locationLabel: "Burlington corridor",
     updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     affectedCount: 3,
     affectedByUser: false,
     fund: "Street Fund",
@@ -188,6 +191,7 @@ const INITIAL_ITEMS = [
     y: 62,
     locationLabel: "Southwest residential area",
     updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     affectedCount: 2,
     affectedByUser: false,
     fund: "Public Works Fund",
@@ -214,6 +218,7 @@ const INITIAL_ITEMS = [
     y: 45,
     locationLabel: "Downtown intersection",
     updatedAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
     affectedCount: 4,
     affectedByUser: false,
     fund: "Traffic Fund",
@@ -240,6 +245,7 @@ const INITIAL_ITEMS = [
     y: 28,
     locationLabel: "North park zone",
     updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     affectedCount: 0,
     affectedByUser: false,
     fund: "Parks / Keno",
@@ -266,6 +272,7 @@ const INITIAL_ITEMS = [
     y: 58,
     locationLabel: "East utility corridor",
     updatedAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
     affectedCount: 1,
     affectedByUser: false,
     fund: "Utility Fund",
@@ -402,7 +409,6 @@ function inferCategory(text) {
 function inferConfidence(text) {
   const lower = text.toLowerCase();
   let confidence = 72;
-
   if (
     lower.includes("reported") ||
     lower.includes("visible") ||
@@ -411,7 +417,6 @@ function inferConfidence(text) {
   ) {
     confidence += 8;
   }
-
   if (
     lower.includes("maybe") ||
     lower.includes("might") ||
@@ -419,7 +424,6 @@ function inferConfidence(text) {
   ) {
     confidence -= 10;
   }
-
   return clamp(confidence, 45, 98);
 }
 
@@ -509,23 +513,17 @@ function getDepartmentSlaHours(item) {
 function isOverdueForCityReview(item) {
   if (item.queueStage !== "department_active") return false;
   if (item.status === "Resolved") return false;
-
   const updated = new Date(item.updatedAt).getTime();
   const dueAt = updated + getDepartmentSlaHours(item) * 60 * 60 * 1000;
-
   return Date.now() > dueAt;
 }
 
 function isVisibleInCityQueue(item) {
   if (item.queueStage === "city_review") {
     if (!item.reviewReminderAt) return true;
-    const now = Date.now();
-    const reminderTime = new Date(item.reviewReminderAt).getTime();
-    return reminderTime <= now;
+    return new Date(item.reviewReminderAt).getTime() <= Date.now();
   }
-
   if (isOverdueForCityReview(item)) return true;
-
   return false;
 }
 
@@ -538,7 +536,6 @@ function useIsMobile() {
     function onResize() {
       setIsMobile(window.innerWidth < 980);
     }
-
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -552,7 +549,6 @@ function useIsMobile() {
 
 function StatusBadge({ status }) {
   const style = STATUS_STYLES[status] || STATUS_STYLES["Under Review"];
-
   return (
     <span
       style={{
@@ -605,16 +601,7 @@ function TextInputWithMic({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        style={{
-          width: "100%",
-          borderRadius: 12,
-          border: "1px solid #d7e4f0",
-          padding: "12px 12px",
-          fontSize: 14,
-          outline: "none",
-          boxSizing: "border-box",
-          background: "white",
-        }}
+        style={inputStyle}
       />
       <MicButton listening={listening} onClick={onMicClick} />
     </div>
@@ -635,23 +622,23 @@ function TextareaWithMic({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        style={{
-          width: "100%",
-          minHeight,
-          borderRadius: 12,
-          border: "1px solid #d7e4f0",
-          padding: "12px 12px",
-          fontSize: 14,
-          outline: "none",
-          boxSizing: "border-box",
-          resize: "vertical",
-          background: "white",
-        }}
+        style={{ ...inputStyle, minHeight, resize: "vertical" }}
       />
       <MicButton listening={listening} onClick={onMicClick} />
     </div>
   );
 }
+
+const inputStyle = {
+  width: "100%",
+  borderRadius: 12,
+  border: "1px solid #d7e4f0",
+  padding: "12px 12px",
+  fontSize: 14,
+  outline: "none",
+  boxSizing: "border-box",
+  background: "white",
+};
 
 function primaryButtonStyle() {
   return {
@@ -776,9 +763,32 @@ function Modal({ title, children, onClose }) {
             Close
           </button>
         </div>
-
         {children}
       </div>
+    </div>
+  );
+}
+
+function Toast({ message }) {
+  if (!message) return null;
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 18,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 100,
+        background: "#173d6a",
+        color: "white",
+        padding: "12px 16px",
+        borderRadius: 14,
+        boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+        fontWeight: 700,
+        maxWidth: "92vw",
+      }}
+    >
+      {message}
     </div>
   );
 }
@@ -805,6 +815,7 @@ export default function App() {
   const [remindLaterHours, setRemindLaterHours] = useState("24");
   const [showThankYou, setShowThankYou] = useState(false);
   const [selectedCityAction, setSelectedCityAction] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
 
   const [reportMode, setReportMode] = useState(false);
   const [reportPin, setReportPin] = useState(null);
@@ -845,22 +856,23 @@ export default function App() {
     sections: [],
   });
 
+  useEffect(() => {
+    if (!toastMessage) return undefined;
+    const timer = window.setTimeout(() => setToastMessage(""), 2200);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
   const mapItems = useMemo(() => {
+    if (persona === PERSONAS.PUBLIC) {
+      return items.filter((item) => item.x != null && item.y != null);
+    }
     if (mapMode === MAP_MODES.CIVIC) {
       return items.filter((item) => item.x != null && item.y != null);
     }
-
-    if (mapMode === MAP_MODES.LIVE) {
-      return items.filter(
-        (item) =>
-          item.x != null &&
-          item.y != null &&
-          item.type === "community_issue"
-      );
-    }
-
-    return [];
-  }, [items, mapMode]);
+    return items.filter(
+      (item) => item.x != null && item.y != null && item.type === "community_issue"
+    );
+  }, [items, mapMode, persona]);
 
   const featuredItems = useMemo(
     () =>
@@ -897,9 +909,7 @@ export default function App() {
       .sort((a, b) => {
         const aOverdue = isOverdueForCityReview(a) ? 1 : 0;
         const bOverdue = isOverdueForCityReview(b) ? 1 : 0;
-
         if (aOverdue !== bOverdue) return bOverdue - aOverdue;
-
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
   }, [items]);
@@ -912,25 +922,19 @@ export default function App() {
 
   useEffect(() => {
     if (!featuredItems.length) return undefined;
-
     const timer = window.setInterval(() => {
       setRotationIndex((prev) => (prev + 1) % featuredItems.length);
     }, 4500);
-
     return () => window.clearInterval(timer);
   }, [featuredItems.length]);
 
   useEffect(() => {
     if (!reportForm.description.trim()) {
-      if (
-        !reportForm.categoryTouched &&
-        reportForm.category !== "Community Concern"
-      ) {
+      if (!reportForm.categoryTouched && reportForm.category !== "Community Concern") {
         setReportForm((prev) => ({ ...prev, category: "Community Concern" }));
       }
       return;
     }
-
     if (!reportForm.categoryTouched) {
       const suggested = inferCategory(reportForm.description);
       if (suggested !== reportForm.category) {
@@ -941,7 +945,6 @@ export default function App() {
 
   function startVoiceInput(fieldName, getValue, setValue) {
     const SpeechRecognition = getSpeechRecognition();
-
     if (!SpeechRecognition) {
       window.alert("Microphone is not supported on this device/browser.");
       return;
@@ -949,7 +952,6 @@ export default function App() {
 
     try {
       const recognition = new SpeechRecognition();
-
       recognition.lang = "en-US";
       recognition.interimResults = false;
       recognition.continuous = false;
@@ -962,13 +964,11 @@ export default function App() {
         const nextValue = currentValue
           ? `${currentValue} ${transcript}`.trim()
           : transcript.trim();
-
         setValue(nextValue);
       };
 
       recognition.onerror = () => setListeningField(null);
       recognition.onend = () => setListeningField(null);
-
       recognition.start();
     } catch {
       setListeningField(null);
@@ -990,18 +990,21 @@ export default function App() {
     ]);
   }
 
+  function showToast(message) {
+    setToastMessage(message);
+  }
+
   function closeMapPopover() {
     setSelectedItemId(null);
   }
 
   function handleMapClick(event) {
     if (!mapRef.current) return;
-
     const rect = mapRef.current.getBoundingClientRect();
     const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 4, 96);
     const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 8, 94);
 
-    if (reportMode && mapMode === MAP_MODES.CIVIC) {
+    if (reportMode && (persona === PERSONAS.PUBLIC || mapMode === MAP_MODES.CIVIC)) {
       setReportPin({ x, y });
       setShowReportModal(true);
       return;
@@ -1045,6 +1048,7 @@ export default function App() {
     const category = reportForm.category || inferCategory(reportForm.description);
     const recommendedDepartment = CATEGORY_TO_DEPARTMENT[category];
     const confidence = inferConfidence(reportForm.description);
+    const nowIso = new Date().toISOString();
 
     const nextItem = {
       id: makeId("item"),
@@ -1066,7 +1070,8 @@ export default function App() {
       x: reportPin.x,
       y: reportPin.y,
       locationLabel: "Resident-selected location",
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
+      createdAt: nowIso,
       affectedCount: 1,
       affectedByUser: true,
       fund: CATEGORY_TO_FUND[category],
@@ -1099,6 +1104,7 @@ export default function App() {
 
     const category = cityInitiatedForm.category;
     const department = CATEGORY_TO_DEPARTMENT[category];
+    const nowIso = new Date().toISOString();
 
     const nextItem = {
       id: makeId("item"),
@@ -1117,7 +1123,8 @@ export default function App() {
       x: cityInitiatedPin.x,
       y: cityInitiatedPin.y,
       locationLabel: "City-selected project location",
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
+      createdAt: nowIso,
       affectedCount: 0,
       affectedByUser: false,
       fund: CATEGORY_TO_FUND[category],
@@ -1128,13 +1135,8 @@ export default function App() {
 
     setItems((prev) => [nextItem, ...prev]);
     setSelectedItemId(nextItem.id);
-
-    addNotification(
-      `New city initiated pin created for ${department}.`,
-      department,
-      "medium"
-    );
-
+    addNotification(`New city initiated pin created for ${department}.`, department, "medium");
+    showToast("City initiated pin saved.");
     closeCityInitiatedModal();
     setActiveTab(TABS.HOME);
   }
@@ -1145,19 +1147,29 @@ export default function App() {
         item.id === itemId
           ? {
               ...item,
-              affectedCount: item.affectedByUser
-                ? item.affectedCount
-                : item.affectedCount + 1,
+              affectedCount: item.affectedByUser ? item.affectedCount : item.affectedCount + 1,
               affectedByUser: true,
               updatedAt: new Date().toISOString(),
             }
           : item
       )
     );
+    showToast("Thanks for adding your voice.");
   }
 
   function updateCommandForm(key, value) {
     setCommandForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function clearAfterCityAction(message) {
+    setSelectedItemId(null);
+    setSelectedCityAction("");
+    setCommandForm((prev) => ({
+      ...prev,
+      specialInstructions: "",
+      multiDepartments: [],
+    }));
+    showToast(message);
   }
 
   function applyCommandAction(action) {
@@ -1174,19 +1186,16 @@ export default function App() {
       nextDepartments = [selectedItem.recommendedDepartment];
       nextQueueStage = "department_active";
     }
-
     if (action === "reassign") {
       nextStatus = "Routed";
       nextDepartments = [commandForm.reassignDepartment];
       nextQueueStage = "department_active";
     }
-
     if (action === "escalate") {
       nextEscalated = true;
       nextStatus = "Escalated";
       nextQueueStage = "department_active";
     }
-
     if (action === "multi_department") {
       const picked = commandForm.multiDepartments.length
         ? commandForm.multiDepartments
@@ -1220,17 +1229,18 @@ export default function App() {
       action === "escalate" ? "high" : "medium"
     );
 
-    setCommandForm((prev) => ({
-      ...prev,
-      specialInstructions: "",
-    }));
+    const toastMap = {
+      confirm_routing: `Routed to ${nextDepartments[0]}.`,
+      reassign: `Sent to ${nextDepartments[0]}.`,
+      escalate: "Marked as priority.",
+      multi_department: "Additional teams notified.",
+    };
 
-    setSelectedCityAction("");
+    clearAfterCityAction(toastMap[action] || "Action saved.");
   }
 
   function applyDepartmentStatus(status) {
     if (!selectedItem) return;
-
     const nextQueueStage = status === "Resolved" ? "resolved" : "department_active";
 
     setItems((prev) =>
@@ -1241,8 +1251,7 @@ export default function App() {
               status,
               queueStage: nextQueueStage,
               publicStatus: derivePublicStatus(status, item.escalated, item.type),
-              specialInstructions:
-                commandForm.specialInstructions.trim() || item.specialInstructions,
+              specialInstructions: commandForm.specialInstructions.trim() || item.specialInstructions,
               updatedAt: new Date().toISOString(),
             }
           : item
@@ -1255,17 +1264,20 @@ export default function App() {
       status === "Resolved" ? "medium" : "low"
     );
 
-    setCommandForm((prev) => ({
-      ...prev,
-      specialInstructions: "",
-    }));
+    setSelectedItemId(null);
+    setCommandForm((prev) => ({ ...prev, specialInstructions: "" }));
+    showToast(
+      status === "Resolved"
+        ? "Issue marked done."
+        : status === "In Progress"
+        ? "Department update saved."
+        : "Status updated."
+    );
   }
 
   function applyRemindLater(hours) {
     if (!selectedItem) return;
-
-    const now = new Date();
-    const remindAt = new Date(now.getTime() + Number(hours) * 60 * 60 * 1000);
+    const remindAt = new Date(Date.now() + Number(hours) * 60 * 60 * 1000);
 
     setItems((prev) =>
       prev.map((item) =>
@@ -1276,8 +1288,7 @@ export default function App() {
               publicStatus: "Under Review",
               queueStage: "city_review",
               reviewReminderAt: remindAt.toISOString(),
-              specialInstructions:
-                commandForm.specialInstructions.trim() || item.specialInstructions,
+              specialInstructions: commandForm.specialInstructions.trim() || item.specialInstructions,
               updatedAt: new Date().toISOString(),
             }
           : item
@@ -1285,19 +1296,12 @@ export default function App() {
     );
 
     addNotification(
-      `${selectedItem.title} removed from the City queue until ${formatShortDate(
-        remindAt.toISOString()
-      )}.`,
+      `${selectedItem.title} removed from the City queue until ${formatShortDate(remindAt.toISOString())}.`,
       selectedItem.assignedDepartments[0] || selectedItem.recommendedDepartment,
       "medium"
     );
 
-    setCommandForm((prev) => ({
-      ...prev,
-      specialInstructions: "",
-    }));
-
-    setSelectedCityAction("");
+    clearAfterCityAction(`Review moved to ${formatShortDate(remindAt.toISOString())}.`);
   }
 
   function toggleMultiDepartment(department) {
@@ -1321,16 +1325,11 @@ export default function App() {
     ).length;
     const inProgress = filteredItems.filter((item) => item.status === "In Progress").length;
     const overdue = filteredItems.filter((item) => isOverdueForCityReview(item)).length;
-    const communitySignals = filteredItems.reduce(
-      (sum, item) => sum + (item.affectedCount || 0),
-      0
-    );
+    const communitySignals = filteredItems.reduce((sum, item) => sum + (item.affectedCount || 0), 0);
 
     const byDepartment = ROUTING_DEPARTMENTS.map((department) => ({
       department,
-      count: filteredItems.filter((item) =>
-        item.assignedDepartments.includes(department)
-      ).length,
+      count: filteredItems.filter((item) => item.assignedDepartments.includes(department)).length,
     })).filter((entry) => entry.count > 0);
 
     const topItems = [...filteredItems]
@@ -1360,9 +1359,7 @@ export default function App() {
 
   function handleGenerateReport() {
     const selectedDepartment =
-      reportBuilder.department === "All departments"
-        ? null
-        : reportBuilder.department;
+      reportBuilder.department === "All departments" ? null : reportBuilder.department;
 
     const filteredItems = items.filter((item) => {
       if (reportBuilder.scope === "Selected issue only" && selectedItem) {
@@ -1376,13 +1373,11 @@ export default function App() {
 
     const stats = buildReportSections(filteredItems);
     const type = reportBuilder.type;
+    const subtitle = `${CITY_NAME} • ${reportBuilder.timeframe} • ${reportBuilder.scope}${
+      reportBuilder.department !== "All departments" ? ` • ${reportBuilder.department}` : ""
+    }`;
 
     let title = type;
-    const subtitle = `${CITY_NAME} • ${reportBuilder.timeframe} • ${reportBuilder.scope}${
-      reportBuilder.department !== "All departments"
-        ? ` • ${reportBuilder.department}`
-        : ""
-    }`;
     let sections = [];
 
     if (type === "Selected Issue Report") {
@@ -1398,15 +1393,11 @@ export default function App() {
         },
         {
           heading: "What the City Sees",
-          body: selectedItem
-            ? getCitySeesText(selectedItem)
-            : "No selected issue is currently open.",
+          body: selectedItem ? getCitySeesText(selectedItem) : "No selected issue is currently open.",
         },
         {
           heading: "Who Is Reviewing",
-          body: selectedItem
-            ? getWhoIsReviewing(selectedItem)
-            : "No selected issue is currently open.",
+          body: selectedItem ? getWhoIsReviewing(selectedItem) : "No selected issue is currently open.",
         },
         {
           heading: "Budget Context",
@@ -1418,9 +1409,7 @@ export default function App() {
         },
         {
           heading: "Next Expected Step",
-          body: selectedItem
-            ? getNextExpectedStep(selectedItem)
-            : "No selected issue is currently open.",
+          body: selectedItem ? getNextExpectedStep(selectedItem) : "No selected issue is currently open.",
         },
       ];
     }
@@ -1432,35 +1421,87 @@ export default function App() {
           body: `PublicPulse is currently tracking ${stats.total} items in scope, with ${stats.open} still open, ${stats.resolved} resolved, ${stats.priority} marked as priority concerns, ${stats.overdue} needing renewed City attention, and ${stats.communitySignals} total community signals.`,
         },
         {
-          heading: "Top Concerns",
+          heading: "What Matters Most Right Now",
           body: stats.topItems.length
             ? stats.topItems
                 .map(
                   (item, index) =>
                     `${index + 1}. ${item.title} — ${item.publicStatus}. ${
                       item.affectedCount
-                    } community signals. Assigned to ${item.assignedDepartments.join(
-                      ", "
-                    )}.`
+                    } community signals. Assigned to ${item.assignedDepartments.join(", ")}.`
                 )
                 .join("\n")
             : "No issues matched the selected report scope.",
         },
         {
-          heading: "Department Activity",
-          body: stats.byDepartment.length
-            ? stats.byDepartment
-                .map((entry) => `${entry.department}: ${entry.count} tracked items.`)
-                .join("\n")
-            : "No department activity matched the selected report scope.",
-        },
-        {
-          heading: "Budget Context",
-          body: stats.budgetLines.join("\n"),
+          heading: "Strategic and Budget Context",
+          body:
+            "Recurring infrastructure demand should be considered against existing maintenance priorities, service expectations, and the city’s broader infrastructure reliability goals. This is where strategic planning, service pressure, and annual budgeting intersect.\n\n" +
+            stats.budgetLines.join("\n"),
         },
         {
           heading: "Recommended Next Actions",
-          body: "Focus City attention on the most visible open concerns, follow up on overdue department items, confirm routing on under-review items, and continue moving in-progress items toward closure.",
+          body:
+            "Focus leadership attention on high-visibility open concerns, overdue department follow-up, and any issue clusters that suggest a broader corridor or systems problem rather than a one-off report.",
+        },
+      ];
+    }
+
+    if (type === "Since Last Council Meeting") {
+      const sinceItems = filteredItems.filter(
+        (item) =>
+          new Date(item.updatedAt).getTime() > LAST_COUNCIL_MEETING.getTime() ||
+          new Date(item.createdAt || item.updatedAt).getTime() > LAST_COUNCIL_MEETING.getTime()
+      );
+
+      const sinceOpen = sinceItems.filter((item) => item.status !== "Resolved").length;
+      const sincePriority = sinceItems.filter(
+        (item) => item.escalated || item.status === "Escalated"
+      ).length;
+      const sinceResolved = sinceItems.filter((item) => item.status === "Resolved").length;
+      const sinceOverdue = sinceItems.filter((item) => isOverdueForCityReview(item)).length;
+      const estimatedDemand = sinceItems.reduce(
+        (sum, item) => sum + estimateCost(item.category),
+        0
+      );
+
+      sections = [
+        {
+          heading: "What changed since last council meeting",
+          body: `Since ${LAST_COUNCIL_MEETING.toLocaleDateString()}, PublicPulse has tracked ${sinceItems.length} new or updated items. ${sinceOpen} remain open, ${sinceResolved} have been resolved, ${sincePriority} are currently priority concerns, and ${sinceOverdue} require renewed City attention.`,
+        },
+        {
+          heading: "New and updated issues",
+          body: sinceItems.length
+            ? sinceItems
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                .slice(0, 8)
+                .map(
+                  (item, index) =>
+                    `${index + 1}. ${item.title} — ${item.publicStatus} • ${item.locationLabel}`
+                )
+                .join("\n")
+            : "No new activity since the last council meeting.",
+        },
+        {
+          heading: "Items needing attention",
+          body: sinceItems.filter((item) => isOverdueForCityReview(item)).length
+            ? sinceItems
+                .filter((item) => isOverdueForCityReview(item))
+                .map((item) => `${item.title} — overdue for follow-up`)
+                .join("\n")
+            : "No overdue items were identified in this meeting-to-meeting window.",
+        },
+        {
+          heading: "Budget and planning context",
+          body:
+            `Estimated new demand since the last council meeting: ${formatMoney(estimatedDemand)}.\n\n` +
+            "This view is designed to support council prep by surfacing what changed between meetings, where service demand increased, and which issues may justify corridor-level action, budget attention, or strategic follow-up rather than one-off response.",
+        },
+        {
+          heading: "Recommended next actions",
+          body:
+            "Use this report to open the meeting with what materially changed, which items escalated, what was resolved, and where visible demand appears to be trending faster than routine response or current budget assumptions.",
         },
       ];
     }
@@ -1627,360 +1668,12 @@ export default function App() {
       ];
     }
 
-    setGeneratedReport({
-      title,
-      subtitle,
-      sections,
-    });
-  }
-
-  function renderGeneratedReportPreview() {
-    if (!generatedReport.title) return null;
-
-    return (
-      <div
-        style={{
-          marginTop: 14,
-          background: "#ffffff",
-          border: "1px solid #dbe6f1",
-          borderRadius: 14,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            padding: 14,
-            borderBottom: "1px solid #e5edf6",
-            background: "#f8fbfe",
-          }}
-        >
-          <div style={{ fontWeight: 800, fontSize: 18 }}>{generatedReport.title}</div>
-          <div style={{ color: "#6b8399", fontSize: 12, marginTop: 4 }}>
-            {generatedReport.subtitle}
-          </div>
-        </div>
-
-        <div style={{ padding: 14, display: "grid", gap: 14 }}>
-          {generatedReport.sections.map((section) => (
-            <div
-              key={section.heading}
-              style={{
-                background: "#f8fbfe",
-                border: "1px solid #e5edf6",
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>
-                {section.heading}
-              </div>
-              <div
-                style={{
-                  whiteSpace: "pre-wrap",
-                  fontSize: 13,
-                  color: "#344c63",
-                  lineHeight: 1.55,
-                }}
-              >
-                {section.body}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function renderGenerateReportPanel() {
-    return (
-      <div style={listItemStyle()}>
-        <div style={{ fontWeight: 800, marginBottom: 10 }}>Generate report</div>
-
-        <div style={{ display: "grid", gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Report type
-            </div>
-            <select
-              value={reportBuilder.type}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({ ...prev, type: e.target.value }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              {REPORT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Scope
-            </div>
-            <select
-              value={reportBuilder.scope}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({ ...prev, scope: e.target.value }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              <option value="Citywide">Citywide</option>
-              <option value="Selected issue only">Selected issue only</option>
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Department
-            </div>
-            <select
-              value={reportBuilder.department}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({
-                  ...prev,
-                  department: e.target.value,
-                }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              <option value="All departments">All departments</option>
-              {ROUTING_DEPARTMENTS.map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Timeframe
-            </div>
-            <select
-              value={reportBuilder.timeframe}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({
-                  ...prev,
-                  timeframe: e.target.value,
-                }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              {REPORT_TIMEFRAMES.map((timeframe) => (
-                <option key={timeframe} value={timeframe}>
-                  {timeframe}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button style={primaryButtonStyle()} onClick={handleGenerateReport}>
-            Generate report
-          </button>
-        </div>
-
-        {renderGeneratedReportPreview()}
-      </div>
-    );
-  }
-
-  function renderTopBar() {
-    return (
-      <div
-        style={{
-          background: "linear-gradient(135deg, #0d4d87 0%, #0f6ab7 100%)",
-          color: "#fff",
-          borderRadius: 20,
-          padding: 18,
-          boxShadow: "0 16px 40px rgba(13,77,135,0.22)",
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>
-          PublicPulse
-        </div>
-        <div style={{ fontSize: 14, opacity: 0.95, lineHeight: 1.45 }}>
-          A community impact and city response system for residents, departments,
-          and city leadership.
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-            marginTop: 14,
-          }}
-        >
-          {[
-            `City: ${CITY_NAME}`,
-            `Mode: ${persona}`,
-            `${summary.open} open items`,
-            `${summary.escalated} priority`,
-            `${summary.cityInitiated} city initiated`,
-          ].map((item) => (
-            <div
-              key={item}
-              style={{
-                background: "rgba(255,255,255,0.14)",
-                border: "1px solid rgba(255,255,255,0.22)",
-                color: "white",
-                padding: "8px 12px",
-                borderRadius: 999,
-                fontSize: 13,
-              }}
-            >
-              {item}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function renderModeToggle() {
-    const options = [
-      { key: PERSONAS.PUBLIC, label: "Public" },
-      { key: PERSONAS.ADMIN, label: "City" },
-      { key: PERSONAS.DEPARTMENT, label: "Department" },
-    ];
-
-    return (
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap",
-          marginTop: 12,
-          marginBottom: 16,
-        }}
-      >
-        {options.map((option) => (
-          <button
-            key={option.key}
-            onClick={() => {
-              setPersona(option.key);
-              setActiveTab(TABS.HOME);
-              setReportMode(false);
-              setCityInitiatedMode(false);
-              setMapMode(MAP_MODES.CIVIC);
-              closeMapPopover();
-            }}
-            style={{
-              ...secondaryButtonStyle(),
-              background: persona === option.key ? "#eef6ff" : "white",
-              color: persona === option.key ? "#0f6ab7" : "#24527a",
-              borderColor: persona === option.key ? "#bcd8f6" : "#cfe0f0",
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  function renderInsightBar() {
-    return (
-      <div style={panelStyle()}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 10,
-            alignItems: isMobile ? "flex-start" : "center",
-            flexDirection: isMobile ? "column" : "row",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
-              What’s going on in Hastings
-            </div>
-            {featuredItem ? (
-              <>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#173d6a" }}>
-                  {getInsightLine(featuredItem)}
-                </div>
-                <div style={{ marginTop: 4, fontSize: 13, color: "#647b92" }}>
-                  {featuredItem.affectedCount > 0
-                    ? `${featuredItem.affectedCount} community signals • ${getNextExpectedStep(
-                        featuredItem
-                      )}`
-                    : getNextExpectedStep(featuredItem)}
-                </div>
-              </>
-            ) : (
-              <div style={{ color: "#647b92" }}>No live insight available.</div>
-            )}
-          </div>
-
-          {featuredItem && (
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <StatusBadge status={featuredItem.status} />
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: "#f8fbfe",
-                  border: "1px solid #dbe8f4",
-                  color: "#355a7f",
-                  padding: "6px 10px",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                ✓ {getWhoIsReviewing(featuredItem)}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    setGeneratedReport({ title, subtitle, sections });
+    showToast("Report generated.");
   }
 
   function renderMapPopover(item) {
     if (!item) return null;
-
     const left = clamp(item.x, 16, 84);
     const top = clamp(item.y - 20, 12, 72);
 
@@ -2039,14 +1732,7 @@ export default function App() {
               </button>
             </div>
 
-            <div
-              style={{
-                marginTop: 10,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
+            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <StatusBadge status={item.status} />
               <div
                 style={{
@@ -2066,14 +1752,11 @@ export default function App() {
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 12,
-                fontSize: 14,
-                lineHeight: 1.5,
-                color: "#334b63",
-              }}
-            >
+            <div style={{ marginTop: 8, fontSize: 12, color: "#5c748d", fontWeight: 700 }}>
+              {item.type === "city_activity" ? "City initiated work" : "Community report"}
+            </div>
+
+            <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.5, color: "#334b63" }}>
               {item.description}
             </div>
 
@@ -2102,46 +1785,30 @@ export default function App() {
                     padding: 12,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#5b7590",
-                      marginBottom: 6,
-                    }}
-                  >
-                    {label}
-                  </div>
-                  <div
-                    style={{
-                      fontWeight: label === "Status" ? 800 : 700,
-                      fontSize: 14,
-                      lineHeight: 1.4,
-                    }}
-                  >
+                  <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontWeight: label === "Status" ? 800 : 700, fontSize: 14, lineHeight: 1.4 }}>
                     {value}
                   </div>
                 </div>
               ))}
             </div>
 
-            {item.type === "community_issue" &&
-              persona === PERSONAS.PUBLIC &&
-              mapMode === MAP_MODES.CIVIC && (
-                <div style={{ marginTop: 14 }}>
-                  <button
-                    disabled={item.affectedByUser}
-                    onClick={() => markAffected(item.id)}
-                    style={{
-                      ...primaryButtonStyle(),
-                      opacity: item.affectedByUser ? 0.6 : 1,
-                      cursor: item.affectedByUser ? "default" : "pointer",
-                      width: "100%",
-                    }}
-                  >
-                    {item.affectedByUser ? "You’ve added your voice" : "I noticed this too"}
-                  </button>
-                </div>
-              )}
+            {item.type === "community_issue" && persona === PERSONAS.PUBLIC && (
+              <div style={{ marginTop: 14 }}>
+                <button
+                  disabled={item.affectedByUser}
+                  onClick={() => markAffected(item.id)}
+                  style={{
+                    ...primaryButtonStyle(),
+                    opacity: item.affectedByUser ? 0.6 : 1,
+                    cursor: item.affectedByUser ? "default" : "pointer",
+                    width: "100%",
+                  }}
+                >
+                  {item.affectedByUser ? "You’ve added your voice" : "I noticed this too"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2162,40 +1829,50 @@ export default function App() {
   }
 
   function renderMap() {
+    const publicMap = persona === PERSONAS.PUBLIC;
+
     return (
       <div style={panelStyle()}>
         <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          {mapMode === MAP_MODES.CIVIC ? "City map" : "What’s happening right now"}
+          {publicMap
+            ? "What’s happening right now"
+            : mapMode === MAP_MODES.CIVIC
+            ? "City map"
+            : "What’s happening right now"}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 10 }}>
-          <button
-            onClick={() => {
-              setMapMode(MAP_MODES.CIVIC);
-              setReportMode(false);
-              setCityInitiatedMode(false);
-              closeMapPopover();
-            }}
-            style={mapModeButtonStyle(mapMode === MAP_MODES.CIVIC)}
-          >
-            Civic
-          </button>
+        {!publicMap && (
+          <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 10 }}>
+            <button
+              onClick={() => {
+                setMapMode(MAP_MODES.CIVIC);
+                setReportMode(false);
+                setCityInitiatedMode(false);
+                closeMapPopover();
+              }}
+              style={mapModeButtonStyle(mapMode === MAP_MODES.CIVIC)}
+            >
+              Civic
+            </button>
 
-          <button
-            onClick={() => {
-              setMapMode(MAP_MODES.LIVE);
-              setReportMode(false);
-              setCityInitiatedMode(false);
-              closeMapPopover();
-            }}
-            style={mapModeButtonStyle(mapMode === MAP_MODES.LIVE)}
-          >
-            Right now
-          </button>
-        </div>
+            <button
+              onClick={() => {
+                setMapMode(MAP_MODES.LIVE);
+                setReportMode(false);
+                setCityInitiatedMode(false);
+                closeMapPopover();
+              }}
+              style={mapModeButtonStyle(mapMode === MAP_MODES.LIVE)}
+            >
+              Right now
+            </button>
+          </div>
+        )}
 
         <div style={{ color: "#63809b", fontSize: 13, lineHeight: 1.45 }}>
-          {mapMode === MAP_MODES.CIVIC
+          {publicMap
+            ? "This view shows community concerns and city activity together so residents can see what’s going on across Hastings right now."
+            : mapMode === MAP_MODES.CIVIC
             ? "The map reflects both community concerns and city initiated work."
             : "This view highlights where people are noticing activity right now."}
         </div>
@@ -2213,9 +1890,7 @@ export default function App() {
               color: "#4b657d",
             }}
           >
-            {mapMode === MAP_MODES.CIVIC
-              ? "The City appreciates residents sharing what they are seeing. Response timing depends on priority, safety, staffing, and budget."
-              : "This view shows where activity is happening right now based on community signals."}
+            The City appreciates residents sharing what they are seeing. Response timing depends on priority, safety, staffing, and budget.
           </div>
         )}
 
@@ -2227,17 +1902,11 @@ export default function App() {
             borderRadius: 20,
             position: "relative",
             cursor:
-              reportMode && mapMode === MAP_MODES.CIVIC
-                ? "crosshair"
-                : cityInitiatedMode && mapMode === MAP_MODES.CIVIC
-                ? "crosshair"
-                : "default",
+              reportMode || cityInitiatedMode ? "crosshair" : "default",
             background:
               "linear-gradient(180deg, #cfe6fb 0%, #deefff 35%, #ecf6e6 35%, #f3f8ff 100%)",
             border:
-              (reportMode || cityInitiatedMode) && mapMode === MAP_MODES.CIVIC
-                ? "2px solid #0f6ab7"
-                : "1px solid #cfe0f0",
+              reportMode || cityInitiatedMode ? "2px solid #0f6ab7" : "1px solid #cfe0f0",
             boxShadow: "0 10px 30px rgba(15,106,183,0.08)",
             overflow: "hidden",
             marginTop: 14,
@@ -2246,8 +1915,8 @@ export default function App() {
           <div
             style={{
               position: "absolute",
-              left: "0%",
-              top: "0%",
+              left: 0,
+              top: 0,
               width: "100%",
               height: "100%",
               background:
@@ -2307,34 +1976,14 @@ export default function App() {
             style={{
               position: "absolute",
               left: "49%",
-              top: "0%",
+              top: 0,
               width: 8,
               height: "100%",
               background: "rgba(120, 144, 156, 0.35)",
             }}
           />
-          <div
-            style={{
-              position: "absolute",
-              left: "18%",
-              top: "0%",
-              width: 6,
-              height: "100%",
-              background: "rgba(120, 144, 156, 0.2)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: "74%",
-              top: "0%",
-              width: 6,
-              height: "100%",
-              background: "rgba(120, 144, 156, 0.2)",
-            }}
-          />
 
-          {reportMode && mapMode === MAP_MODES.CIVIC && (
+          {(reportMode || cityInitiatedMode) && (
             <div
               style={{
                 position: "absolute",
@@ -2350,27 +1999,7 @@ export default function App() {
                 zIndex: 3,
               }}
             >
-              Tap map to report
-            </div>
-          )}
-
-          {cityInitiatedMode && mapMode === MAP_MODES.CIVIC && (
-            <div
-              style={{
-                position: "absolute",
-                top: 10,
-                left: "50%",
-                transform: "translateX(-50%)",
-                background: "#0f6ab7",
-                color: "white",
-                padding: "6px 12px",
-                borderRadius: 12,
-                fontSize: 12,
-                fontWeight: 700,
-                zIndex: 3,
-              }}
-            >
-              Tap map to place city initiated pin
+              {reportMode ? "Tap map to report" : "Tap map to place city initiated pin"}
             </div>
           )}
 
@@ -2399,12 +2028,13 @@ export default function App() {
             </div>
           ))}
 
-          {/* Heat Layer */}
           {mapItems.map((item) => {
             const intensity = Math.min(item.affectedCount || 1, 5);
             const heatColor =
-              mapMode === MAP_MODES.LIVE
-                ? "rgba(15,106,183,0.14)"
+              publicMap || mapMode === MAP_MODES.LIVE
+                ? item.type === "city_activity"
+                  ? "rgba(15,106,183,0.10)"
+                  : "rgba(229,57,53,0.12)"
                 : item.status === "In Progress"
                 ? "rgba(15,106,183,0.15)"
                 : item.escalated || item.status === "Escalated"
@@ -2435,27 +2065,21 @@ export default function App() {
 
           {mapItems.map((item) => {
             const isSelected = selectedItemId === item.id;
-
             let pinColor = "#e53935";
             let pulse = false;
             let scale = 1;
 
-            if (mapMode === MAP_MODES.CIVIC && item.type === "city_activity") {
-              pinColor = "#0f6ab7";
-            }
-
+            if (item.type === "city_activity") pinColor = "#0f6ab7";
             if (item.escalated || item.status === "Escalated") {
               pinColor = "#ff9800";
               pulse = true;
               scale = 1.2;
             }
-
             if (item.status === "In Progress") {
               pulse = true;
               scale = 1.1;
             }
-
-            if (mapMode === MAP_MODES.LIVE) {
+            if (!publicMap && mapMode === MAP_MODES.LIVE && item.type !== "city_activity") {
               pinColor = "#0f6ab7";
               pulse = item.affectedCount >= 3;
               scale = item.affectedCount >= 3 ? 1.2 : 1;
@@ -2538,15 +2162,8 @@ export default function App() {
           {renderMapPopover(selectedItem)}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-            marginTop: 12,
-          }}
-        >
-          {persona === PERSONAS.PUBLIC && mapMode === MAP_MODES.CIVIC && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+          {persona === PERSONAS.PUBLIC && (
             <button
               onClick={() => {
                 setActiveTab(TABS.REPORT);
@@ -2560,7 +2177,7 @@ export default function App() {
             </button>
           )}
 
-          {persona === PERSONAS.ADMIN && mapMode === MAP_MODES.CIVIC && (
+          {persona === PERSONAS.ADMIN && (
             <button
               onClick={() => {
                 setActiveTab(TABS.HOME);
@@ -2590,31 +2207,12 @@ export default function App() {
             Tap anywhere on the map background to close the pop-up card.
           </div>
           <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-            <div
-              style={{
-                background: "#f8fbfe",
-                border: "1px solid #e5edf6",
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 4 }}>
-                Status
-              </div>
+            <div style={listItemStyle()}>
+              <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 4 }}>Status</div>
               <div style={{ fontWeight: 800 }}>{selectedItem.publicStatus}</div>
             </div>
-
-            <div
-              style={{
-                background: "#f8fbfe",
-                border: "1px solid #e5edf6",
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 4 }}>
-                Community signals
-              </div>
+            <div style={listItemStyle()}>
+              <div style={{ fontSize: 12, color: "#5b7590", marginBottom: 4 }}>Community signals</div>
               <div style={{ fontWeight: 800 }}>{selectedItem.affectedCount}</div>
             </div>
           </div>
@@ -2628,8 +2226,7 @@ export default function App() {
           Map guide
         </div>
         <div style={{ color: "#5e778f", lineHeight: 1.55 }}>
-          Tap a pin on the map to see the full issue card rise from that
-          location. The map now does the main storytelling.
+          Tap a pin on the map to see the full issue card rise from that location.
         </div>
       </div>
     );
@@ -2676,12 +2273,293 @@ export default function App() {
     );
   }
 
+  function renderGeneratedReportPreview() {
+    if (!generatedReport.title) return null;
+
+    return (
+      <div
+        style={{
+          marginTop: 14,
+          background: "#ffffff",
+          border: "1px solid #dbe6f1",
+          borderRadius: 14,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: 14,
+            borderBottom: "1px solid #e5edf6",
+            background: "#f8fbfe",
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: 18 }}>{generatedReport.title}</div>
+          <div style={{ color: "#6b8399", fontSize: 12, marginTop: 4 }}>
+            {generatedReport.subtitle}
+          </div>
+        </div>
+
+        <div style={{ padding: 14, display: "grid", gap: 14 }}>
+          {generatedReport.sections.map((section) => (
+            <div
+              key={section.heading}
+              style={{
+                background: "#f8fbfe",
+                border: "1px solid #e5edf6",
+                borderRadius: 14,
+                padding: 12,
+              }}
+            >
+              <div style={{ fontWeight: 800, marginBottom: 8 }}>{section.heading}</div>
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  fontSize: 13,
+                  color: "#344c63",
+                  lineHeight: 1.55,
+                }}
+              >
+                {section.body}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderGenerateReportPanel() {
+    return (
+      <div style={listItemStyle()}>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>Generate report</div>
+
+        <div style={{ display: "grid", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
+              Report type
+            </div>
+            <select
+              value={reportBuilder.type}
+              onChange={(e) => setReportBuilder((prev) => ({ ...prev, type: e.target.value }))}
+              style={inputStyle}
+            >
+              {REPORT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
+              Scope
+            </div>
+            <select
+              value={reportBuilder.scope}
+              onChange={(e) => setReportBuilder((prev) => ({ ...prev, scope: e.target.value }))}
+              style={inputStyle}
+            >
+              <option value="Citywide">Citywide</option>
+              <option value="Selected issue only">Selected issue only</option>
+            </select>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
+              Department
+            </div>
+            <select
+              value={reportBuilder.department}
+              onChange={(e) =>
+                setReportBuilder((prev) => ({ ...prev, department: e.target.value }))
+              }
+              style={inputStyle}
+            >
+              <option value="All departments">All departments</option>
+              {ROUTING_DEPARTMENTS.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
+              Timeframe
+            </div>
+            <select
+              value={reportBuilder.timeframe}
+              onChange={(e) =>
+                setReportBuilder((prev) => ({ ...prev, timeframe: e.target.value }))
+              }
+              style={inputStyle}
+            >
+              {REPORT_TIMEFRAMES.map((timeframe) => (
+                <option key={timeframe} value={timeframe}>
+                  {timeframe}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button style={primaryButtonStyle()} onClick={handleGenerateReport}>
+            Generate report
+          </button>
+        </div>
+
+        {renderGeneratedReportPreview()}
+      </div>
+    );
+  }
+
+  function renderTopBar() {
+    return (
+      <div
+        style={{
+          background: "linear-gradient(135deg, #0d4d87 0%, #0f6ab7 100%)",
+          color: "#fff",
+          borderRadius: 20,
+          padding: 18,
+          boxShadow: "0 16px 40px rgba(13,77,135,0.22)",
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>PublicPulse</div>
+        <div style={{ fontSize: 14, opacity: 0.95, lineHeight: 1.45 }}>
+          A community impact and city response system for residents, departments, and city leadership.
+        </div>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+          {[`City: ${CITY_NAME}`, `Mode: ${persona}`, `${summary.open} open items`, `${summary.escalated} priority`, `${summary.cityInitiated} city initiated`].map(
+            (item) => (
+              <div
+                key={item}
+                style={{
+                  background: "rgba(255,255,255,0.14)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  color: "white",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                }}
+              >
+                {item}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderModeToggle() {
+    const options = [
+      { key: PERSONAS.PUBLIC, label: "Public" },
+      { key: PERSONAS.ADMIN, label: "City" },
+      { key: PERSONAS.DEPARTMENT, label: "Department" },
+    ];
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          marginTop: 12,
+          marginBottom: 16,
+        }}
+      >
+        {options.map((option) => (
+          <button
+            key={option.key}
+            onClick={() => {
+              setPersona(option.key);
+              setActiveTab(TABS.HOME);
+              setReportMode(false);
+              setCityInitiatedMode(false);
+              setMapMode(MAP_MODES.CIVIC);
+              closeMapPopover();
+            }}
+            style={{
+              ...secondaryButtonStyle(),
+              background: persona === option.key ? "#eef6ff" : "white",
+              color: persona === option.key ? "#0f6ab7" : "#24527a",
+              borderColor: persona === option.key ? "#bcd8f6" : "#cfe0f0",
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  function renderInsightBar() {
+    return (
+      <div style={panelStyle()}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            alignItems: isMobile ? "flex-start" : "center",
+            flexDirection: isMobile ? "column" : "row",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
+              What’s going on in Hastings
+            </div>
+            {featuredItem ? (
+              <>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#173d6a" }}>
+                  {getInsightLine(featuredItem)}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 13, color: "#647b92" }}>
+                  {featuredItem.affectedCount > 0
+                    ? `${featuredItem.affectedCount} community signals • ${getNextExpectedStep(
+                        featuredItem
+                      )}`
+                    : getNextExpectedStep(featuredItem)}
+                </div>
+              </>
+            ) : (
+              <div style={{ color: "#647b92" }}>No live insight available.</div>
+            )}
+          </div>
+
+          {featuredItem && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <StatusBadge status={featuredItem.status} />
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "#f8fbfe",
+                  border: "1px solid #dbe8f4",
+                  color: "#355a7f",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                ✓ {getWhoIsReviewing(featuredItem)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   function renderCityCommandCenter() {
     return (
       <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          City decisions
-        </div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>City decisions</div>
         <div
           style={{
             color: "#63809b",
@@ -2690,8 +2568,7 @@ export default function App() {
             marginBottom: 14,
           }}
         >
-          Review citywide concerns, make routing decisions, generate reports,
-          and add city initiated pins to the map.
+          Review citywide concerns, make routing decisions, generate reports, and add city initiated pins to the map.
         </div>
 
         <div
@@ -2723,30 +2600,20 @@ export default function App() {
                     Hidden from City queue until {formatShortDate(selectedItem.reviewReminderAt)}
                   </div>
                 )}
-                {selectedItem && isOverdueForCityReview(selectedItem) && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#a43d3d",
-                    }}
-                  >
+                {isOverdueForCityReview(selectedItem) && (
+                  <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: "#a43d3d" }}>
                     Returned to City queue due to no department action in time.
                   </div>
                 )}
               </div>
             ) : (
-              <div style={listItemStyle()}>
-                Select an item from the queue or tap a map pin.
-              </div>
+              <div style={listItemStyle()}>Select an item from the queue or tap a map pin.</div>
             )}
 
             <div style={{ fontWeight: 800, marginTop: 6 }}>Queue</div>
 
             {visibleCityQueueItems.map((item) => {
               const overdue = isOverdueForCityReview(item);
-
               return (
                 <button
                   key={item.id}
@@ -2774,14 +2641,7 @@ export default function App() {
                     {item.assignedDepartments.join(", ")} • {item.publicStatus}
                   </div>
                   {overdue && (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "#a43d3d",
-                      }}
-                    >
+                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: "#a43d3d" }}>
                       Needs City follow-up
                     </div>
                   )}
@@ -2790,9 +2650,7 @@ export default function App() {
             })}
 
             {visibleCityQueueItems.length === 0 && (
-              <div style={listItemStyle()}>
-                No issues are currently active in the City queue.
-              </div>
+              <div style={listItemStyle()}>No issues are currently active in the City queue.</div>
             )}
           </div>
 
@@ -2807,9 +2665,7 @@ export default function App() {
                     disabled={selectedItem.status === "Routed"}
                     onClick={() => {
                       setSelectedCityAction("confirm_routing");
-                      if (selectedItem.status !== "Routed") {
-                        applyCommandAction("confirm_routing");
-                      }
+                      if (selectedItem.status !== "Routed") applyCommandAction("confirm_routing");
                     }}
                     style={actionButtonStyle(
                       selectedCityAction === "confirm_routing",
@@ -2824,9 +2680,7 @@ export default function App() {
                     disabled={selectedItem.status === "Routed"}
                     onClick={() => {
                       if (selectedItem.status === "Routed") return;
-                      setSelectedCityAction(
-                        selectedCityAction === "reassign" ? "" : "reassign"
-                      );
+                      setSelectedCityAction(selectedCityAction === "reassign" ? "" : "reassign");
                     }}
                     style={actionButtonStyle(
                       selectedCityAction === "reassign",
@@ -2836,48 +2690,29 @@ export default function App() {
                     Send elsewhere
                   </button>
 
-                  {selectedCityAction === "reassign" &&
-                    selectedItem.status !== "Routed" && (
-                      <div
-                        style={{
-                          display: "grid",
-                          gap: 8,
-                          padding: 10,
-                          borderRadius: 12,
-                          background: "#f8fbfe",
-                          border: "1px solid #e5edf6",
-                        }}
+                  {selectedCityAction === "reassign" && selectedItem.status !== "Routed" && (
+                    <div style={listItemStyle()}>
+                      <select
+                        value={commandForm.reassignDepartment}
+                        onChange={(e) => updateCommandForm("reassignDepartment", e.target.value)}
+                        style={inputStyle}
                       >
-                        <select
-                          value={commandForm.reassignDepartment}
-                          onChange={(e) =>
-                            updateCommandForm("reassignDepartment", e.target.value)
-                          }
-                          style={{
-                            width: "100%",
-                            borderRadius: 12,
-                            border: "1px solid #d7e4f0",
-                            padding: "12px 12px",
-                            fontSize: 14,
-                            background: "white",
-                          }}
-                        >
-                          {ROUTING_DEPARTMENTS.map((department) => (
-                            <option key={department} value={department}>
-                              {department}
-                            </option>
-                          ))}
-                        </select>
+                        {ROUTING_DEPARTMENTS.map((department) => (
+                          <option key={department} value={department}>
+                            {department}
+                          </option>
+                        ))}
+                      </select>
 
-                        <button
-                          type="button"
-                          onClick={() => applyCommandAction("reassign")}
-                          style={primaryButtonStyle()}
-                        >
-                          Confirm reassignment
-                        </button>
-                      </div>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => applyCommandAction("reassign")}
+                        style={{ ...primaryButtonStyle(), marginTop: 8 }}
+                      >
+                        Confirm reassignment
+                      </button>
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -2894,39 +2729,21 @@ export default function App() {
                     type="button"
                     onClick={() => {
                       setSelectedCityAction(
-                        selectedCityAction === "multi_department"
-                          ? ""
-                          : "multi_department"
+                        selectedCityAction === "multi_department" ? "" : "multi_department"
                       );
                     }}
-                    style={actionButtonStyle(
-                      selectedCityAction === "multi_department"
-                    )}
+                    style={actionButtonStyle(selectedCityAction === "multi_department")}
                   >
                     Notify more teams
                   </button>
 
                   {selectedCityAction === "multi_department" && (
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: 8,
-                        padding: 10,
-                        borderRadius: 12,
-                        background: "#f8fbfe",
-                        border: "1px solid #e5edf6",
-                      }}
-                    >
+                    <div style={listItemStyle()}>
                       <div style={{ display: "grid", gap: 8 }}>
                         {ROUTING_DEPARTMENTS.map((department) => (
                           <label
                             key={department}
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              alignItems: "center",
-                              fontSize: 13,
-                            }}
+                            style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}
                           >
                             <input
                               type="checkbox"
@@ -2941,7 +2758,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => applyCommandAction("multi_department")}
-                        style={primaryButtonStyle()}
+                        style={{ ...primaryButtonStyle(), marginTop: 8 }}
                       >
                         Confirm departments
                       </button>
@@ -2961,27 +2778,11 @@ export default function App() {
                   </button>
 
                   {selectedCityAction === "review_later" && (
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: 8,
-                        padding: 10,
-                        borderRadius: 12,
-                        background: "#f8fbfe",
-                        border: "1px solid #e5edf6",
-                      }}
-                    >
+                    <div style={listItemStyle()}>
                       <select
                         value={remindLaterHours}
                         onChange={(e) => setRemindLaterHours(e.target.value)}
-                        style={{
-                          width: "100%",
-                          borderRadius: 12,
-                          border: "1px solid #d7e4f0",
-                          padding: "12px 12px",
-                          fontSize: 14,
-                          background: "white",
-                        }}
+                        style={inputStyle}
                       >
                         <option value="24">24 hours</option>
                         <option value="168">7 days</option>
@@ -2991,7 +2792,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => applyRemindLater(remindLaterHours)}
-                        style={primaryButtonStyle()}
+                        style={{ ...primaryButtonStyle(), marginTop: 8 }}
                       >
                         Set reminder
                       </button>
@@ -3012,17 +2813,14 @@ export default function App() {
                   </div>
                   <TextareaWithMic
                     value={commandForm.specialInstructions}
-                    onChange={(e) =>
-                      updateCommandForm("specialInstructions", e.target.value)
-                    }
+                    onChange={(e) => updateCommandForm("specialInstructions", e.target.value)}
                     placeholder="Always-visible internal note or direction."
                     listening={listeningField === "city-special-instructions"}
                     onMicClick={() =>
                       startVoiceInput(
                         "city-special-instructions",
                         () => commandForm.specialInstructions,
-                        (nextValue) =>
-                          updateCommandForm("specialInstructions", nextValue)
+                        (nextValue) => updateCommandForm("specialInstructions", nextValue)
                       )
                     }
                   />
@@ -3047,13 +2845,9 @@ export default function App() {
                 </div>
 
                 <div style={listItemStyle()}>
-                  <div style={{ fontWeight: 800, marginBottom: 8 }}>
-                    Issue snapshot
-                  </div>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Issue snapshot</div>
                   <div>Public status: {selectedItem.publicStatus}</div>
-                  <div style={{ marginTop: 6 }}>
-                    Updated: {formatShortDate(selectedItem.updatedAt)}
-                  </div>
+                  <div style={{ marginTop: 6 }}>Updated: {formatShortDate(selectedItem.updatedAt)}</div>
                   <div style={{ marginTop: 8, fontSize: 12, color: "#67819a" }}>
                     Community signals: {selectedItem.affectedCount}
                   </div>
@@ -3075,9 +2869,7 @@ export default function App() {
                   </div>
                 ))
               ) : (
-                <div style={{ fontSize: 13, color: "#67819a" }}>
-                  No notifications yet.
-                </div>
+                <div style={{ fontSize: 13, color: "#67819a" }}>No notifications yet.</div>
               )}
             </div>
 
@@ -3101,9 +2893,7 @@ export default function App() {
   function renderDepartmentOperations() {
     return (
       <div style={panelStyle()}>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>
-          Department work
-        </div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>Department work</div>
         <div
           style={{
             color: "#63809b",
@@ -3167,28 +2957,16 @@ export default function App() {
             {selectedItem ? (
               <div style={listItemStyle()}>
                 <div style={{ display: "grid", gap: 10 }}>
-                  <button
-                    style={primaryButtonStyle()}
-                    onClick={() => applyDepartmentStatus("Routed")}
-                  >
+                  <button style={primaryButtonStyle()} onClick={() => applyDepartmentStatus("Routed")}>
                     Accept work
                   </button>
-                  <button
-                    style={secondaryButtonStyle()}
-                    onClick={() => applyDepartmentStatus("In Progress")}
-                  >
+                  <button style={secondaryButtonStyle()} onClick={() => applyDepartmentStatus("In Progress")}>
                     Working on it
                   </button>
-                  <button
-                    style={secondaryButtonStyle()}
-                    onClick={() => applyDepartmentStatus("Monitoring")}
-                  >
+                  <button style={secondaryButtonStyle()} onClick={() => applyDepartmentStatus("Monitoring")}>
                     Watching it
                   </button>
-                  <button
-                    style={secondaryButtonStyle()}
-                    onClick={() => applyDepartmentStatus("Resolved")}
-                  >
+                  <button style={secondaryButtonStyle()} onClick={() => applyDepartmentStatus("Resolved")}>
                     Done
                   </button>
                 </div>
@@ -3206,17 +2984,14 @@ export default function App() {
                   </div>
                   <TextareaWithMic
                     value={commandForm.specialInstructions}
-                    onChange={(e) =>
-                      updateCommandForm("specialInstructions", e.target.value)
-                    }
+                    onChange={(e) => updateCommandForm("specialInstructions", e.target.value)}
                     placeholder="Operational note or department instruction."
                     listening={listeningField === "department-special-instructions"}
                     onMicClick={() =>
                       startVoiceInput(
                         "department-special-instructions",
                         () => commandForm.specialInstructions,
-                        (nextValue) =>
-                          updateCommandForm("specialInstructions", nextValue)
+                        (nextValue) => updateCommandForm("specialInstructions", nextValue)
                       )
                     }
                   />
@@ -3241,19 +3016,13 @@ export default function App() {
                 </div>
 
                 <div style={listItemStyle()}>
-                  <div style={{ fontWeight: 800, marginBottom: 8 }}>
-                    Work snapshot
-                  </div>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Work snapshot</div>
                   <div>Public status: {selectedItem.publicStatus}</div>
-                  <div style={{ marginTop: 6 }}>
-                    Updated: {formatShortDate(selectedItem.updatedAt)}
-                  </div>
+                  <div style={{ marginTop: 6 }}>Updated: {formatShortDate(selectedItem.updatedAt)}</div>
                 </div>
 
                 <div style={listItemStyle()}>
-                  <div style={{ fontWeight: 800, marginBottom: 8 }}>
-                    Department snapshot
-                  </div>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Department snapshot</div>
                   <div style={{ fontSize: 13 }}>
                     Assigned: {selectedItem.assignedDepartments.join(", ")}
                   </div>
@@ -3276,9 +3045,7 @@ export default function App() {
                   </div>
                 ))
               ) : (
-                <div style={{ fontSize: 13, color: "#67819a" }}>
-                  No notifications yet.
-                </div>
+                <div style={{ fontSize: 13, color: "#67819a" }}>No notifications yet.</div>
               )}
             </div>
           </div>
@@ -3305,17 +3072,14 @@ export default function App() {
           </div>
           <TextareaWithMic
             value={reportForm.description}
-            onChange={(e) =>
-              setReportForm((prev) => ({ ...prev, description: e.target.value }))
-            }
+            onChange={(e) => setReportForm((prev) => ({ ...prev, description: e.target.value }))}
             placeholder="Describe the issue in your own words."
             listening={listeningField === "report-description"}
             onMicClick={() =>
               startVoiceInput(
                 "report-description",
                 () => reportForm.description,
-                (nextValue) =>
-                  setReportForm((prev) => ({ ...prev, description: nextValue }))
+                (nextValue) => setReportForm((prev) => ({ ...prev, description: nextValue }))
               )
             }
           />
@@ -3341,14 +3105,7 @@ export default function App() {
                 categoryTouched: true,
               }))
             }
-            style={{
-              width: "100%",
-              borderRadius: 12,
-              border: "1px solid #d7e4f0",
-              padding: "12px 12px",
-              fontSize: 14,
-              background: "white",
-            }}
+            style={inputStyle}
           >
             {PUBLIC_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -3420,20 +3177,14 @@ export default function App() {
           </div>
           <TextInputWithMic
             value={cityInitiatedForm.title}
-            onChange={(e) =>
-              setCityInitiatedForm((prev) => ({ ...prev, title: e.target.value }))
-            }
+            onChange={(e) => setCityInitiatedForm((prev) => ({ ...prev, title: e.target.value }))}
             placeholder="Enter a title."
             listening={listeningField === "city-initiated-title"}
             onMicClick={() =>
               startVoiceInput(
                 "city-initiated-title",
                 () => cityInitiatedForm.title,
-                (nextValue) =>
-                  setCityInitiatedForm((prev) => ({
-                    ...prev,
-                    title: nextValue,
-                  }))
+                (nextValue) => setCityInitiatedForm((prev) => ({ ...prev, title: nextValue }))
               )
             }
           />
@@ -3453,10 +3204,7 @@ export default function App() {
           <TextareaWithMic
             value={cityInitiatedForm.description}
             onChange={(e) =>
-              setCityInitiatedForm((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
+              setCityInitiatedForm((prev) => ({ ...prev, description: e.target.value }))
             }
             placeholder="Describe the city initiated work."
             listening={listeningField === "city-initiated-description"}
@@ -3465,10 +3213,7 @@ export default function App() {
                 "city-initiated-description",
                 () => cityInitiatedForm.description,
                 (nextValue) =>
-                  setCityInitiatedForm((prev) => ({
-                    ...prev,
-                    description: nextValue,
-                  }))
+                  setCityInitiatedForm((prev) => ({ ...prev, description: nextValue }))
               )
             }
           />
@@ -3488,19 +3233,9 @@ export default function App() {
           <select
             value={cityInitiatedForm.category}
             onChange={(e) =>
-              setCityInitiatedForm((prev) => ({
-                ...prev,
-                category: e.target.value,
-              }))
+              setCityInitiatedForm((prev) => ({ ...prev, category: e.target.value }))
             }
-            style={{
-              width: "100%",
-              borderRadius: 12,
-              border: "1px solid #d7e4f0",
-              padding: "12px 12px",
-              fontSize: 14,
-              background: "white",
-            }}
+            style={inputStyle}
           >
             {PUBLIC_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -3524,10 +3259,7 @@ export default function App() {
           <TextareaWithMic
             value={cityInitiatedForm.specialInstructions}
             onChange={(e) =>
-              setCityInitiatedForm((prev) => ({
-                ...prev,
-                specialInstructions: e.target.value,
-              }))
+              setCityInitiatedForm((prev) => ({ ...prev, specialInstructions: e.target.value }))
             }
             placeholder="Internal note or project direction."
             listening={listeningField === "city-initiated-special-instructions"}
@@ -3536,10 +3268,7 @@ export default function App() {
                 "city-initiated-special-instructions",
                 () => cityInitiatedForm.specialInstructions,
                 (nextValue) =>
-                  setCityInitiatedForm((prev) => ({
-                    ...prev,
-                    specialInstructions: nextValue,
-                  }))
+                  setCityInitiatedForm((prev) => ({ ...prev, specialInstructions: nextValue }))
               )
             }
           />
@@ -3561,19 +3290,14 @@ export default function App() {
     let itemsForNav = [];
 
     if (persona === PERSONAS.PUBLIC) {
-      itemsForNav = [
-        { key: TABS.HOME, label: "Home" },
-        { key: TABS.REPORT, label: "Report" },
-      ];
+      itemsForNav = [{ key: TABS.HOME, label: "Home" }];
     }
-
     if (persona === PERSONAS.ADMIN) {
       itemsForNav = [
         { key: TABS.HOME, label: "Map" },
         { key: TABS.CITY, label: "City" },
       ];
     }
-
     if (persona === PERSONAS.DEPARTMENT) {
       itemsForNav = [
         { key: TABS.HOME, label: "Map" },
@@ -3603,7 +3327,6 @@ export default function App() {
             key={item.key}
             onClick={() => {
               setActiveTab(item.key);
-              setReportMode(item.key === TABS.REPORT);
               if (item.key !== TABS.REPORT) setReportMode(false);
               if (item.key !== TABS.HOME) closeMapPopover();
             }}
@@ -3639,29 +3362,16 @@ export default function App() {
       <style>
         {`
           @keyframes pulse {
-            0% {
-              transform: scale(0.6);
-              opacity: 0.4;
-            }
-            70% {
-              transform: scale(1.6);
-              opacity: 0;
-            }
-            100% {
-              transform: scale(0.6);
-              opacity: 0;
-            }
+            0% { transform: scale(0.6); opacity: 0.4; }
+            70% { transform: scale(1.6); opacity: 0; }
+            100% { transform: scale(0.6); opacity: 0; }
           }
         `}
       </style>
 
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          padding: 16,
-        }}
-      >
+      <Toast message={toastMessage} />
+
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: 16 }}>
         {renderTopBar()}
         {renderModeToggle()}
         {renderInsightBar()}
@@ -3671,11 +3381,7 @@ export default function App() {
             style={
               isMobile
                 ? { display: "grid", gap: 16 }
-                : {
-                    display: "grid",
-                    gridTemplateColumns: "1.45fr 0.75fr",
-                    gap: 16,
-                  }
+                : { display: "grid", gridTemplateColumns: "1.45fr 0.75fr", gap: 16 }
             }
           >
             <div>{renderMap()}</div>
@@ -3688,11 +3394,7 @@ export default function App() {
             style={
               isMobile
                 ? { display: "grid", gap: 16 }
-                : {
-                    display: "grid",
-                    gridTemplateColumns: "1.4fr 0.85fr",
-                    gap: 16,
-                  }
+                : { display: "grid", gridTemplateColumns: "1.4fr 0.85fr", gap: 16 }
             }
           >
             <div>{renderMap()}</div>
@@ -3701,7 +3403,9 @@ export default function App() {
         )}
 
         {activeTab === TABS.CITY && persona === PERSONAS.ADMIN && renderCityCommandCenter()}
-        {activeTab === TABS.DEPARTMENT && persona === PERSONAS.DEPARTMENT && renderDepartmentOperations()}
+        {activeTab === TABS.DEPARTMENT &&
+          persona === PERSONAS.DEPARTMENT &&
+          renderDepartmentOperations()}
       </div>
 
       {renderReportModal()}
