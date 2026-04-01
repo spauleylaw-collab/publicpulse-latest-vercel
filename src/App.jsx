@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
    VERSION
 ========================= */
 
-const BUILD_VERSION = "full-build-report-forward-4";
+const BUILD_VERSION = "full-build-report-forward-5";
 
 /* =========================
    CONSTANTS
@@ -1319,9 +1319,7 @@ export default function App() {
     const priority = filteredItems.filter(
       (item) => item.escalated || item.status === "Escalated"
     ).length;
-    const inProgress = filteredItems.filter(
-      (item) => item.status === "In Progress"
-    ).length;
+    const inProgress = filteredItems.filter((item) => item.status === "In Progress").length;
     const overdue = filteredItems.filter((item) => isOverdueForCityReview(item)).length;
     const communitySignals = filteredItems.reduce(
       (sum, item) => sum + (item.affectedCount || 0),
@@ -1452,9 +1450,7 @@ export default function App() {
           heading: "Department Activity",
           body: stats.byDepartment.length
             ? stats.byDepartment
-                .map(
-                  (entry) => `${entry.department}: ${entry.count} tracked items.`
-                )
+                .map((entry) => `${entry.department}: ${entry.count} tracked items.`)
                 .join("\n")
             : "No department activity matched the selected report scope.",
         },
@@ -1580,9 +1576,7 @@ export default function App() {
           heading: "Department Activity",
           body: stats.byDepartment.length
             ? stats.byDepartment
-                .map(
-                  (entry) => `${entry.department}: ${entry.count} tracked items.`
-                )
+                .map((entry) => `${entry.department}: ${entry.count} tracked items.`)
                 .join("\n")
             : "No department activity matched the selected report scope.",
         },
@@ -1618,9 +1612,7 @@ export default function App() {
           heading: "Department Activity",
           body: stats.byDepartment.length
             ? stats.byDepartment
-                .map(
-                  (entry) => `${entry.department}: ${entry.count} tracked items.`
-                )
+                .map((entry) => `${entry.department}: ${entry.count} tracked items.`)
                 .join("\n")
             : "No department activity matched the selected report scope.",
         },
@@ -2407,6 +2399,40 @@ export default function App() {
             </div>
           ))}
 
+          {/* Heat Layer */}
+          {mapItems.map((item) => {
+            const intensity = Math.min(item.affectedCount || 1, 5);
+            const heatColor =
+              mapMode === MAP_MODES.LIVE
+                ? "rgba(15,106,183,0.14)"
+                : item.status === "In Progress"
+                ? "rgba(15,106,183,0.15)"
+                : item.escalated || item.status === "Escalated"
+                ? "rgba(255,152,0,0.20)"
+                : item.type === "city_activity"
+                ? "rgba(15,106,183,0.10)"
+                : "rgba(229,57,53,0.12)";
+
+            return (
+              <div
+                key={`heat-${item.id}`}
+                style={{
+                  position: "absolute",
+                  left: `${item.x}%`,
+                  top: `${item.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  width: 60 + intensity * 20,
+                  height: 60 + intensity * 20,
+                  borderRadius: "50%",
+                  background: heatColor,
+                  filter: "blur(20px)",
+                  zIndex: 1,
+                  pointerEvents: "none",
+                }}
+              />
+            );
+          })}
+
           {mapItems.map((item) => {
             const isSelected = selectedItemId === item.id;
 
@@ -2646,187 +2672,6 @@ export default function App() {
             Tap map to place report
           </button>
         </div>
-      </div>
-    );
-  }
-
-  function renderGeneratedReportPreview() {
-    if (!generatedReport.title) return null;
-
-    return (
-      <div
-        style={{
-          marginTop: 14,
-          background: "#ffffff",
-          border: "1px solid #dbe6f1",
-          borderRadius: 14,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            padding: 14,
-            borderBottom: "1px solid #e5edf6",
-            background: "#f8fbfe",
-          }}
-        >
-          <div style={{ fontWeight: 800, fontSize: 18 }}>{generatedReport.title}</div>
-          <div style={{ color: "#6b8399", fontSize: 12, marginTop: 4 }}>
-            {generatedReport.subtitle}
-          </div>
-        </div>
-
-        <div style={{ padding: 14, display: "grid", gap: 14 }}>
-          {generatedReport.sections.map((section) => (
-            <div
-              key={section.heading}
-              style={{
-                background: "#f8fbfe",
-                border: "1px solid #e5edf6",
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>
-                {section.heading}
-              </div>
-              <div
-                style={{
-                  whiteSpace: "pre-wrap",
-                  fontSize: 13,
-                  color: "#344c63",
-                  lineHeight: 1.55,
-                }}
-              >
-                {section.body}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function renderGenerateReportPanel() {
-    return (
-      <div style={listItemStyle()}>
-        <div style={{ fontWeight: 800, marginBottom: 10 }}>Generate report</div>
-
-        <div style={{ display: "grid", gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Report type
-            </div>
-            <select
-              value={reportBuilder.type}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({ ...prev, type: e.target.value }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              {REPORT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Scope
-            </div>
-            <select
-              value={reportBuilder.scope}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({ ...prev, scope: e.target.value }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              <option value="Citywide">Citywide</option>
-              <option value="Selected issue only">Selected issue only</option>
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Department
-            </div>
-            <select
-              value={reportBuilder.department}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({
-                  ...prev,
-                  department: e.target.value,
-                }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              <option value="All departments">All departments</option>
-              {ROUTING_DEPARTMENTS.map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#355a7f", marginBottom: 6 }}>
-              Timeframe
-            </div>
-            <select
-              value={reportBuilder.timeframe}
-              onChange={(e) =>
-                setReportBuilder((prev) => ({
-                  ...prev,
-                  timeframe: e.target.value,
-                }))
-              }
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                border: "1px solid #d7e4f0",
-                padding: "12px 12px",
-                fontSize: 14,
-                background: "white",
-              }}
-            >
-              {REPORT_TIMEFRAMES.map((timeframe) => (
-                <option key={timeframe} value={timeframe}>
-                  {timeframe}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button style={primaryButtonStyle()} onClick={handleGenerateReport}>
-            Generate report
-          </button>
-        </div>
-
-        {renderGeneratedReportPreview()}
       </div>
     );
   }
@@ -3855,13 +3700,8 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === TABS.CITY &&
-          persona === PERSONAS.ADMIN &&
-          renderCityCommandCenter()}
-
-        {activeTab === TABS.DEPARTMENT &&
-          persona === PERSONAS.DEPARTMENT &&
-          renderDepartmentOperations()}
+        {activeTab === TABS.CITY && persona === PERSONAS.ADMIN && renderCityCommandCenter()}
+        {activeTab === TABS.DEPARTMENT && persona === PERSONAS.DEPARTMENT && renderDepartmentOperations()}
       </div>
 
       {renderReportModal()}
