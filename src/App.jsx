@@ -1,204 +1,214 @@
-import { useEffect, useMemo, useState } from "react";
-import "./App.css";
-
-const STORAGE_KEY = "publicpulse-stable";
-
-const escalationOptions = [
-  { label: "24 hours", ms: 86400000 },
-  { label: "48 hours", ms: 172800000 },
-];
-
-function statusClass(status) {
-  return status.toLowerCase().replace(/\s+/g, "-");
-}
-
-function sortQueue(items) {
-  const order = {
-    Escalated: 1,
-    Received: 2,
-    Assigned: 3,
-    "In Progress": 4,
-    Completed: 5,
-  };
-
-  return [...items].sort((a, b) => {
-    return (order[a.status] || 99) - (order[b.status] || 99);
-  });
-}
+import { useState, useEffect } from "react";
 
 export default function App() {
-  const [view, setView] = useState("public");
-  const [reports, setReports] = useState([]);
+  const [mode, setMode] = useState("home");
   const [reportMode, setReportMode] = useState(false);
-  const [publicSelectedId, setPublicSelectedId] = useState(null);
-  const [commandSelectedId, setCommandSelectedId] = useState(null);
+  const [pins, setPins] = useState([]);
+  const [selectedPin, setSelectedPin] = useState(null);
+  const [issueIndex, setIssueIndex] = useState(0);
 
-  const [reportForm, setReportForm] = useState({
+  // Report form state
+  const [reportData, setReportData] = useState({
     description: "",
-    locationName: "",
+    category: "",
     photo: null,
+    instructions: ""
   });
 
+  // Rotate issues (bottom card)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setReports(JSON.parse(saved));
-    }
-  }, []);
+    if (pins.length === 0) return;
+    const interval = setInterval(() => {
+      setIssueIndex((prev) => (prev + 1) % pins.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [pins]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-  }, [reports]);
-
-  const handleMapClick = (e) => {
-    if (!reportMode) return;
-
-    if (!reportForm.description.trim()) {
-      alert("Describe the issue first");
-      return;
-    }
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    const newItem = {
-      id: Date.now(),
-      title: reportForm.description,
-      locationName: reportForm.locationName || "Community report",
-      publicSummary: reportForm.description,
-      publicUpdateText: "Report received",
-      department: "City Review",
-      status: "Received",
-      x,
-      y,
-    };
-
-    setReports((prev) => [newItem, ...prev]);
-    setPublicSelectedId(newItem.id);
-    setCommandSelectedId(newItem.id);
-
-    setReportMode(false);
-    setReportForm({ description: "", locationName: "", photo: null });
+  // Simulated AI categorization
+  const detectCategory = (text) => {
+    const t = text.toLowerCase();
+    if (t.includes("pothole")) return "Road Repair";
+    if (t.includes("water")) return "Utilities";
+    if (t.includes("tree")) return "Parks";
+    if (t.includes("fire")) return "Fire";
+    return "General";
   };
 
-  const commandQueue = useMemo(() => {
-    return sortQueue(
-      reports.filter((r) => r.status === "Received" || r.status === "Escalated")
-    );
-  }, [reports]);
+  const handleMapClick = (e) => {
+    if (!reportMode && mode !== "department") return;
 
-  const assignFromCommand = () => {
-    if (!commandSelectedId) return;
+    const newPin = {
+      id: Date.now(),
+      x: e.clientX,
+      y: e.clientY,
+      description:
+        mode === "department"
+          ? "Department initiated work"
+          : reportData.description,
+      category:
+        mode === "department"
+          ? "Department Work"
+          : detectCategory(reportData.description),
+      status: "Assigned",
+      updates: "Scheduled for review within 24–48 hours based on priority.",
+      instructions: reportData.instructions || "",
+      support: 0
+    };
 
-    setReports((prev) => {
-      const updated = prev.map((r) =>
-        r.id === commandSelectedId ? { ...r, status: "Assigned" } : r
-      );
-
-      const next = updated.find(
-        (r) => r.status === "Received" || r.status === "Escalated"
-      );
-
-      setCommandSelectedId(next?.id || null);
-
-      return updated;
+    setPins([...pins, newPin]);
+    setReportMode(false);
+    setReportData({
+      description: "",
+      category: "",
+      photo: null,
+      instructions: ""
     });
   };
 
-  const publicSelected = reports.find((r) => r.id === publicSelectedId);
+  const handleSupport = (id) => {
+    setPins(
+      pins.map((p) =>
+        p.id === id ? { ...p, support: p.support + 1 } : p
+      )
+    );
+  };
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <h1>PublicPulse</h1>
+    <div className="h-screen w-screen bg-gray-100 relative overflow-hidden">
+      {/* MAP */}
+      <div
+        className="absolute inset-0 bg-green-100"
+        onClick={handleMapClick}
+      >
+        {pins.map((pin) => (
+          <div
+            key={pin.id}
+            className="absolute w-4 h-4 bg-red-600 rounded-full cursor-pointer"
+            style={{ top: pin.y, left: pin.x }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedPin(pin);
+            }}
+          />
+        ))}
+      </div>
 
-        <div className="topbar-actions">
-          <button onClick={() => setView("public")}>Public</button>
-          <button onClick={() => setView("command")}>Command</button>
+      {/* TOP BAR */}
+      <div className="absolute top-0 left-0 right-0 bg-white shadow p-3 text-center font-bold">
+        PublicPulse — Hastings
+      </div>
+
+      {/* REPORT MODE PANEL */}
+      {reportMode && (
+        <div className="absolute bottom-20 left-4 right-4 bg-white p-4 rounded-xl shadow">
+          <textarea
+            placeholder="Describe what’s going on..."
+            className="w-full border p-2 rounded mb-2"
+            value={reportData.description}
+            onChange={(e) =>
+              setReportData({ ...reportData, description: e.target.value })
+            }
+          />
+
+          <input
+            type="file"
+            className="mb-2"
+            onChange={(e) =>
+              setReportData({ ...reportData, photo: e.target.files[0] })
+            }
+          />
+
+          <textarea
+            placeholder="Special instructions (optional)"
+            className="w-full border p-2 rounded mb-2"
+            value={reportData.instructions}
+            onChange={(e) =>
+              setReportData({ ...reportData, instructions: e.target.value })
+            }
+          />
+
+          <div className="text-sm text-gray-500">
+            Tap on the map to place this report
+          </div>
         </div>
-      </header>
+      )}
 
-      {view === "public" && (
-        <main className="public-page">
-          <div className="insight-chip">
-            <span>What’s going on in Hastings right now</span>
-            <strong>{reports.length} active items on the map</strong>
+      {/* PIN DETAIL */}
+      {selectedPin && (
+        <div className="absolute bottom-20 left-4 right-4 bg-white p-4 rounded-xl shadow">
+          <div className="font-bold">{selectedPin.category}</div>
+          <div className="text-sm mb-2">{selectedPin.description}</div>
+
+          <div className="text-xs text-gray-600 mb-2">
+            {selectedPin.updates}
           </div>
 
-          <div className="map-stage" onClick={handleMapClick}>
-            <div className="map-label north">North Hastings</div>
-            <div className="map-label parks">Parks Corridor</div>
-
-            <div className="road vertical" />
-            <div className="road horizontal" />
-            <div className="road diagonal" />
-
-            {reports.map((r) => (
-              <div
-                key={r.id}
-                className={`map-pin ${statusClass(r.status)}`}
-                style={{ left: `${r.x}%`, top: `${r.y}%` }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPublicSelectedId(r.id);
-                }}
-              />
-            ))}
-          </div>
-
-          {publicSelected && (
-            <div className="public-popup">
-              <h3>{publicSelected.locationName}</h3>
-              <p>{publicSelected.publicSummary}</p>
-              <strong>{publicSelected.publicUpdateText}</strong>
+          {selectedPin.instructions && (
+            <div className="text-xs mb-2">
+              <b>Notes:</b> {selectedPin.instructions}
             </div>
           )}
 
-          {reportMode && (
-            <div className="report-flow-card">
-              <h3>New Report</h3>
-
-              <textarea
-                placeholder="Describe what is happening..."
-                value={reportForm.description}
-                onChange={(e) =>
-                  setReportForm((p) => ({ ...p, description: e.target.value }))
-                }
-              />
-
-              <input
-                placeholder="Location name"
-                value={reportForm.locationName}
-                onChange={(e) =>
-                  setReportForm((p) => ({ ...p, locationName: e.target.value }))
-                }
-              />
-            </div>
-          )}
-
-          <button className="floating-report-btn" onClick={() => setReportMode(true)}>
-            + Report
+          <button
+            className="bg-blue-500 text-white px-3 py-1 rounded"
+            onClick={() => handleSupport(selectedPin.id)}
+          >
+            I noticed this too ({selectedPin.support})
           </button>
-        </main>
-      )}
 
-      {view === "command" && (
-        <div className="three-column">
-          <div>
-            <h3>Queue</h3>
-            {commandQueue.map((r) => (
-              <div key={r.id} onClick={() => setCommandSelectedId(r.id)}>
-                {r.title}
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <button onClick={assignFromCommand}>Assign</button>
-          </div>
+          <button
+            className="ml-2 text-sm text-gray-500"
+            onClick={() => setSelectedPin(null)}
+          >
+            Close
+          </button>
         </div>
       )}
+
+      {/* ROTATING ISSUE CARD */}
+      {pins.length > 0 && (
+        <div className="absolute bottom-32 left-4 right-4 bg-white p-3 rounded-xl shadow text-sm">
+          <div className="font-bold mb-1">
+            What’s going on in Hastings right now
+          </div>
+          <div>{pins[issueIndex].description}</div>
+        </div>
+      )}
+
+      {/* BOTTOM NAV */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white shadow flex justify-around p-3">
+        <button onClick={() => { setMode("home"); setReportMode(false); }}>
+          Home
+        </button>
+
+        <button
+          onClick={() => {
+            setMode("report");
+            setReportMode(true);
+          }}
+          className="font-bold text-blue-600"
+        >
+          Report
+        </button>
+
+        <button
+          onClick={() => {
+            setMode("command");
+            setReportMode(false);
+          }}
+        >
+          Command Center
+        </button>
+
+        <button
+          onClick={() => {
+            setMode("department");
+            setReportMode(false);
+          }}
+        >
+          Department Work
+        </button>
+      </div>
     </div>
   );
 }
