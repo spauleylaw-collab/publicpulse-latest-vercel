@@ -1,33 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const STORAGE_KEY = "publicpulse-full-build-v2";
+const STORAGE_KEY = "publicpulse-stable";
 
 const escalationOptions = [
-  { label: "24 hours", ms: 24 * 60 * 60 * 1000 },
-  { label: "48 hours", ms: 48 * 60 * 60 * 1000 },
-  { label: "72 hours", ms: 72 * 60 * 60 * 1000 },
-  { label: "5 days", ms: 5 * 24 * 60 * 60 * 1000 },
-  { label: "7 days", ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: "24 hours", ms: 86400000 },
+  { label: "48 hours", ms: 172800000 },
 ];
-
-function getRouteFromText(text) {
-  const lower = text.toLowerCase();
-
-  if (lower.includes("pothole") || lower.includes("road") || lower.includes("street")) {
-    return { department: "Streets", category: "Roadway", actionType: "Inspect" };
-  }
-
-  if (lower.includes("park") || lower.includes("playground") || lower.includes("bench")) {
-    return { department: "Parks", category: "Parks", actionType: "Inspect" };
-  }
-
-  if (lower.includes("water") || lower.includes("drain")) {
-    return { department: "Utilities", category: "Utilities", actionType: "Investigate" };
-  }
-
-  return { department: "City Review", category: "General", actionType: "Inspect" };
-}
 
 function statusClass(status) {
   return status.toLowerCase().replace(/\s+/g, "-");
@@ -43,9 +22,7 @@ function sortQueue(items) {
   };
 
   return [...items].sort((a, b) => {
-    const byStatus = (order[a.status] || 99) - (order[b.status] || 99);
-    if (byStatus !== 0) return byStatus;
-    return (b.createdAt || 0) - (a.createdAt || 0);
+    return (order[a.status] || 99) - (order[b.status] || 99);
   });
 }
 
@@ -53,23 +30,19 @@ export default function App() {
   const [view, setView] = useState("public");
   const [reports, setReports] = useState([]);
   const [reportMode, setReportMode] = useState(false);
+  const [publicSelectedId, setPublicSelectedId] = useState(null);
+  const [commandSelectedId, setCommandSelectedId] = useState(null);
 
   const [reportForm, setReportForm] = useState({
     description: "",
     locationName: "",
     photo: null,
-    photoName: "",
   });
-
-  const [publicSelectedId, setPublicSelectedId] = useState(null);
-  const [commandSelectedId, setCommandSelectedId] = useState(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setReports(parsed);
-      return;
+      setReports(JSON.parse(saved));
     }
   }, []);
 
@@ -77,12 +50,11 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
   }, [reports]);
 
-  // 🔥 FIXED MAP CLICK (CORE FIX)
   const handleMapClick = (e) => {
     if (!reportMode) return;
 
     if (!reportForm.description.trim()) {
-      alert("Please describe what is happening first.");
+      alert("Describe the issue first");
       return;
     }
 
@@ -90,29 +62,16 @@ export default function App() {
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-    const route = getRouteFromText(reportForm.description);
-    const escalation = escalationOptions[1];
-
     const newItem = {
       id: Date.now(),
       title: reportForm.description,
       locationName: reportForm.locationName || "Community report",
       publicSummary: reportForm.description,
-      publicActionText: "City will review and route this issue.",
-      publicUpdateText: "Report received.",
-      department: route.department,
-      category: route.category,
-      actionType: route.actionType,
-      escalationMs: escalation.ms,
-      escalationChoice: escalation.label,
+      publicUpdateText: "Report received",
+      department: "City Review",
       status: "Received",
-      createdAt: Date.now(),
-      lastActivityAt: Date.now(),
-      photo: reportForm.photo,
-      photoName: reportForm.photoName,
       x,
       y,
-      updates: [],
     };
 
     setReports((prev) => [newItem, ...prev]);
@@ -120,67 +79,61 @@ export default function App() {
     setCommandSelectedId(newItem.id);
 
     setReportMode(false);
-    setReportForm({
-      description: "",
-      locationName: "",
-      photo: null,
-      photoName: "",
-    });
+    setReportForm({ description: "", locationName: "", photo: null });
   };
 
-  // 🔥 FIXED COMMAND QUEUE
   const commandQueue = useMemo(() => {
     return sortQueue(
       reports.filter((r) => r.status === "Received" || r.status === "Escalated")
     );
   }, [reports]);
 
-  const commandSelected = reports.find((r) => r.id === commandSelectedId);
-
-  // 🔥 FIXED ASSIGN LOGIC
   const assignFromCommand = () => {
-    if (!commandSelected) return;
+    if (!commandSelectedId) return;
 
     setReports((prev) => {
-      const updated = prev.map((item) =>
-        item.id === commandSelected.id
-          ? {
-              ...item,
-              status: "Assigned",
-              lastActivityAt: Date.now(),
-            }
-          : item
+      const updated = prev.map((r) =>
+        r.id === commandSelectedId ? { ...r, status: "Assigned" } : r
       );
 
-      // auto select next item
       const next = updated.find(
         (r) => r.status === "Received" || r.status === "Escalated"
       );
 
-      if (next) {
-        setCommandSelectedId(next.id);
-      } else {
-        setCommandSelectedId(null);
-      }
+      setCommandSelectedId(next?.id || null);
 
       return updated;
     });
   };
+
+  const publicSelected = reports.find((r) => r.id === publicSelectedId);
 
   return (
     <div className="app-shell">
       <header className="topbar">
         <h1>PublicPulse</h1>
 
-        <div>
+        <div className="topbar-actions">
           <button onClick={() => setView("public")}>Public</button>
           <button onClick={() => setView("command")}>Command</button>
         </div>
       </header>
 
       {view === "public" && (
-        <div className="public-page">
+        <main className="public-page">
+          <div className="insight-chip">
+            <span>What’s going on in Hastings right now</span>
+            <strong>{reports.length} active items on the map</strong>
+          </div>
+
           <div className="map-stage" onClick={handleMapClick}>
+            <div className="map-label north">North Hastings</div>
+            <div className="map-label parks">Parks Corridor</div>
+
+            <div className="road vertical" />
+            <div className="road horizontal" />
+            <div className="road diagonal" />
+
             {reports.map((r) => (
               <div
                 key={r.id}
@@ -193,6 +146,14 @@ export default function App() {
               />
             ))}
           </div>
+
+          {publicSelected && (
+            <div className="public-popup">
+              <h3>{publicSelected.locationName}</h3>
+              <p>{publicSelected.publicSummary}</p>
+              <strong>{publicSelected.publicUpdateText}</strong>
+            </div>
+          )}
 
           {reportMode && (
             <div className="report-flow-card">
@@ -213,31 +174,13 @@ export default function App() {
                   setReportForm((p) => ({ ...p, locationName: e.target.value }))
                 }
               />
-
-              <input
-                type="file"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setReportForm((p) => ({
-                      ...p,
-                      photo: reader.result,
-                      photoName: file.name,
-                    }));
-                  };
-                  reader.readAsDataURL(file);
-                }}
-              />
-
-              <button onClick={() => setReportMode(false)}>Cancel</button>
             </div>
           )}
 
           <button className="floating-report-btn" onClick={() => setReportMode(true)}>
             + Report
           </button>
-        </div>
+        </main>
       )}
 
       {view === "command" && (
@@ -252,12 +195,7 @@ export default function App() {
           </div>
 
           <div>
-            {commandSelected && (
-              <>
-                <h3>{commandSelected.title}</h3>
-                <button onClick={assignFromCommand}>Assign</button>
-              </>
-            )}
+            <button onClick={assignFromCommand}>Assign</button>
           </div>
         </div>
       )}
