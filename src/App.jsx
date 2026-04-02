@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function App() {
-  const [viewMode, setViewMode] = useState("public"); // public | command | department
+  const [viewMode, setViewMode] = useState("public");
   const [reportMode, setReportMode] = useState(false);
   const [selectedPin, setSelectedPin] = useState(null);
   const [issueIndex, setIssueIndex] = useState(0);
@@ -11,6 +11,11 @@ export default function App() {
     instructions: "",
     photo: null
   });
+
+  const [selectedReportType, setSelectedReportType] = useState("Council Summary");
+  const [reportPreview, setReportPreview] = useState(
+    "A concise overview of current concerns, response activity, escalations, and top recommended next steps for city leadership."
+  );
 
   const [pins, setPins] = useState([
     {
@@ -62,21 +67,21 @@ export default function App() {
       y: 70,
       description: "Stormwater pooling near intersection after recent rain.",
       category: "Utilities",
-      status: "In Progress",
+      status: "Assigned",
       source: "resident",
       department: "Utilities",
       actionType: "Inspect",
       escalationHours: 24,
-      lastUpdatedBy: "Utilities",
-      lastUpdatedText: "Work is underway: utility team inspecting drainage issue",
+      lastUpdatedBy: "City Admin",
+      lastUpdatedText: "City has directed the appropriate department to address this",
       updates:
-        "Work is underway: utility team inspecting drainage issue and evaluating next repair step.",
+        "City has directed the appropriate department to address this.",
       instructions: "",
       support: 2,
       priority: "High",
-      queueState: "Active",
+      queueState: "Assigned",
       visibility: "public",
-      timeline: "Today"
+      timeline: "Within 24 hours"
     },
     {
       id: 4,
@@ -147,11 +152,7 @@ export default function App() {
   const commandItems = useMemo(() => {
     return pins
       .filter((p) => p.status !== "Completed")
-      .sort((a, b) => {
-        const aScore = getPriorityScore(a);
-        const bScore = getPriorityScore(b);
-        return bScore - aScore;
-      });
+      .sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
   }, [pins]);
 
   const departmentItems = useMemo(() => {
@@ -161,11 +162,7 @@ export default function App() {
           p.department !== "City Review" &&
           ["Assigned", "In Progress", "Escalated"].includes(p.status)
       )
-      .sort((a, b) => {
-        const aScore = getPriorityScore(a);
-        const bScore = getPriorityScore(b);
-        return bScore - aScore;
-      });
+      .sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
   }, [pins]);
 
   const selectedCommandItem =
@@ -271,7 +268,7 @@ export default function App() {
       return "City has addressed this concern and the issue is now closed";
     }
     if (pin.status === "Escalated") {
-      return `Escalated: no activity within expected timeframe`;
+      return "Escalated: no activity within expected timeframe";
     }
     return pin.updates;
   };
@@ -507,6 +504,25 @@ export default function App() {
     );
   };
 
+  const generateSelectedReport = () => {
+    const previews = {
+      "Council Summary":
+        "A concise overview of current concerns, response activity, escalations, and top recommended next steps for city leadership.",
+      "Department Performance":
+        "A department-by-department view of open items, response timing, in-progress work, and completion performance.",
+      "Escalations":
+        "A focused list of items that have exceeded expected activity windows and now require city attention.",
+      "Public Concerns":
+        "A summary of the issues residents are reporting most often, where they are occurring, and how they are being addressed.",
+      "Budget / Planning":
+        "A planning-oriented view showing recurring issue types, likely maintenance pressure points, and where future spending may need attention.",
+      "Strategic Insights":
+        "A higher-level narrative of patterns, hotspots, repeat issues, and action recommendations drawn from current city activity."
+    };
+
+    setReportPreview(previews[selectedReportType] || "Report preview ready.");
+  };
+
   const statOpen = pins.filter((p) => p.status !== "Completed").length;
   const statEscalated = pins.filter((p) => p.status === "Escalated").length;
   const statInProgress = pins.filter((p) => p.status === "In Progress").length;
@@ -522,6 +538,13 @@ export default function App() {
       }}
     >
       <style>{`
+        * { box-sizing: border-box; }
+
+        html, body, #root {
+          max-width: 100%;
+          overflow-x: hidden;
+        }
+
         @keyframes pulsePin {
           0% { transform: translate(-50%, -100%) scale(1); opacity: 0.95; }
           50% { transform: translate(-50%, -100%) scale(1.12); opacity: 1; }
@@ -576,46 +599,68 @@ export default function App() {
           }
           .pp-three-col > div {
             margin-bottom: 14px !important;
+            min-height: unset !important;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .pp-top-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+
+          .pp-nav-row {
+            width: 100%;
+            justify-content: flex-start !important;
           }
         }
       `}</style>
 
       <div
         style={{
-          maxWidth: 1360,
+          maxWidth: 1240,
           margin: "0 auto",
-          padding: "18px 16px 120px"
+          padding: "16px 14px 108px"
         }}
       >
         <div
           style={{
             background: "linear-gradient(135deg, #0a3d91 0%, #0c5fd7 100%)",
             color: "white",
-            borderRadius: 26,
-            padding: "22px 20px",
+            borderRadius: 24,
+            padding: "18px 18px 16px",
             boxShadow: "0 12px 30px rgba(12,95,215,0.18)",
-            marginBottom: 14
+            marginBottom: 12
           }}
         >
           <div
+            className="pp-top-row"
             style={{
               display: "flex",
               justifyContent: "space-between",
-              gap: 16,
+              gap: 14,
               alignItems: "center",
               flexWrap: "wrap"
             }}
           >
             <div>
-              <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>
                 PublicPulse
               </div>
-              <div style={{ fontSize: 15, opacity: 0.95 }}>
+              <div style={{ fontSize: 14, opacity: 0.96 }}>
                 Hastings — real-time visibility, response, and decision support
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div
+              className="pp-nav-row"
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                justifyContent: "flex-end"
+              }}
+            >
               {[
                 { key: "public", label: "Public" },
                 { key: "command", label: "Command Center" },
@@ -636,9 +681,10 @@ export default function App() {
                         : "rgba(255,255,255,0.08)",
                     color: "white",
                     borderRadius: 14,
-                    padding: "10px 14px",
+                    padding: "9px 13px",
                     fontWeight: 800,
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    fontSize: 14
                   }}
                 >
                   {item.label}
@@ -647,7 +693,7 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
             {[
               `${statOpen} open items`,
               `${statInProgress} in progress`,
@@ -657,11 +703,11 @@ export default function App() {
               <div
                 key={chip}
                 style={{
-                  padding: "8px 12px",
+                  padding: "7px 11px",
                   borderRadius: 999,
                   background: "rgba(255,255,255,0.10)",
                   border: "1px solid rgba(255,255,255,0.18)",
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700
                 }}
               >
@@ -675,32 +721,32 @@ export default function App() {
           <div
             style={{
               background: "white",
-              borderRadius: 22,
-              padding: 22,
+              borderRadius: 20,
+              padding: 16,
               boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-              marginBottom: 14
+              marginBottom: 12
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
               What’s going on in Hastings right now
             </div>
 
             <div
               style={{
-                fontSize: 28,
+                fontSize: 22,
                 lineHeight: 1.15,
                 fontWeight: 800,
-                marginBottom: 10
+                marginBottom: 8
               }}
             >
               {currentIssue.description}
             </div>
 
-            <div style={{ color: "#4f6478", fontSize: 15, marginBottom: 12 }}>
+            <div style={{ color: "#4f6478", fontSize: 14, marginBottom: 10 }}>
               {getStatusLabel(currentIssue)}
             </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <div style={pillStyle("#edf4ff", "#2355a2")}>{currentIssue.status}</div>
               <div style={pillStyle("#f4f7fa", "#4e6278")}>{currentIssue.category}</div>
               <div style={pillStyle("#f4f7fa", "#4e6278")}>
@@ -714,50 +760,22 @@ export default function App() {
           <div
             style={{
               background: "white",
-              borderRadius: 22,
-              padding: 18,
+              borderRadius: 20,
+              padding: 14,
               boxShadow: "0 10px 24px rgba(0,0,0,0.06)"
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                alignItems: "center",
-                flexWrap: "wrap",
-                marginBottom: 12
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>
-                  Live city map
-                </div>
-                <div style={{ fontSize: 14, color: "#55697e" }}>
-                  Tap a pin to see what is happening and how the city is responding.
-                </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>
+                Live city map
               </div>
-
-              <button
-                onClick={startReport}
-                style={{
-                  border: "none",
-                  background: "#0c5fd7",
-                  color: "white",
-                  borderRadius: 14,
-                  padding: "11px 16px",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  boxShadow: "0 10px 18px rgba(12,95,215,0.22)"
-                }}
-              >
-                Report a Concern
-              </button>
+              <div style={{ fontSize: 14, color: "#55697e" }}>
+                Tap a pin to see what is happening and how the city is responding.
+              </div>
             </div>
 
             <MapPanel
               pins={pins}
-              selectedPin={selectedPin}
               setSelectedPin={setSelectedPin}
               reportMode={reportMode}
               handleMapClick={handleMapClick}
@@ -931,16 +949,31 @@ export default function App() {
 
               <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
                 <div style={insightBoxStyle()}>
-                  <div style={insightTitleStyle()}>Top Recommended Actions</div>
-                  <div style={insightTextStyle()}>
-                    1. Prioritize drainage-related items after recent storm activity.
-                  </div>
-                  <div style={insightTextStyle()}>
-                    2. Close routine parks items quickly to avoid queue buildup.
-                  </div>
-                  <div style={insightTextStyle()}>
-                    3. Review repeat road repair reports near downtown for broader maintenance need.
-                  </div>
+                  <div style={insightTitleStyle()}>Choose Report</div>
+                  <select
+                    value={selectedReportType}
+                    onChange={(e) => setSelectedReportType(e.target.value)}
+                    style={inputStyle()}
+                  >
+                    <option>Council Summary</option>
+                    <option>Department Performance</option>
+                    <option>Escalations</option>
+                    <option>Public Concerns</option>
+                    <option>Budget / Planning</option>
+                    <option>Strategic Insights</option>
+                  </select>
+
+                  <button
+                    onClick={generateSelectedReport}
+                    style={{ ...primaryButtonStyle(), width: "100%", marginTop: 10 }}
+                  >
+                    Generate Report
+                  </button>
+                </div>
+
+                <div style={insightBoxStyle()}>
+                  <div style={insightTitleStyle()}>{selectedReportType}</div>
+                  <div style={insightTextStyle()}>{reportPreview}</div>
                 </div>
 
                 <div style={insightBoxStyle()}>
@@ -954,13 +987,6 @@ export default function App() {
                   <div style={insightTitleStyle()}>Budget / Planning Signal</div>
                   <div style={insightTextStyle()}>
                     Drainage and roadway-related items are clustering after weather events, suggesting a need to review preventative maintenance planning.
-                  </div>
-                </div>
-
-                <div style={insightBoxStyle()}>
-                  <div style={insightTitleStyle()}>Council-Ready Framing</div>
-                  <div style={insightTextStyle()}>
-                    PublicPulse is showing where public concern, active work, and delayed response are converging right now.
                   </div>
                 </div>
               </div>
@@ -1305,8 +1331,8 @@ function MapPanel({
       onClick={handleMapClick}
       style={{
         position: "relative",
-        height: 620,
-        borderRadius: 20,
+        height: 560,
+        borderRadius: 18,
         overflow: "hidden",
         border: "1px solid #d8e1ea",
         background:
@@ -1628,8 +1654,8 @@ function pillStyle(background, color) {
     borderRadius: 999,
     background,
     color,
-    padding: "8px 12px",
-    fontSize: 13,
+    padding: "7px 11px",
+    fontSize: 12,
     fontWeight: 800
   };
 }
