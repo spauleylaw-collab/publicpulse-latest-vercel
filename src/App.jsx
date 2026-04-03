@@ -796,10 +796,15 @@ export default function App() {
               onClick={handlePublicMapClick}
             >
               <div style={styles.mapBackdrop} />
+              <div style={styles.mapWaterBand} />
+              <div style={styles.mapShade1} />
+              <div style={styles.mapShade2} />
               <div style={styles.mapRoadV} />
               <div style={styles.mapRoadH} />
+              <div style={styles.mapRoadDiag} />
               <div style={styles.mapPark1} />
               <div style={styles.mapPark2} />
+              <div style={styles.mapPark3} />
               <div style={styles.mapZone1}>Downtown</div>
               <div style={styles.mapZone2}>Libs Park</div>
               <div style={styles.mapZone3}>North Hastings</div>
@@ -820,7 +825,11 @@ export default function App() {
                 >
                   <div className="pin-ring" style={{ background: getPinColor(issue.status) }} />
                   <div className="pin-ring pin-ring-2" style={{ background: getPinColor(issue.status) }} />
-                  <div style={{ ...styles.pinCore, background: getPinColor(issue.status) }} />
+                  <div className="pin-ring pin-ring-3" style={{ background: getPinColor(issue.status) }} />
+                  <div style={styles.pinShadow} />
+                  <div style={{ ...styles.pinCore, background: getPinColor(issue.status) }}>
+                    <div style={styles.pinInnerDot} />
+                  </div>
                 </button>
               ))}
 
@@ -833,11 +842,17 @@ export default function App() {
               {reportPinLocation && (awaitingMapPin || reportFlowOpen) && (
                 <div
                   style={{
-                    ...styles.tempPin,
+                    ...styles.tempPinWrap,
                     left: `${reportPinLocation.x}%`,
                     top: `${reportPinLocation.y}%`
                   }}
-                />
+                >
+                  <div className="pin-ring" style={{ background: "#0c5fd7" }} />
+                  <div style={styles.pinShadow} />
+                  <div style={{ ...styles.pinCore, background: "#0c5fd7" }}>
+                    <div style={styles.pinInnerDot} />
+                  </div>
+                </div>
               )}
             </div>
 
@@ -1330,17 +1345,49 @@ const styles = {
     overflow: "hidden",
     border: "1px solid #d9e1ea",
     background:
-      "linear-gradient(to bottom, #cfe7ff 0%, #d8eeff 56%, #eef2e5 56%, #f5f7ef 100%)",
+      "linear-gradient(to bottom, #d9eeff 0%, #d5ecff 50%, #eef3e8 50%, #f7f8f2 100%)",
     boxShadow: "0 10px 24px rgba(0,0,0,0.06)"
   },
-  mapBackdrop: { position: "absolute", inset: 0 },
+  mapBackdrop: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at 20% 18%, rgba(255,255,255,0.35), transparent 22%), radial-gradient(circle at 78% 24%, rgba(255,255,255,0.24), transparent 20%), linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0))"
+  },
+  mapWaterBand: {
+    position: "absolute",
+    top: "49%",
+    left: 0,
+    right: 0,
+    height: "11%",
+    background: "linear-gradient(90deg, rgba(180,221,255,0.12), rgba(124,194,255,0.22), rgba(180,221,255,0.12))"
+  },
+  mapShade1: {
+    position: "absolute",
+    left: "7%",
+    top: "58%",
+    width: "22%",
+    height: "18%",
+    background: "rgba(226, 221, 200, 0.32)",
+    borderRadius: 32
+  },
+  mapShade2: {
+    position: "absolute",
+    left: "61%",
+    top: "13%",
+    width: "14%",
+    height: "11%",
+    background: "rgba(181, 213, 229, 0.22)",
+    borderRadius: 26
+  },
   mapRoadV: {
     position: "absolute",
     top: 0,
     bottom: 0,
     left: "52%",
     width: 5,
-    background: "#8795a3"
+    background: "#7f8e9d",
+    boxShadow: "0 0 0 1px rgba(255,255,255,0.25)"
   },
   mapRoadH: {
     position: "absolute",
@@ -1348,7 +1395,18 @@ const styles = {
     right: 0,
     top: "69%",
     height: 5,
-    background: "#8795a3"
+    background: "#7f8e9d",
+    boxShadow: "0 0 0 1px rgba(255,255,255,0.25)"
+  },
+  mapRoadDiag: {
+    position: "absolute",
+    left: "25%",
+    top: "43%",
+    width: "42%",
+    height: 4,
+    background: "#8795a3",
+    transform: "rotate(-8deg)",
+    boxShadow: "0 0 0 1px rgba(255,255,255,0.22)"
   },
   mapPark1: {
     position: "absolute",
@@ -1356,8 +1414,9 @@ const styles = {
     left: "68%",
     width: "20%",
     height: "17%",
-    background: "#b9d8cf",
-    borderRadius: 24
+    background: "linear-gradient(135deg, #c2dfcd, #b6d6c2)",
+    borderRadius: 24,
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)"
   },
   mapPark2: {
     position: "absolute",
@@ -1365,38 +1424,51 @@ const styles = {
     left: "10%",
     width: "18%",
     height: "18%",
-    background: "#b8d5c8",
+    background: "linear-gradient(135deg, #bfdcc9, #b5d4c1)",
+    borderRadius: 24,
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)"
+  },
+  mapPark3: {
+    position: "absolute",
+    top: "61%",
+    left: "35%",
+    width: "16%",
+    height: "13%",
+    background: "linear-gradient(135deg, rgba(231,220,190,0.55), rgba(222,210,177,0.42))",
     borderRadius: 24
   },
   mapZone1: {
     position: "absolute",
     top: "74%",
     left: "42%",
-    background: "rgba(255,255,255,0.93)",
+    background: "rgba(255,255,255,0.95)",
     padding: "8px 12px",
     borderRadius: 999,
     fontSize: 13,
-    fontWeight: 800
+    fontWeight: 800,
+    boxShadow: "0 10px 18px rgba(0,0,0,0.06)"
   },
   mapZone2: {
     position: "absolute",
     top: "25%",
     left: "73%",
-    background: "rgba(255,255,255,0.93)",
+    background: "rgba(255,255,255,0.95)",
     padding: "8px 12px",
     borderRadius: 999,
     fontSize: 13,
-    fontWeight: 800
+    fontWeight: 800,
+    boxShadow: "0 10px 18px rgba(0,0,0,0.06)"
   },
   mapZone3: {
     position: "absolute",
     top: "12%",
     left: "9%",
-    background: "rgba(255,255,255,0.93)",
+    background: "rgba(255,255,255,0.95)",
     padding: "8px 12px",
     borderRadius: 999,
     fontSize: 13,
-    fontWeight: 800
+    fontWeight: 800,
+    boxShadow: "0 10px 18px rgba(0,0,0,0.06)"
   },
   pinWrap: {
     position: "absolute",
@@ -1406,14 +1478,40 @@ const styles = {
     padding: 0,
     cursor: "pointer"
   },
+  tempPinWrap: {
+    position: "absolute",
+    transform: "translate(-50%, -100%)"
+  },
+  pinShadow: {
+    position: "absolute",
+    left: "50%",
+    top: 18,
+    width: 26,
+    height: 12,
+    borderRadius: "50%",
+    background: "rgba(0,0,0,0.14)",
+    transform: "translateX(-50%)",
+    filter: "blur(3px)"
+  },
   pinCore: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     borderRadius: "50%",
     border: "3px solid white",
-    boxShadow: "0 8px 18px rgba(0,0,0,0.2)",
+    boxShadow: "0 10px 22px rgba(0,0,0,0.22)",
     position: "relative",
     zIndex: 2
+  },
+  pinInnerDot: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: 6,
+    height: 6,
+    borderRadius: "50%",
+    background: "white",
+    transform: "translate(-50%, -50%)",
+    opacity: 0.95
   },
   mapInstruction: {
     position: "absolute",
@@ -1425,17 +1523,6 @@ const styles = {
     borderRadius: 12,
     fontWeight: 800,
     fontSize: 13,
-    zIndex: 20
-  },
-  tempPin: {
-    position: "absolute",
-    transform: "translate(-50%, -100%)",
-    width: 18,
-    height: 18,
-    borderRadius: "50%",
-    border: "3px solid white",
-    background: "#0c5fd7",
-    boxShadow: "0 8px 18px rgba(0,0,0,0.2)",
     zIndex: 20
   },
   publicBottomRow: {
@@ -1775,35 +1862,48 @@ const styles = {
 const css = `
   * { box-sizing: border-box; }
   html, body, #root { margin: 0; padding: 0; }
+
   .pin-ring {
     position: absolute;
-    width: 34px;
-    height: 34px;
+    width: 42px;
+    height: 42px;
     border-radius: 999px;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    opacity: 0.22;
-    animation: pulseRing 2.2s infinite ease-out;
+    opacity: 0.24;
+    animation: pulseRing 2.4s infinite ease-out;
     pointer-events: none;
+    filter: blur(0.2px);
   }
+
   .pin-ring-2 {
-    animation-delay: 0.9s;
+    animation-delay: 0.75s;
+    opacity: 0.16;
   }
+
+  .pin-ring-3 {
+    animation-delay: 1.35s;
+    opacity: 0.10;
+  }
+
   @keyframes pulseRing {
-    0% { transform: translate(-50%, -50%) scale(0.65); opacity: 0.24; }
-    60% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.1; }
-    100% { transform: translate(-50%, -50%) scale(2.05); opacity: 0; }
+    0% { transform: translate(-50%, -50%) scale(0.55); opacity: 0.30; }
+    55% { transform: translate(-50%, -50%) scale(1.45); opacity: 0.12; }
+    100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
   }
+
   .fade-rotator {
     animation: fadeInOut 4.5s ease-in-out;
   }
+
   @keyframes fadeInOut {
     0% { opacity: 0.3; }
     18% { opacity: 1; }
     82% { opacity: 1; }
     100% { opacity: 0.3; }
   }
+
   @media (max-width: 1080px) {
     .responsive-three-col {
       grid-template-columns: 1fr !important;
