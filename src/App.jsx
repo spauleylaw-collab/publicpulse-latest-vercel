@@ -167,7 +167,6 @@ export default function App() {
 
   const [reportForm, setReportForm] = useState({
     description: "",
-    instructions: "",
     photoUrl: ""
   });
 
@@ -251,7 +250,7 @@ export default function App() {
       escalationHours: 24,
       dueAt: hoursFromNow(6),
       imageUrls: [],
-      specialInstructions: "Confirm whether this is recurring after storms.",
+      specialInstructions: "",
       publicVisible: true,
       cityHistory: [
         { time: hoursFromNow(-5), text: "Resident reported drainage concern." },
@@ -382,26 +381,45 @@ export default function App() {
   const startVoiceInput = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      setToast("Voice input is not supported in this browser.");
+      const fallback = window.prompt("Voice input is not available here. Type what happened:");
+      if (fallback) {
+        setReportForm((prev) => ({
+          ...prev,
+          description: prev.description ? `${prev.description} ${fallback}`.trim() : fallback
+        }));
+      }
       return;
     }
+
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript || "";
-      setReportForm((prev) => ({
-        ...prev,
-        description: prev.description
-          ? `${prev.description} ${transcript}`.trim()
-          : transcript
-      }));
+      if (transcript) {
+        setReportForm((prev) => ({
+          ...prev,
+          description: prev.description
+            ? `${prev.description} ${transcript}`.trim()
+            : transcript
+        }));
+      }
     };
+
     recognition.onerror = () => {
-      setToast("Voice input did not work. Please try again.");
+      const fallback = window.prompt("Voice input did not work. Type what happened:");
+      if (fallback) {
+        setReportForm((prev) => ({
+          ...prev,
+          description: prev.description ? `${prev.description} ${fallback}`.trim() : fallback
+        }));
+      }
     };
+
     recognition.start();
     recognitionRef.current = recognition;
   };
@@ -413,7 +431,6 @@ export default function App() {
     setReportPinLocation(null);
     setReportForm({
       description: "",
-      instructions: "",
       photoUrl: ""
     });
   };
@@ -464,7 +481,7 @@ export default function App() {
       escalationHours,
       dueAt: hoursFromNow(escalationHours),
       imageUrls,
-      specialInstructions: reportForm.instructions.trim(),
+      specialInstructions: "",
       publicVisible: true,
       cityHistory: [
         { time: new Date().toISOString(), text: "Resident reported concern on PublicPulse." }
@@ -473,7 +490,7 @@ export default function App() {
 
     setIssues((prev) => [newIssue, ...prev]);
     setSelectedIssueId(newIssue.id);
-    setSelectedPublicIssueId(newIssue.id);
+    setSelectedPublicIssueId(null);
     setReportFlowOpen(false);
     setAwaitingMapPin(false);
     setReportPinLocation(null);
@@ -773,7 +790,8 @@ export default function App() {
             <div
               style={{
                 ...styles.mapArea,
-                opacity: selectedPublicIssue ? 0.45 : 1
+                opacity: selectedPublicIssue ? 0.45 : 1,
+                cursor: awaitingMapPin ? "crosshair" : "default"
               }}
               onClick={handlePublicMapClick}
             >
@@ -856,12 +874,6 @@ export default function App() {
                     </div>
                   )}
 
-                  {selectedPublicIssue.specialInstructions && (
-                    <div style={styles.specialInstructions}>
-                      <strong>Notes:</strong> {selectedPublicIssue.specialInstructions}
-                    </div>
-                  )}
-
                   <button
                     style={styles.noticeBtn}
                     onClick={() => {
@@ -925,16 +937,6 @@ export default function App() {
                       setReportForm((prev) => ({ ...prev, photoUrl: e.target.value }))
                     }
                     style={styles.input}
-                  />
-
-                  <div style={styles.fieldLabel}>Special instructions</div>
-                  <textarea
-                    value={reportForm.instructions}
-                    onChange={(e) =>
-                      setReportForm((prev) => ({ ...prev, instructions: e.target.value }))
-                    }
-                    style={{ ...styles.textarea, minHeight: 86 }}
-                    placeholder="Optional notes"
                   />
 
                   <button
@@ -1521,10 +1523,6 @@ const styles = {
     objectFit: "cover",
     borderRadius: 14,
     border: "1px solid #d8e0e9"
-  },
-  specialInstructions: {
-    fontSize: 14,
-    marginBottom: 12
   },
   noticeBtn: {
     border: "none",
