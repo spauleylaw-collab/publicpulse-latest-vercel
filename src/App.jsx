@@ -144,11 +144,20 @@ function sortDeptItems(a, b) {
   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 }
 
+function getPinColor(status) {
+  if (status === "Escalated") return "#d64545";
+  if (status === "In Progress") return "#d9a300";
+  if (status === "Assigned" || status === "Acknowledged") return "#2d8cff";
+  if (status === "Completed") return "#2ca75f";
+  return "#4663ff";
+}
+
 export default function App() {
-  const [mode, setMode] = useState("public"); // public | city | department
+  const [mode, setMode] = useState("public");
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [selectedDepartmentIssueId, setSelectedDepartmentIssueId] = useState(null);
   const [selectedPublicIssueId, setSelectedPublicIssueId] = useState(null);
+
   const [reportFlowOpen, setReportFlowOpen] = useState(false);
   const [awaitingMapPin, setAwaitingMapPin] = useState(false);
   const [reportPinLocation, setReportPinLocation] = useState(null);
@@ -251,10 +260,7 @@ export default function App() {
     }
   ]);
 
-  const publicIssues = useMemo(
-    () => issues.filter((i) => i.publicVisible),
-    [issues]
-  );
+  const publicIssues = useMemo(() => issues.filter((i) => i.publicVisible), [issues]);
 
   const rotatingIssues = publicIssues;
   const [rotateIndex, setRotateIndex] = useState(0);
@@ -295,8 +301,7 @@ export default function App() {
     if (!selectedDepartmentIssueId && departmentQueue.length) {
       setSelectedDepartmentIssueId(departmentQueue[0].id);
     }
-    if (!selectedPublicIssueId && publicIssues.length) setSelectedPublicIssueId(publicIssues[0].id);
-  }, [cityQueue, departmentQueue, publicIssues, selectedIssueId, selectedDepartmentIssueId, selectedPublicIssueId]);
+  }, [cityQueue, departmentQueue, selectedIssueId, selectedDepartmentIssueId]);
 
   const selectedCityIssue =
     cityQueue.find((i) => i.id === selectedIssueId) || null;
@@ -403,8 +408,7 @@ export default function App() {
 
   const openReportFlow = () => {
     setSelectedPublicIssueId(null);
-    setSelectedPinIdSafe(null);
-    setReportFlowOpen(true);
+    setReportFlowOpen(false);
     setAwaitingMapPin(true);
     setReportPinLocation(null);
     setReportForm({
@@ -414,20 +418,20 @@ export default function App() {
     });
   };
 
-  const setSelectedPinIdSafe = (id) => {
-    setSelectedPublicIssueId(id);
-  };
-
   const handlePublicMapClick = (e) => {
-    if (!awaitingMapPin) {
-      if (selectedPublicIssueId) setSelectedPublicIssueId(null);
+    if (awaitingMapPin) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setReportPinLocation({ x, y });
+      setAwaitingMapPin(false);
+      setReportFlowOpen(true);
       return;
     }
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setReportPinLocation({ x, y });
-    setAwaitingMapPin(false);
+
+    if (selectedPublicIssueId) {
+      setSelectedPublicIssueId(null);
+    }
   };
 
   const submitReport = () => {
@@ -599,7 +603,6 @@ export default function App() {
               escalationHours: Number(ackForm.dueHours),
               updatedAt: new Date().toISOString(),
               lastActivityAt: new Date().toISOString(),
-              specialInstructions: issue.specialInstructions,
               cityHistory: [
                 ...(issue.cityHistory || []),
                 {
@@ -748,24 +751,9 @@ export default function App() {
         </div>
 
         <div style={styles.topNav}>
-          <button
-            style={navBtn(mode === "public")}
-            onClick={() => setMode("public")}
-          >
-            Public
-          </button>
-          <button
-            style={navBtn(mode === "city")}
-            onClick={() => setMode("city")}
-          >
-            City
-          </button>
-          <button
-            style={navBtn(mode === "department")}
-            onClick={() => setMode("department")}
-          >
-            Department
-          </button>
+          <button style={navBtn(mode === "public")} onClick={() => setMode("public")}>Public</button>
+          <button style={navBtn(mode === "city")} onClick={() => setMode("city")}>City</button>
+          <button style={navBtn(mode === "department")} onClick={() => setMode("department")}>Department</button>
         </div>
       </div>
 
@@ -776,9 +764,7 @@ export default function App() {
             {rotatingIssue && (
               <div className="fade-rotator" key={rotatingIssue.id}>
                 <div style={styles.publicBannerTitle}>{rotatingIssue.title}</div>
-                <div style={styles.publicBannerText}>
-                  {rotatingIssue.shortSummary}
-                </div>
+                <div style={styles.publicBannerText}>{rotatingIssue.shortSummary}</div>
               </div>
             )}
           </div>
@@ -814,20 +800,9 @@ export default function App() {
                   }}
                   title={issue.title}
                 >
-                  <div
-                    className="pin-ring"
-                    style={{ background: getPinColor(issue.status) }}
-                  />
-                  <div
-                    className="pin-ring pin-ring-2"
-                    style={{ background: getPinColor(issue.status) }}
-                  />
-                  <div
-                    style={{
-                      ...styles.pinCore,
-                      background: getPinColor(issue.status)
-                    }}
-                  />
+                  <div className="pin-ring" style={{ background: getPinColor(issue.status) }} />
+                  <div className="pin-ring pin-ring-2" style={{ background: getPinColor(issue.status) }} />
+                  <div style={{ ...styles.pinCore, background: getPinColor(issue.status) }} />
                 </button>
               ))}
 
@@ -837,7 +812,7 @@ export default function App() {
                 </div>
               )}
 
-              {reportPinLocation && reportFlowOpen && (
+              {reportPinLocation && (awaitingMapPin || reportFlowOpen) && (
                 <div
                   style={{
                     ...styles.tempPin,
@@ -849,14 +824,8 @@ export default function App() {
             </div>
 
             {selectedPublicIssue && (
-              <div
-                style={styles.publicIssueOverlay}
-                onClick={() => setSelectedPublicIssueId(null)}
-              >
-                <div
-                  style={styles.publicIssueCard}
-                  onClick={(e) => e.stopPropagation()}
-                >
+              <div style={styles.publicIssueOverlay} onClick={() => setSelectedPublicIssueId(null)}>
+                <div style={styles.publicIssueCard} onClick={(e) => e.stopPropagation()}>
                   <div style={styles.issueCardHeader}>
                     <div>
                       <div style={styles.issueCardTitle}>{selectedPublicIssue.title}</div>
@@ -864,10 +833,7 @@ export default function App() {
                         {selectedPublicIssue.category} • {selectedPublicIssue.department}
                       </div>
                     </div>
-                    <button
-                      style={styles.closeBtn}
-                      onClick={() => setSelectedPublicIssueId(null)}
-                    >
+                    <button style={styles.closeBtn} onClick={() => setSelectedPublicIssueId(null)}>
                       Close
                     </button>
                   </div>
@@ -906,7 +872,6 @@ export default function App() {
                             : issue
                         )
                       );
-                      setSelectedPublicIssueId(selectedPublicIssue.id);
                     }}
                   >
                     I noticed this too ({selectedPublicIssue.support || 0})
@@ -933,9 +898,7 @@ export default function App() {
                   </div>
 
                   <div style={styles.reportStep}>
-                    {reportPinLocation
-                      ? "Pin placed. Add details below."
-                      : "Start by dropping a pin on the map."}
+                    Pin placed. Add details below.
                   </div>
 
                   <div style={styles.fieldLabel}>Describe what happened</div>
@@ -1000,7 +963,7 @@ export default function App() {
       {mode === "city" && (
         <div style={styles.dashboardPage}>
           <div style={styles.dashboardTitle}>Command Center</div>
-          <div style={styles.threeCol}>
+          <div style={{ ...styles.threeCol }} className="responsive-three-col">
             <div style={styles.col}>
               <div style={styles.colHeader}>Citizen Concern Queue</div>
               <div style={styles.queueList}>
@@ -1151,7 +1114,7 @@ export default function App() {
       {mode === "department" && (
         <div style={styles.dashboardPage}>
           <div style={styles.dashboardTitle}>Department Center</div>
-          <div style={styles.threeCol}>
+          <div style={{ ...styles.threeCol }} className="responsive-three-col">
             <div style={styles.col}>
               <div style={styles.colHeader}>Department Queue</div>
               <div style={styles.queueList}>
@@ -1281,12 +1244,27 @@ export default function App() {
   );
 }
 
-function getPinColor(status) {
-  if (status === "Escalated") return "#d64545";
-  if (status === "In Progress") return "#d9a300";
-  if (status === "Assigned" || status === "Acknowledged") return "#2d8cff";
-  if (status === "Completed") return "#2ca75f";
-  return "#4663ff";
+function navBtn(active) {
+  return {
+    border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.18)",
+    background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)",
+    color: "white",
+    borderRadius: 14,
+    padding: "10px 14px",
+    fontWeight: 800,
+    cursor: "pointer"
+  };
+}
+
+function tagStyle(bg, color) {
+  return {
+    background: bg,
+    color,
+    borderRadius: 999,
+    padding: "7px 10px",
+    fontSize: 12,
+    fontWeight: 800
+  };
 }
 
 const styles = {
@@ -1353,10 +1331,7 @@ const styles = {
       "linear-gradient(to bottom, #cfe7ff 0%, #d8eeff 56%, #eef2e5 56%, #f5f7ef 100%)",
     boxShadow: "0 10px 24px rgba(0,0,0,0.06)"
   },
-  mapBackdrop: {
-    position: "absolute",
-    inset: 0
-  },
+  mapBackdrop: { position: "absolute", inset: 0 },
   mapRoadV: {
     position: "absolute",
     top: 0,
@@ -1447,7 +1422,8 @@ const styles = {
     padding: "10px 12px",
     borderRadius: 12,
     fontWeight: 800,
-    fontSize: 13
+    fontSize: 13,
+    zIndex: 20
   },
   tempPin: {
     position: "absolute",
@@ -1457,7 +1433,8 @@ const styles = {
     borderRadius: "50%",
     border: "3px solid white",
     background: "#0c5fd7",
-    boxShadow: "0 8px 18px rgba(0,0,0,0.2)"
+    boxShadow: "0 8px 18px rgba(0,0,0,0.2)",
+    zIndex: 20
   },
   publicBottomRow: {
     display: "flex",
@@ -1796,29 +1773,6 @@ const styles = {
     fontWeight: 700
   }
 };
-
-function navBtn(active) {
-  return {
-    border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.18)",
-    background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)",
-    color: "white",
-    borderRadius: 14,
-    padding: "10px 14px",
-    fontWeight: 800,
-    cursor: "pointer"
-  };
-}
-
-function tagStyle(bg, color) {
-  return {
-    background: bg,
-    color,
-    borderRadius: 999,
-    padding: "7px 10px",
-    fontSize: 12,
-    fontWeight: 800
-  };
-}
 
 const css = `
   * { box-sizing: border-box; }
