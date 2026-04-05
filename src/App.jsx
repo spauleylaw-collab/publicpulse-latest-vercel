@@ -1,111 +1,2673 @@
-// PASTE YOUR ORIGINAL FILE HERE
-// (UNCHANGED EXCEPT FOR MICROPHONE SECTION)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PublicPulse — Hastings, NE</title>
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-/* --- EVERYTHING ABOVE REMAINS EXACTLY THE SAME --- */
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
-export default function App() {
+<style>
+:root {
+  --bg: #0b0f1a;
+  --surface: #131829;
+  --surface2: #1a2035;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8eaf0;
+  --muted: #7a8299;
+  --accent: #3d8ef8;
+  --accent2: #00e5b0;
+  --warn: #f5a623;
+  --danger: #ff4d6d;
+  --green: #22c55e;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 12px;
+  --shadow: 0 8px 40px rgba(0,0,0,0.6);
+  --nav-h: 52px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
 
-  /* --- ADD THIS STATE --- */
-  const [isRecording, setIsRecording] = useState(false);
+/* ─── NAV ─── */
+#nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: var(--nav-h);
+  background: rgba(11,15,26,0.97);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
+.nav-logo span { color: var(--accent); }
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab {
+  padding: 6px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  color: var(--muted); border: none; background: none;
+  transition: all 0.2s; font-family: var(--font-body);
+}
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { color: var(--accent); background: rgba(61,142,248,0.12); }
+.nav-city { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 
-  /* --- KEEP EVERYTHING ELSE SAME UNTIL MIC FUNCTION --- */
+/* ─── VIEWS ─── */
+.view { position: fixed; inset: var(--nav-h) 0 0 0; display: none; }
+.view.active { display: flex; }
 
-  const recognitionRef = useRef(null);
+/* ════════════════
+   PUBLIC MAP VIEW
+════════════════ */
+#view-public { flex-direction: column; }
+#map-container { flex: 1; position: relative; overflow: hidden; }
+#map { width: 100%; height: 100%; }
 
-  /* --- REPLACE YOUR startVoiceInput FUNCTION WITH THIS --- */
-  const startVoiceInput = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+/* Dark tile tint */
+.leaflet-tile { filter: brightness(0.52) saturate(0.65) hue-rotate(195deg); }
+.leaflet-container { background: #0d1520; }
 
-    // STOP if already recording
-    if (isRecording && recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-      setIsRecording(false);
-      return;
+/* Hide default Leaflet popup entirely */
+.leaflet-popup { display: none !important; }
+.leaflet-popup-pane { display: none !important; }
+
+/* Rotating banner */
+#banner {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(11,15,26,0.92);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 10px 20px;
+  display: flex; align-items: center; gap: 10px;
+  min-width: 340px; max-width: 520px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.banner-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent2); box-shadow: 0 0 8px var(--accent2);
+  flex-shrink: 0; animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
+#banner-text {
+  font-size: 13px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity 0.4s;
+}
+#banner-text.fading { opacity: 0; }
+
+/* Pin-drop prompt */
+#drop-hint {
+  display: none;
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(11,15,26,0.92);
+  border: 1px solid rgba(61,142,248,0.4);
+  border-radius: 100px;
+  padding: 10px 10px 10px 20px;
+  font-size: 13px; color: var(--accent); font-weight: 600;
+  align-items: center; gap: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  animation: hint-blink 1.5s ease-in-out infinite;
+  white-space: nowrap;
+}
+#drop-hint.active { display: flex; }
+#drop-cancel {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--muted);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+#drop-cancel:hover { color: var(--text); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.1); }
+@keyframes hint-blink { 0%,100%{opacity:.85} 50%{opacity:1} }
+
+/* Report button */
+#btn-report {
+  position: absolute; bottom: 28px; right: 28px; z-index: 500;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
+  padding: 14px 24px; border-radius: 100px;
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: -0.3px;
+  display: flex; align-items: center; gap: 8px;
+  animation: report-glow 3s ease-in-out infinite;
+  transition: transform 0.15s;
+}
+#btn-report:hover { transform: scale(1.04); }
+@keyframes report-glow {
+  0%,100% { box-shadow: 0 4px 20px rgba(61,142,248,.4); }
+  50%      { box-shadow: 0 4px 44px rgba(61,142,248,.7); }
+}
+
+/* Legend */
+#legend {
+  position: absolute; bottom: 28px; left: 20px; z-index: 500;
+  background: rgba(11,15,26,0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  pointer-events: none;
+  min-width: 160px;
+}
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.legend-row:last-child { margin-bottom: 0; }
+.legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+/* Heat map button active state */
+#btn-heatmap.active { color: #f59e0b; background: rgba(245,158,11,0.12); }
+
+/* ══ CUSTOM POPUP CARD ══
+   Positioned entirely by JS — always stays inside the map viewport */
+#map-card {
+  display: none;
+  position: absolute;
+  z-index: 600;
+  width: 310px;
+  max-height: calc(100% - 28px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.72), 0 0 0 1px rgba(61,142,248,0.07);
+  scrollbar-width: none;
+}
+#map-card::-webkit-scrollbar { display: none; }
+#map-card.open {
+  display: block;
+  animation: card-pop 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes card-pop {
+  from { opacity:0; transform:scale(0.9) translateY(8px); }
+  to   { opacity:1; transform:scale(1)   translateY(0);   }
+}
+
+/* Tail — points DOWN toward pin when card is above it */
+#card-tail {
+  position: absolute;
+  width: 0; height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  display: none;
+  pointer-events: none;
+}
+#card-tail.tail-down {
+  display: block;
+  border-top: 10px solid #131829;
+  bottom: -10px;
+}
+#card-tail.tail-up {
+  display: block;
+  border-bottom: 10px solid #131829;
+  top: -10px;
+}
+
+.card-close {
+  position: absolute; top: 10px; right: 10px;
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px;
+  border-radius: 4px; transition: color 0.15s;
+}
+.card-close:hover { color: var(--text); }
+
+.card-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 100px; margin-bottom: 10px;
+}
+.s-reported { background: rgba(245,166,35,.15); color: var(--warn); }
+.s-review   { background: rgba(61,142,248,.12);  color: var(--accent); }
+.s-progress { background: rgba(61,142,248,.15);  color: var(--accent); }
+.s-done     { background: rgba(34,197,94,.12);   color: var(--green); }
+
+.card-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+.card-desc  { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
+.card-meta  { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+.card-meta span { display: flex; align-items: center; gap: 5px; }
+
+.card-noticed {
+  width: 100%; background: rgba(61,142,248,.1); border: 1px solid rgba(61,142,248,.25);
+  color: var(--accent); border-radius: 8px; padding: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+  font-family: var(--font-body);
+}
+.card-noticed:hover { background: rgba(61,142,248,.18); }
+.card-noticed.confirmed { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); color: var(--green); }
+
+/* Photo in card */
+.card-photo {
+  width: 100%; height: 130px; object-fit: cover;
+  border-radius: 9px; margin-bottom: 12px; display: block;
+  border: 1px solid var(--border);
+}
+.card-no-photo {
+  width: 100%; height: 72px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 9px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--muted); gap: 6px;
+}
+.card-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+.card-noticed-count { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+
+/* Report form overlay */
+#report-overlay {
+  display: none;
+  position: absolute; inset: 0; z-index: 700;
+  background: rgba(11,15,26,.72);
+  backdrop-filter: blur(5px);
+  align-items: center; justify-content: center;
+}
+#report-overlay.open { display: flex; }
+#report-form {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 18px; padding: 28px;
+  width: 420px; max-width: calc(100vw - 40px);
+  box-shadow: var(--shadow);
+  animation: form-in 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes form-in { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }
+.form-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+.form-title  { font-family: var(--font-display); font-size: 20px; font-weight: 800; }
+.form-sub    { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.form-loc-badge {
+  font-size: 11px; color: var(--accent2); font-weight: 600;
+  background: rgba(0,229,176,.1); border: 1px solid rgba(0,229,176,.2);
+  padding: 4px 10px; border-radius: 100px; white-space: nowrap; margin-left: 10px; margin-top: 2px;
+}
+.form-label  { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 6px; display: block; }
+.form-field  { margin-bottom: 16px; }
+.form-textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 9px; color: var(--text); font-family: var(--font-body);
+  font-size: 14px; padding: 12px; resize: none; outline: none;
+  line-height: 1.55; transition: border-color 0.2s;
+}
+.form-textarea:focus { border-color: var(--accent); }
+.form-row  { display: flex; gap: 10px; }
+.btn-mic   { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 18px; transition: all 0.2s; flex-shrink: 0; }
+.btn-mic:hover { color: var(--accent); border-color: var(--accent); }
+.btn-photo { flex: 1; background: var(--surface2); border: 1px dashed var(--border); color: var(--muted); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btn-photo:hover { color: var(--text); border-color: rgba(255,255,255,.15); }
+.btn-submit { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 14px; font-family: var(--font-display); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px; transition: opacity 0.2s, transform 0.15s; }
+.btn-submit:hover { opacity: .9; transform: scale(1.01); }
+
+/* Toast */
+#confirm-toast {
+  display: none;
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  z-index: 800;
+  background: var(--surface); border: 1px solid rgba(34,197,94,.3);
+  border-radius: var(--radius); padding: 16px 22px;
+  align-items: center; gap: 12px; box-shadow: var(--shadow);
+  pointer-events: none;
+}
+#confirm-toast.showing { display: flex; animation: toast-in .3s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes toast-in { from{opacity:0;transform:translateX(-50%) translateY(16px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+.toast-msg { font-size: 14px; font-weight: 500; }
+.toast-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ════════════════════
+   ADMIN / DEPT VIEWS
+════════════════════ */
+#view-admin, #view-dept { flex-direction: row; }
+
+.admin-col { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+.admin-col:last-child { border-right: none; border-left: 1px solid var(--border); }
+.col-left  { width: 300px; flex-shrink: 0; }
+.col-mid   { flex: 1; min-width: 0; }
+.col-right { width: 320px; flex-shrink: 0; }
+
+.col-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.col-title  { font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.col-badge  { background: var(--surface2); color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px; }
+
+.col-body { flex: 1; overflow-y: auto; padding: 12px; }
+.col-body::-webkit-scrollbar { width: 3px; }
+.col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.queue-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; position: relative; }
+.queue-item:hover    { border-color: rgba(255,255,255,.12); background: var(--surface2); }
+.queue-item.selected { border-color: var(--accent); background: rgba(61,142,248,.06); }
+.queue-item.escalated { border-left: 3px solid var(--danger); }
+.queue-item.warning   { border-left: 3px solid var(--warn); }
+.qi-top   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.qi-time  { font-size: 11px; color: var(--muted); }
+.qi-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+.qi-dept  { font-size: 11px; color: var(--muted); }
+.qi-badge { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 100px; }
+.qi-badge.reported { background: rgba(245,166,35,.15); color: var(--warn); }
+.qi-badge.review   { background: rgba(61,142,248,.1);  color: var(--accent); }
+.qi-badge.assigned { background: rgba(0,229,176,.1);   color: var(--accent2); }
+.qi-badge.progress { background: rgba(61,142,248,.15); color: var(--accent); }
+.qi-badge.done     { background: rgba(34,197,94,.12);  color: var(--green); }
+.escalate-pill { position: absolute; top: 9px; right: 9px; font-size: 10px; color: var(--danger); background: rgba(255,77,109,.1); padding: 2px 6px; border-radius: 100px; font-weight: 600; }
+
+.action-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 10px; }
+.action-empty-icon { font-size: 36px; opacity: .25; }
+.action-empty-text { font-size: 14px; }
+
+.action-panel { padding: 22px; flex: 1; overflow-y: auto; }
+.action-panel::-webkit-scrollbar { width: 3px; }
+.action-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.action-id    { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.action-title { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+.action-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+.action-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: 11px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; }
+.chip strong { color: var(--text); }
+
+.section-title { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin: 20px 0 10px; }
+.action-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.action-btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font-body); transition: all 0.15s; }
+.action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.action-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.action-btn.primary:hover { opacity: .9; }
+.action-btn.danger  { border-color: rgba(255,77,109,.3); color: var(--danger); }
+.action-btn.danger:hover { background: rgba(255,77,109,.1); }
+
+.dept-select { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--font-body); font-size: 13px; padding: 10px 12px; border-radius: 8px; outline: none; cursor: pointer; appearance: none; transition: border-color 0.2s; margin-bottom: 8px; }
+.dept-select:focus { border-color: var(--accent); }
+
+.tl-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.tl-chip { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.tl-chip:hover, .tl-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(61,142,248,.08); }
+
+.activity-log { background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 12px; margin-top: 16px; }
+.log-entry { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.log-entry:last-child { border-bottom: none; }
+.log-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 4px; flex-shrink: 0; }
+.log-body { flex: 1; color: var(--muted); line-height: 1.5; }
+.log-time { color: var(--muted); font-size: 10px; flex-shrink: 0; }
+
+.insight-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+.insight-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
+.insight-val   { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
+.insight-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.insight-trend { font-size: 12px; font-weight: 600; color: var(--green); margin-top: 5px; display: block; }
+.insight-trend.down { color: var(--danger); }
+
+.metrics-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.metric-mini { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+.metric-val   { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
+.metric-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.ai-reco { background: rgba(61,142,248,.06); border: 1px solid rgba(61,142,248,.15); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; }
+.ai-reco-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ai-badge { font-size: 10px; font-weight: 700; letter-spacing: .04em; background: rgba(61,142,248,.2); color: var(--accent); padding: 2px 7px; border-radius: 100px; }
+.ai-conf  { font-size: 11px; color: var(--muted); }
+.ai-text  { font-size: 13px; line-height: 1.5; }
+
+/* Report type grid */
+#report-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.rtype-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 11px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: left;
+}
+.rtype-card:hover { border-color: var(--accent); background: rgba(61,142,248,0.06); }
+.rtype-card.selected { border-color: var(--accent); background: rgba(61,142,248,0.1); }
+.rtype-icon { font-size: 20px; margin-bottom: 6px; line-height: 1; }
+.rtype-name { font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 3px; line-height: 1.2; }
+.rtype-sub  { font-size: 10px; color: var(--muted); line-height: 1.3; }
+.report-check {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted); cursor: pointer;
+  padding: 6px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface);
+  transition: all 0.15s;
+}
+.report-check:hover { border-color: rgba(255,255,255,.12); color: var(--text); }
+.report-check input[type=checkbox] { accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer; }
+
+.report-tab {
+  padding: 5px 11px; border-radius: 7px; font-size: 11px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: var(--surface2);
+  color: var(--muted); font-family: var(--font-body); transition: all 0.15s;
+  white-space: nowrap;
+}
+.report-tab:hover { color: var(--text); border-color: rgba(255,255,255,.15); }
+.report-tab.active { background: rgba(61,142,248,.12); border-color: var(--accent); color: var(--accent); }
+
+/* Streaming dots */
+.stream-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  display: inline-block;
+  animation: stream-bounce 1s ease-in-out infinite;
+}
+@keyframes stream-bounce {
+  0%,80%,100% { transform: scale(0.6); opacity: .4; }
+  40%          { transform: scale(1);   opacity: 1; }
+}
+
+/* Report section content */
+.report-section {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  font-size: 12px; color: var(--muted); line-height: 1.7;
+}
+.report-section h3 {
+  font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 7px;
+}
+.report-section p  { margin-bottom: 8px; }
+.report-section p:last-child { margin-bottom: 0; }
+.report-section ul { padding-left: 16px; margin-bottom: 8px; }
+.report-section li { margin-bottom: 4px; }
+.report-section strong { color: var(--text); }
+.report-section .highlight {
+  display: inline-block; padding: 1px 7px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+}
+.report-section .hl-danger { background: rgba(255,77,109,.12); color: var(--danger); }
+.report-section .hl-warn   { background: rgba(245,158,11,.12); color: var(--warn); }
+.report-section .hl-green  { background: rgba(34,197,94,.12);  color: var(--green); }
+.report-section .hl-blue   { background: rgba(61,142,248,.12); color: var(--accent); }
+
+.btn-gen-report {
+  width: 100%; background: linear-gradient(135deg, rgba(61,142,248,.15), rgba(0,229,176,.1));
+  border: 1px solid rgba(61,142,248,.25); color: var(--accent);
+  border-radius: 10px; padding: 12px;
+  font-family: var(--font-display); font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-gen-report:hover { background: linear-gradient(135deg, rgba(61,142,248,.25), rgba(0,229,176,.18)); }
+.btn-gen-report:disabled { opacity: .5; cursor: not-allowed; }
+
+.dept-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.dept-item:hover    { border-color: rgba(255,255,255,.12); }
+.dept-item.selected { border-color: var(--accent2); background: rgba(0,229,176,.04); }
+.dept-item.late { border-left: 3px solid var(--danger); }
+.dept-item.warn { border-left: 3px solid var(--warn); }
+
+.progress-bar  { height: 4px; border-radius: 2px; background: var(--surface2); margin-top: 10px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+.fill-blue   { background: var(--accent); }
+.fill-green  { background: var(--green); }
+.fill-warn   { background: var(--warn); }
+.fill-danger { background: var(--danger); }
+
+.tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+.tl-item::before { content:''; position:absolute; left:15px; top:30px; bottom:0; width:1px; background:var(--border); }
+.tl-item:last-child::before { display: none; }
+.tl-dot { width:30px; height:30px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; margin-top:2px; }
+.tl-content { flex: 1; }
+.tl-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.tl-time  { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.tl-note  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* Queue section tabs */
+.queue-tab {
+  flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-family: var(--font-body);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.queue-tab:hover { color: var(--text); }
+.queue-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Assign action row */
+.assign-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.assign-row .dept-select { flex: 1; margin-bottom: 0; }
+.btn-assign {
+  background: var(--accent2); color: #0b0f1a;
+  border: none; border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: var(--font-body); white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btn-assign:hover { opacity: 0.88; }
+
+/* Post update textarea */
+.update-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--font-body);
+  font-size: 13px; padding: 9px 11px; resize: none; outline: none;
+  transition: border-color 0.2s; margin-bottom: 8px; line-height: 1.5;
+}
+.update-input:focus { border-color: var(--accent); }
+
+/* Status badge in action panel */
+.action-status-badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 100px;
+}
+.asb-reported { background: rgba(245,166,35,.15); color: var(--warn); }
+.asb-review   { background: rgba(61,142,248,.12);  color: var(--accent); }
+.asb-assigned { background: rgba(0,229,176,.1);    color: var(--accent2); }
+.asb-progress { background: rgba(61,142,248,.15);  color: var(--accent); }
+.asb-done     { background: rgba(107,114,128,.15); color: #9ca3af; }
+
+/* Log entry type coloring */
+.log-entry.log-escalate .log-dot { background: var(--danger) !important; }
+.log-entry.log-escalate .log-body { color: var(--danger); font-weight: 500; }
+.log-entry.log-complete .log-dot  { background: var(--green) !important; }
+.log-entry.log-complete .log-body { color: var(--green); font-weight: 500; }
+.log-entry.log-assign   .log-dot  { background: var(--accent2) !important; }
+.log-entry.log-public   .log-dot  { background: var(--accent) !important; }
+
+/* Queue item exit animation */
+@keyframes item-exit {
+  to { opacity:0; transform:translateX(-14px); max-height:0; padding:0 14px; margin:0; }
+}
+.queue-item.exiting { animation: item-exit 0.32s ease forwards; overflow: hidden; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation: fadeIn 0.22s ease; }
+
+/* Preview pin pulse ring */
+@keyframes pin-ring-anim {
+  0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.8; }
+  100% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">Public<span>Pulse</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-view="public" onclick="switchView('public')">Public Map</button>
+    <button class="nav-tab" data-view="admin" onclick="switchView('admin')">City Admin</button>
+    <button class="nav-tab" data-view="dept" onclick="switchView('dept')">Dept. View</button>
+    <button class="nav-tab" id="btn-heatmap" onclick="toggleHeatmap()" style="display:none">🌡 Heat Map</button>
+  </div>
+  <div class="nav-city">Hastings, NE</div>
+</nav>
+
+<!-- ════════ VIEW 1 — PUBLIC MAP ════════ -->
+<div id="view-public" class="view active">
+  <div id="map-container">
+    <div id="map"></div>
+
+    <!-- Banner -->
+    <div id="banner">
+      <div class="banner-dot"></div>
+      <div id="banner-text">Pothole reported on Burlington Ave — 18 minutes ago</div>
+    </div>
+
+    <!-- Pin-drop prompt bar -->
+    <div id="drop-hint">
+      <span>📍 Click on the map to mark the location of your concern</span>
+      <button id="drop-cancel" onclick="cancelReport()">✕ Cancel</button>
+    </div>
+
+    <!-- Our custom card popup -->
+    <div id="map-card">
+      <div id="card-tail"></div>
+      <button class="card-close" onclick="closeCard()">×</button>
+      <div id="card-status" class="card-status s-reported">Reported</div>
+      <div id="card-title"  class="card-title"></div>
+      <div id="card-desc"   class="card-desc"></div>
+      <div id="card-meta"   class="card-meta"></div>
+      <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
+    </div>
+
+    <!-- Report button -->
+    <button id="btn-report" onclick="startReport()">
+      <span style="font-size:18px;line-height:1">+</span> Report Issue
+    </button>
+
+    <!-- Legend -->
+    <div id="legend">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Issue Priority</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Critical</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
+      <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Larger, brighter pins reflect<br>urgency and resident activity</div>
+    </div>
+
+    <!-- Report form overlay — click backdrop to cancel -->
+    <div id="report-overlay" onclick="handleOverlayClick(event)">
+      <div id="report-form">
+        <div class="form-header">
+          <div>
+            <div class="form-title">Report an Issue</div>
+            <div class="form-sub">Pin dropped on your selected location</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <div class="form-loc-badge">📍 Location set</div>
+            <button onclick="cancelReport()" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;transition:color .15s;margin-top:1px" title="Cancel report">×</button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">What's happening? *</label>
+          <textarea id="report-desc" class="form-textarea" rows="4" placeholder="Describe what you see — street, cross street, details…"></textarea>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Additional options</label>
+          <div class="form-row">
+            <button class="btn-mic" id="btn-mic" title="Voice input" onclick="toggleMic()">🎤</button>
+            <button class="btn-photo" id="btn-photo" onclick="document.getElementById('photo-input').click()">📷 Add photo (optional)</button>
+            <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+          </div>
+          <!-- Mic status -->
+          <div id="mic-status" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:8px;font-size:12px;color:var(--danger);align-items:center;gap:8px">
+            <span id="mic-dot" style="width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;animation:pulse-dot 1s ease-in-out infinite"></span>
+            <span id="mic-label">Listening…</span>
+          </div>
+          <!-- Photo preview -->
+          <div id="photo-preview-wrap" style="display:none;margin-top:10px;position:relative">
+            <img id="photo-preview" style="width:100%;max-height:160px;object-fit:cover;border-radius:9px;display:block">
+            <button onclick="removePhoto()" style="position:absolute;top:6px;right:6px;background:rgba(11,15,26,0.8);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">✕ Remove</button>
+          </div>
+        </div>
+        <button class="btn-submit" onclick="submitReport()">Submit Report →</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="confirm-toast">
+      <div style="font-size:20px">✅</div>
+      <div>
+        <div class="toast-msg">Thanks for sharing your voice.</div>
+        <div class="toast-sub">You will receive direct updates on this issue.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ VIEW 2 — ADMIN ════════ -->
+<div id="view-admin" class="view">
+  <div class="admin-col col-left">
+    <div class="col-header">
+      <div class="col-title">Issue Queue</div>
+      <div class="col-badge" id="queue-badge">6 active</div>
+    </div>
+    <!-- Queue filter tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="queue-tab active" id="qtab-active"   onclick="setQueueTab('active')">Active</button>
+      <button class="queue-tab"        id="qtab-completed" onclick="setQueueTab('completed')">Completed</button>
+    </div>
+    <div class="col-body" id="admin-queue"></div>
+  </div>
+  <div class="admin-col col-mid">
+    <div class="col-header"><div class="col-title">Action Center</div></div>
+    <div id="action-empty" class="action-empty">
+      <div class="action-empty-icon">⚡</div>
+      <div class="action-empty-text">Select an issue to take action</div>
+    </div>
+    <div id="action-panel" class="action-panel" style="display:none"></div>
+  </div>
+  <div class="admin-col col-right" id="report-col">
+    <div class="col-header">
+      <div class="col-title" id="report-col-title">Reports</div>
+      <div class="ai-badge">AI</div>
+    </div>
+    <div class="col-body" id="report-col-body">
+
+      <!-- Quick stats row -->
+      <div class="metrics-row">
+        <div class="metric-mini"><div class="metric-val" style="color:var(--danger)">3</div><div class="metric-label">Escalated</div></div>
+        <div class="metric-mini"><div class="metric-val" style="color:var(--accent)">12</div><div class="metric-label">Open</div></div>
+        <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
+      </div>
+
+      <!-- Step 1: Report type picker -->
+      <div id="report-type-picker">
+        <div class="section-title" style="margin-top:4px">Select Report Type</div>
+        <div id="report-type-grid"></div>
+      </div>
+
+      <!-- Step 2: Report config (shown after type selected) -->
+      <div id="report-config" style="display:none">
+        <button onclick="backToTypePicker()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 0 10px 0;display:flex;align-items:center;gap:4px">← All Reports</button>
+        <div id="report-type-header" style="margin-bottom:14px">
+          <div id="rth-icon" style="font-size:22px;margin-bottom:4px"></div>
+          <div id="rth-name" style="font-family:var(--font-display);font-size:15px;font-weight:800;margin-bottom:2px"></div>
+          <div id="rth-desc" style="font-size:11px;color:var(--muted);line-height:1.4"></div>
+        </div>
+        <div class="section-title">Period</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="period-chips"></div>
+        <div class="section-title">Sections</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="section-checks"></div>
+        <button class="btn-gen-report" id="btn-generate" onclick="generateReport()">
+          <span id="gen-btn-text">📊 Generate Report</span>
+        </button>
+      </div>
+
+      <!-- Step 3: Report output -->
+      <div id="report-output" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--muted)" id="report-date-label"></div>
+          <button onclick="resetReport()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">← New Report</button>
+        </div>
+        <div id="report-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div id="report-section-content"></div>
+        <div id="report-streaming" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:12px">
+          <div style="display:inline-flex;gap:4px;align-items:center">
+            <span class="stream-dot"></span><span class="stream-dot" style="animation-delay:.2s"></span><span class="stream-dot" style="animation-delay:.4s"></span>
+            <span style="margin-left:6px" id="streaming-label">Generating…</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════ VIEW 3 — DEPT ════════ -->
+<div id="view-dept" class="view">
+
+  <!-- LEFT: Queue -->
+  <div class="admin-col col-left">
+    <div class="col-header">
+      <div>
+        <div class="col-title">Street Department</div>
+        <div id="dept-workload" style="font-size:11px;color:var(--muted);margin-top:2px">4 active · 1 late</div>
+      </div>
+    </div>
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="queue-tab active" id="dqtab-active"    onclick="setDeptTab('active')">Active</button>
+      <button class="queue-tab"        id="dqtab-completed" onclick="setDeptTab('completed')">Completed</button>
+    </div>
+    <div class="col-body" id="dept-queue"></div>
+  </div>
+
+  <!-- MID: Work Item Panel -->
+  <div class="admin-col col-mid">
+    <div class="col-header"><div class="col-title">Work Item</div></div>
+    <div id="dept-empty" class="action-empty">
+      <div class="action-empty-icon">🔧</div>
+      <div class="action-empty-text">Select a work item</div>
+    </div>
+    <div id="dept-panel" class="action-panel" style="display:none"></div>
+  </div>
+
+  <!-- RIGHT: Accountability Timeline -->
+  <div class="admin-col col-right">
+    <div class="col-header"><div class="col-title">Accountability</div></div>
+    <div class="col-body" id="dept-accountability">
+      <!-- populated by renderDeptAccountability() -->
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   PIN DATA — real Hastings, NE locations
+   severity: 0-100 (AI scored)
+   category: 'safety'|'infrastructure'|'utility'|'park'|'police'
+══════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ISSUES — single source of truth for all three views
+   Public map reads lat/lng/status/severity
+   Admin reads queueStatus/statusLabel/tag/log
+   Dept reads workStatus/actionStatus/progress/deadline
+══════════════════════════════════════════════════════════════ */
+const ISSUES = [
+  {
+    // ── shared ──
+    id:'PP-0241', lat:40.5869, lng:-98.3895,
+    title:'Pothole — Burlington Ave & W 2nd St',
+    desc:'Large pothole at Burlington Ave and W 2nd St intersection. Multiple reports since spring thaw. Vehicle damage risk.',
+    dept:'Street Department', time:'18 min ago',
+    category:'infrastructure', severity:78, noticeCount:11,
+    // ── public map ──
+    status:'reported', escalate:true,
+    // ── admin ──
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    // ── dept ──
+    workStatus:'active', actionStatus:'assigned', progress:0, deadline:'48h overdue', priority:'late',
+    log:[
+      { type:'system',  body:'Issue submitted by resident via PublicPulse', time:'18 min ago' },
+      { type:'system',  body:'Routed to Street Department by PublicPulse', time:'18 min ago' },
+      { type:'escalate',body:'Auto-escalated — no activity within 12h SLA', time:'5 min ago' },
+    ]
+  },
+  {
+    id:'PP-0235', lat:40.5878, lng:-98.3765,
+    title:'Gas Odor — E 3rd St & N Hastings Ave',
+    desc:'Resident reports faint gas odor near E 3rd St intersection. Hastings Utilities crew dispatched to investigate.',
+    dept:'Hastings Utilities', time:'30 min ago',
+    category:'safety', severity:92, noticeCount:8,
+    status:'review', escalate:true,
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Immediate', priority:'late',
+    log:[
+      { type:'system',  body:'Issue submitted by resident via PublicPulse', time:'30 min ago' },
+      { type:'escalate',body:'Auto-escalated — critical safety category', time:'28 min ago' },
+    ]
+  },
+  {
+    id:'PP-0240', lat:40.5920, lng:-98.3958,
+    title:'Storm Sewer Backup — N Kansas Ave',
+    desc:'Storm sewer overflowing on N Kansas Ave. Hastings Utilities crews assessing pipe capacity before next rain.',
+    dept:'Hastings Utilities', time:'2 hrs ago',
+    category:'utility', severity:65, noticeCount:6,
+    status:'progress', escalate:false,
+    statusLabel:'In Progress', tag:'progress', queueStatus:'active', warn:true,
+    workStatus:'active', actionStatus:'in-progress', progress:35, deadline:'Due in 12h', priority:'warn',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'2 hrs ago' },
+      { type:'assign', body:'Assigned to Hastings Utilities by City Admin', time:'1 hr 45 min ago' },
+      { type:'ack',    body:'Assignment acknowledged by Hastings Utilities', time:'1 hr 45 min ago' },
+      { type:'start',  body:'Work started — crew on site at N Kansas Ave', time:'1 hr ago' },
+      { type:'public', body:'Public update posted: "Crew assessing drainage capacity"', time:'45 min ago' },
+    ]
+  },
+  {
+    id:'PP-0238', lat:40.5835, lng:-98.3972,
+    title:'Abandoned Vehicle — W 9th St & N Denver Ave',
+    desc:'Vehicle parked on W 9th St near N Denver Ave for over 72 hours. No registration visible.',
+    dept:'Hastings Police', time:'45 min ago',
+    category:'police', severity:35, noticeCount:3,
+    status:'reported', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 24h', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'45 min ago' },
+      { type:'review', body:'Marked as Reviewed — officer dispatched to assess', time:'30 min ago' },
+    ]
+  },
+  {
+    id:'PP-0236', lat:40.5858, lng:-98.4018,
+    title:'Sidewalk Heave — W 7th St & N Colorado Ave',
+    desc:'Tree roots causing concrete heave near W 7th and N Colorado Ave. Significant trip hazard for pedestrians.',
+    dept:'Street Department', time:'1 hr ago',
+    category:'infrastructure', severity:48, noticeCount:5,
+    status:'reported', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 8h', priority:'warn',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'1 hr ago' },
+      { type:'ack',    body:'Assignment acknowledged — crew scheduled for afternoon', time:'45 min ago' },
+    ]
+  },
+  {
+    id:'PP-0237', lat:40.5945, lng:-98.3880,
+    title:'Road Resurfacing — W 12th St',
+    desc:'Scheduled resurfacing of W 12th St between N Burlington and N Denver Ave. Street crews active on site.',
+    dept:'Street Department', time:'4 days ago',
+    category:'infrastructure', severity:30, noticeCount:2,
+    status:'progress', escalate:false,
+    statusLabel:'In Progress', tag:'progress', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'in-progress', progress:55, deadline:'Due in 2 days', priority:'ok',
+    log:[
+      { type:'system', body:'City-initiated project added to map', time:'4 days ago' },
+      { type:'assign', body:'Assigned to Street Department', time:'4 days ago' },
+      { type:'ack',    body:'Assignment acknowledged by Street Department', time:'4 days ago' },
+      { type:'start',  body:'Work started — resurfacing crew deployed', time:'3 days ago' },
+      { type:'public', body:'Public update: "Resurfacing underway, expect delays on W 12th"', time:'2 days ago' },
+      { type:'update', body:'Materials resupply complete. On schedule for Thursday completion', time:'1 day ago' },
+    ]
+  },
+  {
+    id:'PP-0239', lat:40.5850, lng:-98.3812,
+    title:'Streetlight Out — N Hastings Ave',
+    desc:'Street light on N Hastings Ave replaced and fully operational. Work completed same day as report.',
+    dept:'Hastings Utilities', time:'3 days ago',
+    category:'infrastructure', severity:20, noticeCount:1,
+    status:'done', escalate:false,
+    statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
+    workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 3 days ago', priority:'done',
+    log:[
+      { type:'system',  body:'Issue submitted by resident via PublicPulse', time:'3 days ago' },
+      { type:'assign',  body:'Assigned to Hastings Utilities by City Admin', time:'3 days ago' },
+      { type:'ack',     body:'Assignment acknowledged', time:'3 days ago' },
+      { type:'start',   body:'Work started — technician dispatched to N Hastings Ave', time:'3 days ago' },
+      { type:'complete',body:'Marked as Completed — light replaced and operational', time:'3 days ago' },
+    ]
+  },
+  {
+    id:'PP-0234', lat:40.5955, lng:-98.4005,
+    title:'Water Main Break — N Burlington Ave',
+    desc:'Water main fully repaired. Service restored to all affected addresses on N Burlington Ave. Area cleared.',
+    dept:'Hastings Utilities', time:'5 days ago',
+    category:'utility', severity:15, noticeCount:0,
+    status:'done', escalate:false,
+    statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
+    workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 5 days ago', priority:'done',
+    log:[
+      { type:'system',  body:'Issue submitted by resident via PublicPulse', time:'5 days ago' },
+      { type:'assign',  body:'Assigned to Hastings Utilities by City Admin', time:'5 days ago' },
+      { type:'ack',     body:'Assignment acknowledged', time:'5 days ago' },
+      { type:'start',   body:'Work started — repair crew on N Burlington Ave', time:'5 days ago' },
+      { type:'public',  body:'Public update: "Water service restored to all addresses"', time:'4 days ago' },
+      { type:'complete',body:'Marked as Completed — area inspected and cleared', time:'4 days ago' },
+    ]
+  },
+  {
+    id:'PP-0233', lat:40.5830, lng:-98.3850,
+    title:'Damaged Park Bench — Levee Park',
+    desc:'Park bench near the river overlook has broken slats. Splinter/cut hazard for visitors.',
+    dept:'Street Department', time:'2 days ago',
+    category:'park', severity:12, noticeCount:1,
+    status:'reported', escalate:false,
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed Apr 1', priority:'done',
+    log:[
+      { type:'system',  body:'Issue submitted by resident via PublicPulse', time:'5 days ago' },
+      { type:'assign',  body:'Assigned to Street Department', time:'5 days ago' },
+      { type:'ack',     body:'Assignment acknowledged', time:'5 days ago' },
+      { type:'start',   body:'Work started — crew deployed', time:'5 days ago' },
+      { type:'complete',body:'Marked as Completed — bench repaired and graded', time:'Apr 1, 2pm' },
+    ]
+  },
+  {
+    id:'PP-0232', lat:40.5905, lng:-98.3830,
+    title:'Graffiti — Hastings Middle School Wall',
+    desc:'Large graffiti tag on the south-facing wall of the school. Visible from street.',
+    dept:'Hastings Police', time:'6 hrs ago',
+    category:'police', severity:25, noticeCount:4,
+    status:'reported', escalate:false,
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Due in 48h', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'6 hrs ago' },
+    ]
+  },
+];
+
+// ── Convenience lookup ──
+function getIssueById(id) { return ISSUES.find(i => i.id === id); }
+
+// ── Public map: ISSUES with lat/lng ──
+const PINS = ISSUES; // same array — public map reads directly from ISSUES
+
+const STATUS_LABELS = { reported:'Reported', review:'Under Review', progress:'In Progress', done:'Completed' };
+const STATUS_CLASS  = { reported:'s-reported', review:'s-review', progress:'s-progress', done:'s-done' };
+
+/* ── SEVERITY SCORING ──
+   Combined score from: AI severity (weighted 60%) + noticeCount (weighted 40%)
+   Caps noticeCount contribution at 20 notices = full weight
+   Returns 0-100 */
+function calcScore(pin) {
+  const noticeFactor = Math.min((pin.noticeCount || 0) / 20, 1) * 100;
+  return Math.min(100, Math.round((pin.severity || 0) * 0.6 + noticeFactor * 0.4));
+}
+
+/* ── PIN COLOR + SIZE from score ──
+   Green (low) → Orange (medium) → Red (critical)
+   Score 0-30: green, 31-60: orange, 61+: red
+   Completed pins always grey-green */
+function pinStyle(pin) {
+  if (pin.status === 'done') return { color:'#6b7280', r:7, pulseScale:0, glowAlpha:0 };
+  const score = calcScore(pin);
+  let color, r, pulseScale, glowAlpha;
+  if (score < 31) {
+    color = '#22c55e';      // green — low
+    r = 8;
+    pulseScale = 1.4;
+    glowAlpha = 0.25;
+  } else if (score < 61) {
+    color = '#f59e0b';      // amber — medium
+    r = 10 + Math.round((score - 31) / 30 * 3);  // 10–13
+    pulseScale = 1.6;
+    glowAlpha = 0.35;
+  } else {
+    color = '#ef4444';      // red — critical
+    r = 13 + Math.round((score - 61) / 39 * 5);  // 13–18
+    pulseScale = 2.0;
+    glowAlpha = 0.5;
+  }
+  return { color, r, pulseScale, glowAlpha, score };
+}
+
+/* ── DYNAMIC PULSING SVG PIN ──
+   Three concentric rings per pin, all starting from pin edge.
+   Slow, wavy, depth-layered — inner bright, outer ghost.
+   Rings use a custom ease that pauses mid-expand for a breathing feel. */
+
+// Inject shared keyframe styles once into the document head
+(function injectPulseStyles() {
+  if (document.getElementById('pulse-keyframes')) return;
+  const el = document.createElement('style');
+  el.id = 'pulse-keyframes';
+  // We define per-color keyframes for green, amber, red
+  // The wave effect comes from a cubic-bezier that slows mid-way (holds breath)
+  // border-radius oscillates subtly between 50% and 48% for a slight waver
+  el.textContent = `
+    /* ── shared ring base ── */
+    .pring {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      transform-origin: center center;
     }
 
-    if (!SpeechRecognition) {
-      const fallback = window.prompt("Voice input is not available here. Type what happened:");
-      if (fallback) {
-        setReportForm((prev) => ({
-          ...prev,
-          description: prev.description
-            ? `${prev.description} ${fallback}`.trim()
-            : fallback
-        }));
-      }
-      return;
+    /* GREEN rings — slow, calm */
+    @keyframes wave-green-1 {
+      0%   { transform:scale(1);    opacity:0.55; border-width:2.5px; }
+      35%  { transform:scale(1.55); opacity:0.28; border-width:1.8px; }
+      65%  { transform:scale(2.1);  opacity:0.10; border-width:1.2px; }
+      100% { transform:scale(2.8);  opacity:0;    border-width:0.8px; }
+    }
+    @keyframes wave-green-2 {
+      0%   { transform:scale(1);    opacity:0.35; border-width:1.8px; }
+      40%  { transform:scale(1.7);  opacity:0.15; border-width:1.2px; }
+      100% { transform:scale(3.0);  opacity:0;    border-width:0.6px; }
+    }
+    @keyframes wave-green-3 {
+      0%   { transform:scale(1);    opacity:0.18; border-width:1.2px; }
+      100% { transform:scale(3.4);  opacity:0;    border-width:0.4px; }
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true;
+    /* AMBER rings — medium pace */
+    @keyframes wave-amber-1 {
+      0%   { transform:scale(1);    opacity:0.62; border-width:3px;   }
+      30%  { transform:scale(1.5);  opacity:0.35; border-width:2px;   }
+      60%  { transform:scale(2.2);  opacity:0.12; border-width:1.4px; }
+      100% { transform:scale(3.0);  opacity:0;    border-width:0.8px; }
+    }
+    @keyframes wave-amber-2 {
+      0%   { transform:scale(1);    opacity:0.40; border-width:2px;   }
+      35%  { transform:scale(1.8);  opacity:0.18; border-width:1.3px; }
+      100% { transform:scale(3.3);  opacity:0;    border-width:0.5px; }
+    }
+    @keyframes wave-amber-3 {
+      0%   { transform:scale(1);    opacity:0.20; border-width:1.4px; }
+      100% { transform:scale(3.8);  opacity:0;    border-width:0.3px; }
+    }
 
-    recognition.onstart = () => {
-      setIsRecording(true);
-    };
+    /* RED rings — urgent but still measured */
+    @keyframes wave-red-1 {
+      0%   { transform:scale(1);    opacity:0.72; border-width:3.5px; }
+      25%  { transform:scale(1.4);  opacity:0.45; border-width:2.5px; }
+      55%  { transform:scale(2.1);  opacity:0.18; border-width:1.6px; }
+      100% { transform:scale(3.2);  opacity:0;    border-width:0.8px; }
+    }
+    @keyframes wave-red-2 {
+      0%   { transform:scale(1);    opacity:0.48; border-width:2.5px; }
+      30%  { transform:scale(1.7);  opacity:0.22; border-width:1.5px; }
+      100% { transform:scale(3.5);  opacity:0;    border-width:0.5px; }
+    }
+    @keyframes wave-red-3 {
+      0%   { transform:scale(1);    opacity:0.25; border-width:1.6px; }
+      100% { transform:scale(4.0);  opacity:0;    border-width:0.3px; }
+    }
 
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
+    /* soft inner glow aura — depth layer behind pin */
+    @keyframes aura-pulse {
+      0%,100% { transform:scale(0.9);  opacity:0.18; }
+      50%      { transform:scale(1.25); opacity:0.08; }
+    }
+  `;
+  document.head.appendChild(el);
+})();
 
-      setReportForm((prev) => ({
-        ...prev,
-        description: transcript.trim()
-      }));
-    };
+function makeIcon(pin) {
+  const { color, r, glowAlpha } = pinStyle(pin);
+  const tail  = 13;
+  const score = calcScore(pin);
 
-    recognition.onerror = () => {
-      setIsRecording(false);
-      recognitionRef.current = null;
+  // Ring spread room: how far the outermost ring reaches
+  // Low = 2x, medium = 2.8x, critical = 3.5x pin radius
+  const spreadMult = pin.status === 'done' ? 0
+    : score < 31 ? 2.2
+    : score < 61 ? 2.8
+    : 3.5;
+  const pulseRoom = pin.status === 'done' ? 6 : Math.round(r * spreadMult);
+  const pad = 6;
+  const w  = (r + pad + pulseRoom) * 2;
+  const h  = w + tail;
+  const cx = w / 2;
+  const cy = r + pad + pulseRoom;
 
-      const fallback = window.prompt("Voice input did not work. Type what happened:");
-      if (fallback) {
-        setReportForm((prev) => ({
-          ...prev,
-          description: prev.description
-            ? `${prev.description} ${fallback}`.trim()
-            : fallback
-        }));
-      }
-    };
+  // Cycle duration — slow: 5–8s
+  const dur = pin.status === 'done' ? 0
+    : score < 31 ? 7.5
+    : score < 61 ? 6.0
+    : 4.8;
 
-    recognition.onend = () => {
-      setIsRecording(false);
-      recognitionRef.current = null;
-    };
+  // Which keyframe family to use
+  const family = pin.status === 'done' ? null
+    : score < 31 ? 'green'
+    : score < 61 ? 'amber'
+    : 'red';
 
-    recognition.start();
-    recognitionRef.current = recognition;
+  // Ring base size = pin body diameter, centered at cx,cy
+  const rs = r * 2;   // ring start size (px)
+  const rTop  = cy - r;
+  const rLeft = cx - r;
+
+  // Easing: cubic-bezier that gives a soft hold mid-way — wavy breath feel
+  const ease = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+  const rings = (pin.status !== 'done' && family) ? `
+    <!-- aura depth layer -->
+    <div class="pring" style="
+      width:${rs * 1.6}px; height:${rs * 1.6}px;
+      top:${cy - r * 1.6}px; left:${cx - r * 1.6}px;
+      background: radial-gradient(circle, ${color}22 0%, transparent 70%);
+      border:none;
+      animation: aura-pulse ${dur * 0.9}s ease-in-out infinite;
+    "></div>
+    <!-- ring 1 — inner, brightest -->
+    <div class="pring" style="
+      width:${rs}px; height:${rs}px;
+      top:${rTop}px; left:${rLeft}px;
+      border: 2.5px solid ${color};
+      animation: wave-${family}-1 ${dur}s ${ease} infinite;
+    "></div>
+    <!-- ring 2 — mid, delayed -->
+    <div class="pring" style="
+      width:${rs}px; height:${rs}px;
+      top:${rTop}px; left:${rLeft}px;
+      border: 1.8px solid ${color};
+      animation: wave-${family}-2 ${dur}s ${ease} ${(dur * 0.33).toFixed(2)}s infinite;
+    "></div>
+    <!-- ring 3 — outer ghost -->
+    <div class="pring" style="
+      width:${rs}px; height:${rs}px;
+      top:${rTop}px; left:${rLeft}px;
+      border: 1.2px solid ${color};
+      animation: wave-${family}-3 ${dur}s ${ease} ${(dur * 0.66).toFixed(2)}s infinite;
+    "></div>` : '';
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"
+      width="${w}" height="${h}"
+      style="position:absolute;top:0;left:0;overflow:visible">
+    <!-- soft outer glow -->
+    <circle cx="${cx}" cy="${cy}" r="${r + 5}" fill="${color}" fill-opacity="0.12"/>
+    <!-- pin body -->
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" stroke="white" stroke-opacity="0.45" stroke-width="2"/>
+    <!-- tail -->
+    <polygon
+      points="${cx - Math.round(r*0.5)},${cy + r - 1}
+              ${cx + Math.round(r*0.5)},${cy + r - 1}
+              ${cx},${cy + r + tail}"
+      fill="${color}"/>
+    <!-- inner specular dot -->
+    <circle cx="${cx - Math.round(r*0.22)}" cy="${cy - Math.round(r*0.22)}"
+      r="${Math.round(r * 0.28)}" fill="white" fill-opacity="0.5"/>
+  </svg>`;
+
+  const wrapper = `<div style="position:relative;width:${w}px;height:${h}px">
+    ${rings}
+    ${svg}
+  </div>`;
+
+  return L.divIcon({
+    html: wrapper,
+    className: '',
+    iconSize:   [w, h],
+    iconAnchor: [cx, cy + r + tail],
+    popupAnchor:[0, -(cy)],
+  });
+}
+
+/* ══════════════════════════════════════
+   LEAFLET MAP — centered on Hastings, NE
+══════════════════════════════════════ */
+const map = L.map('map', {
+  center: [40.5888, -98.3910],
+  zoom: 14,
+  zoomControl: true,
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+  maxZoom: 19,
+}).addTo(map);
+
+map.zoomControl.setPosition('bottomright');
+
+/* Place markers */
+const markerMap = {};
+PINS.forEach(pin => {
+  const m = L.marker([pin.lat, pin.lng], { icon: makeIcon(pin) }).addTo(map);
+  m.on('click', e => {
+    openCard(pin, e.containerPoint);
+    L.DomEvent.stopPropagation(e);
+  });
+  markerMap[pin.id] = m;
+});
+
+/* ══════════════════════════════════════
+   HEAT MAP — canvas layer drawn over map
+   Uses a radial gradient per pin weighted by score.
+   Toggled via the Heat Map button in the nav area.
+══════════════════════════════════════ */
+let heatCanvas = null;
+let heatActive = false;
+
+function buildHeatCanvas() {
+  if (heatCanvas) { heatCanvas.remove(); heatCanvas = null; }
+  const mapEl = document.getElementById('map');
+  const w = mapEl.offsetWidth, h = mapEl.offsetHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.style.cssText = `
+    position:absolute;top:0;left:0;width:${w}px;height:${h}px;
+    pointer-events:none;z-index:450;
+    mix-blend-mode:screen;
+    transition:opacity .4s;
+  `;
+  document.getElementById('map-container').appendChild(canvas);
+  heatCanvas = canvas;
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+
+  PINS.forEach(pin => {
+    if (pin.status === 'done') return;
+    const score = calcScore(pin);
+    if (score < 5) return;
+
+    // Convert lat/lng to pixel
+    const pt = map.latLngToContainerPoint([pin.lat, pin.lng]);
+    const px = pt.x, py = pt.y;
+
+    // Radius grows with score: 40–120px
+    const rad = 40 + (score / 100) * 80;
+    const alpha = 0.12 + (score / 100) * 0.3;
+
+    // Color: green → amber → red
+    let innerColor, outerColor;
+    if (score < 31) {
+      innerColor = `rgba(34,197,94,${alpha})`;
+      outerColor = `rgba(34,197,94,0)`;
+    } else if (score < 61) {
+      innerColor = `rgba(245,158,11,${alpha})`;
+      outerColor = `rgba(245,158,11,0)`;
+    } else {
+      innerColor = `rgba(239,68,68,${alpha + 0.08})`;
+      outerColor = `rgba(239,68,68,0)`;
+    }
+
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, rad);
+    grad.addColorStop(0, innerColor);
+    grad.addColorStop(1, outerColor);
+    ctx.beginPath();
+    ctx.arc(px, py, rad, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  });
+}
+
+function toggleHeatmap() {
+  heatActive = !heatActive;
+  const btn = document.getElementById('btn-heatmap');
+  if (heatActive) {
+    buildHeatCanvas();
+    btn.classList.add('active');
+    btn.textContent = '🌡 Heat Map: ON';
+  } else {
+    if (heatCanvas) { heatCanvas.remove(); heatCanvas = null; }
+    btn.classList.remove('active');
+    btn.textContent = '🌡 Heat Map';
+  }
+}
+
+// Rebuild heat layer when map moves/zooms
+map.on('moveend zoomend', () => { if (heatActive) buildHeatCanvas(); });
+
+/* ══ SMART CARD POSITIONING ══
+   Always stays fully within the map viewport.
+   Shows a directional tail pointing toward the pin. */
+let activePin = null;
+
+function openCard(pin, cp) {
+  activePin = pin;
+  const card = document.getElementById('map-card');
+  const tail = document.getElementById('card-tail');
+
+  // Status badge
+  const statusEl = document.getElementById('card-status');
+  statusEl.textContent = STATUS_LABELS[pin.status];
+  statusEl.className   = 'card-status ' + STATUS_CLASS[pin.status];
+
+  document.getElementById('card-title').textContent = pin.title;
+  document.getElementById('card-desc').textContent  = pin.desc;
+
+  // Photo — show only if present
+  const photoHTML = pin.photo
+    ? `<img class="card-photo" src="${pin.photo}" alt="Photo of issue">`
+    : '';
+
+  // Clean public-facing meta — no scores, no AI language
+  // Merge "Just now" + "Just submitted" into a single timestamp line
+  const timeLabel = pin.isNew ? 'Just submitted' : pin.time;
+  const noticeCount = pin.noticeCount || 0;
+  document.getElementById('card-meta').innerHTML =
+    `${photoHTML}
+     <span>🏢 <strong>${pin.dept}</strong></span>
+     <span>🕐 ${timeLabel}</span>
+     ${pin.escalate ? `<span style="color:var(--danger)">⚠ Escalated</span>` : ''}`;
+
+  const noticedBtn = document.getElementById('card-noticed');
+  noticedBtn.className = pin.noticed ? 'card-noticed confirmed' : 'card-noticed';
+  noticedBtn.textContent = pin.noticed ? '✓ You noticed this' : '👁 I noticed this too';
+
+  let countEl = document.getElementById('card-noticed-count');
+  if (!countEl) {
+    countEl = document.createElement('div');
+    countEl.id = 'card-noticed-count';
+    countEl.className = 'card-noticed-count';
+    noticedBtn.parentNode.insertBefore(countEl, noticedBtn.nextSibling);
+  }
+  countEl.textContent = noticeCount > 0
+    ? `${noticeCount} resident${noticeCount > 1 ? 's' : ''} noticed this` : '';
+
+  // Position card off-screen to measure
+  card.style.visibility = 'hidden';
+  card.style.display    = 'block';
+  card.style.left = '-2000px';
+  card.style.top  = '-2000px';
+  tail.className  = '';
+
+  requestAnimationFrame(() => {
+    const cw = card.offsetWidth;
+    const ch = card.offsetHeight;
+    const mapEl = document.getElementById('map-container');
+    const mw = mapEl.offsetWidth;
+    const mh = mapEl.offsetHeight;
+    const MARGIN = 14, TAIL_H = 12;
+    const px = cp.x, py = cp.y;
+
+    let top, tailDir;
+    if (py - ch - TAIL_H - MARGIN >= 0) {
+      top = py - ch - TAIL_H; tailDir = 'tail-down';
+    } else {
+      top = py + TAIL_H + MARGIN; tailDir = 'tail-up';
+    }
+    top  = Math.max(MARGIN, Math.min(top,  mh - ch - MARGIN));
+    let left = px - cw / 2;
+    left = Math.max(MARGIN, Math.min(left, mw - cw - MARGIN));
+
+    const tailLeft = Math.max(14, Math.min(px - left - 9, cw - 32));
+    tail.style.left = tailLeft + 'px';
+    tail.className  = tailDir;
+    card.style.left       = left + 'px';
+    card.style.top        = top  + 'px';
+    card.style.visibility = '';
+    card.className        = 'open';
+  });
+}
+
+function closeCard() {
+  document.getElementById('map-card').className = '';
+  document.getElementById('map-card').style.display = 'none';
+  activePin = null;
+}
+
+/* ══ PIN-DROP / REPORT ══ */
+let pinMode = false;
+let droppedLatLng = null;
+let previewMarker = null;
+let newPinCounter = 242; // for IDs like PP-0242, PP-0243, ...
+
+function makePreviewIcon() {
+  // Animated "dropping" pin — white pulsing while form is open
+  const r = 9, pad = 6, tail = 12;
+  const w = (r + pad) * 2, h = (r + pad) * 2 + tail;
+  const cx = w / 2, cy = r + pad;
+  return L.divIcon({
+    html: `<div style="position:relative;width:${w}px;height:${h}px">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+        width:${(r+8)*2}px;height:${(r+8)*2}px;border-radius:50%;
+        background:rgba(61,142,248,0.18);animation:pin-ring-anim 1.2s ease-out infinite"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" style="position:relative;z-index:1">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="#3d8ef8" stroke="white" stroke-opacity="0.5" stroke-width="2.5"/>
+        <polygon points="${cx-5},${cy+r-1} ${cx+5},${cy+r-1} ${cx},${cy+r+tail-1}" fill="#3d8ef8"/>
+        <circle cx="${cx}" cy="${cy}" r="4" fill="white" fill-opacity="0.7"/>
+      </svg>
+    </div>`,
+    className: '',
+    iconSize:   [w, h],
+    iconAnchor: [cx, cy + r + tail - 1],
+  });
+}
+
+function startReport() {
+  pinMode = true;
+  map.getContainer().style.cursor = 'crosshair';
+  document.getElementById('btn-report').style.display = 'none';
+  document.getElementById('banner').style.display = 'none';
+  document.getElementById('drop-hint').classList.add('active');
+  closeCard();
+}
+
+function cancelReport() {
+  if (pinMode) {
+    pinMode = false;
+    map.getContainer().style.cursor = '';
+    document.getElementById('drop-hint').classList.remove('active');
+  }
+  // Remove preview pin if it exists
+  if (previewMarker) { map.removeLayer(previewMarker); previewMarker = null; }
+  droppedLatLng = null;
+  document.getElementById('report-overlay').classList.remove('open');
+  if (typeof micActive !== 'undefined' && micActive) stopMic();
+  removePhoto();
+  setMicStatus(false);
+  document.getElementById('report-desc').value = '';
+  document.getElementById('btn-report').style.display = '';
+  document.getElementById('banner').style.display = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('report-overlay')) cancelReport();
+}
+
+// Single map click handler — handles both "close card" and "drop pin" modes
+map.on('click', function(e) {
+  if (pinMode) {
+    // ── Drop preview pin immediately ──
+    pinMode = false;
+    map.getContainer().style.cursor = '';
+    document.getElementById('drop-hint').classList.remove('active');
+    droppedLatLng = e.latlng;
+
+    // Place an animated preview marker right away
+    if (previewMarker) map.removeLayer(previewMarker);
+    previewMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+      icon: makePreviewIcon(),
+      zIndexOffset: 1000,
+    }).addTo(map);
+
+    // Small bounce animation: map pans slightly to confirm
+    map.panBy([0, -30], { animate: true, duration: 0.25 });
+    setTimeout(() => map.panBy([0, 30], { animate: true, duration: 0.25 }), 260);
+
+    // Open form after brief moment so user sees the pin land
+    setTimeout(() => document.getElementById('report-overlay').classList.add('open'), 320);
+    return;
+  }
+  // Otherwise close any open card
+  closeCard();
+});
+
+function submitReport() {
+  const desc = document.getElementById('report-desc').value.trim();
+  if (!desc) { document.getElementById('report-desc').focus(); return; }
+  if (typeof micActive !== 'undefined' && micActive) stopMic();
+
+  // Remove preview marker
+  if (previewMarker) { map.removeLayer(previewMarker); previewMarker = null; }
+
+  // Build new pin data object
+  const photoSrc = photoFile ? document.getElementById('photo-preview').src : null;
+  const newId = 'PP-0' + newPinCounter++;
+  const newPin = {
+    id: newId,
+    lat: droppedLatLng ? droppedLatLng.lat : 40.5888,
+    lng: droppedLatLng ? droppedLatLng.lng : -98.3910,
+    status: 'reported',
+    title: desc.length > 50 ? desc.slice(0, 48) + '…' : desc,
+    desc: desc,
+    dept: 'Pending Assignment',
+    time: 'Just now',
+    escalate: false,
+    photo: photoSrc,
+    isNew: true,
   };
 
-  /* --- FIND YOUR MIC BUTTON AND REPLACE IT WITH THIS --- */
+  // Add permanent pin to map
+  const m = L.marker([newPin.lat, newPin.lng], {
+    icon: makeIcon(newPin),
+    zIndexOffset: 900,
+  }).addTo(map);
+  m.on('click', ev => {
+    openCard(newPin, ev.containerPoint);
+    L.DomEvent.stopPropagation(ev);
+  });
 
-  /*
-  OLD:
-  <button style={styles.micBtn} onClick={startVoiceInput}>
-    🎤
-  </button>
-  */
+  // Also add to PINS array so it's accessible
+  PINS.push(newPin);
+  markerMap[newPin.id] = m;
 
-  /*
-  NEW:
-  */
-  <button
-    style={{
-      ...styles.micBtn,
-      background: isRecording ? "#d64545" : "#eef5ff",
-      color: isRecording ? "white" : "#0c5fd7"
-    }}
-    onClick={startVoiceInput}
-  >
-    {isRecording ? "⏹" : "🎤"}
-  </button>
+  // Refresh heatmap if active
+  if (heatActive) buildHeatCanvas();
 
+  // Reset form state
+  document.getElementById('report-overlay').classList.remove('open');
+  document.getElementById('report-desc').value = '';
+  document.getElementById('btn-report').style.display = '';
+  document.getElementById('banner').style.display = '';
+  removePhoto();
+  setMicStatus(false);
+  droppedLatLng = null;
+
+  // Show toast
+  const toast = document.getElementById('confirm-toast');
+  toast.className = 'showing';
+  setTimeout(() => {
+    toast.style.transition = 'opacity .5s';
+    toast.style.opacity = '0';
+    setTimeout(() => { toast.className = ''; toast.style = ''; }, 500);
+  }, 4500);
 }
+
+function noticeThis() {
+  if (!activePin || activePin.noticed) return;
+  activePin.noticed = true;
+  activePin.noticeCount = (activePin.noticeCount || 0) + 1;
+
+  // Refresh pin icon to reflect new score
+  const marker = markerMap[activePin.id];
+  if (marker) marker.setIcon(makeIcon(activePin));
+
+  // Refresh heat map if on
+  if (heatActive) buildHeatCanvas();
+
+  const btn = document.getElementById('card-noticed');
+  btn.className = 'card-noticed confirmed';
+  btn.textContent = '✓ You noticed this';
+  const countEl = document.getElementById('card-noticed-count');
+  if (countEl) countEl.textContent = `${activePin.noticeCount} resident${activePin.noticeCount > 1 ? 's' : ''} noticed this`;
+
+  // Re-render AI score bar in card with updated score
+  const score = calcScore(activePin);
+  const { color } = pinStyle(activePin);
+  const scoreLabel = score >= 61 ? 'Critical' : score >= 31 ? 'Moderate' : 'Low';
+  const bar = document.querySelector('#map-card .ai-score-bar');
+  if (bar) {
+    bar.style.width = score + '%';
+    bar.style.background = color;
+    const scoreTxt = document.querySelector('#map-card .ai-score-txt');
+    if (scoreTxt) scoreTxt.textContent = `${score}/100 · ${scoreLabel}`;
+  }
+}
+
+/* ══ BANNER ROTATION ══ */
+const BANNERS = [
+  'Pothole reported on Burlington Ave — 18 minutes ago',
+  'Gas odor near E 3rd St — Hastings Utilities dispatched',
+  'Abandoned vehicle on W 9th St — Police notified',
+  'Storm sewer backup on N Kansas Ave — under review',
+  'Road resurfacing on W 12th St in progress',
+  '3 new issues reported in Hastings today',
+];
+let bannerIdx = 0;
+setInterval(() => {
+  const el = document.getElementById('banner-text');
+  el.classList.add('fading');
+  setTimeout(() => {
+    bannerIdx = (bannerIdx + 1) % BANNERS.length;
+    el.textContent = BANNERS[bannerIdx];
+    el.classList.remove('fading');
+  }, 400);
+}, 4500);
+
+/* ══════════════════════════════════════
+   ADMIN VIEW — reads from ISSUES (ID-based)
+══════════════════════════════════════ */
+/* ======================================================
+   ADMIN VIEW + DEPT VIEW — unified, ID-based, map-synced
+   All three views read from the single ISSUES array.
+   selectAdminById / selectDeptById replace index-based selection.
+   Actions update ISSUES fields and call syncMapPin() so the
+   public map reflects every admin and department status change.
+====================================================== */
+
+/* -- Admin state -- */
+let selectedAdminId  = null;
+let selectedTimeline = '48h';
+let currentQueueTab  = 'active';
+
+function getSortedAdminQueue(tab) {
+  return ISSUES
+    .filter(function(issue) { return issue.queueStatus === tab; })
+    .sort(function(a, b) {
+      if (a.escalate !== b.escalate) return b.escalate ? 1 : -1;
+      return (b.severity || 0) - (a.severity || 0);
+    });
+}
+
+function setQueueTab(tab) {
+  currentQueueTab = tab;
+  document.getElementById('qtab-active').classList.toggle('active', tab === 'active');
+  document.getElementById('qtab-completed').classList.toggle('active', tab === 'completed');
+  selectedAdminId = null;
+  document.getElementById('action-empty').style.display = 'flex';
+  document.getElementById('action-panel').style.display = 'none';
+  renderAdminQueue();
+}
+
+function updateQueueBadge() {
+  var n = ISSUES.filter(function(i) { return i.queueStatus === 'active'; }).length;
+  var el = document.getElementById('queue-badge');
+  if (el) el.textContent = n + ' active';
+}
+
+function renderAdminQueue() {
+  var items = getSortedAdminQueue(currentQueueTab);
+  updateQueueBadge();
+  var qel = document.getElementById('admin-queue');
+  if (!items.length) {
+    qel.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' +
+      (currentQueueTab === 'active' ? 'No active issues' : 'No completed issues yet') + '</div>';
+    return;
+  }
+  qel.innerHTML = items.map(function(issue) {
+    return '<div class="queue-item ' +
+      (issue.escalate ? 'escalated' : issue.warn ? 'warning' : '') + ' ' +
+      (selectedAdminId === issue.id ? 'selected' : '') +
+      '" id="qi-' + issue.id + '" onclick="selectAdminById(\'' + issue.id + '\')">' +
+      (issue.escalate ? '<div class="escalate-pill">Escalated</div>' : '') +
+      '<div class="qi-top">' +
+        '<span class="qi-badge ' + issue.tag + '">' + issue.statusLabel + '</span>' +
+        '<span class="qi-time">' + issue.time + '</span>' +
+      '</div>' +
+      '<div class="qi-title">' + issue.title + '</div>' +
+      '<div class="qi-dept">' + issue.dept + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function selectAdminById(id) {
+  selectedAdminId = id;
+  renderAdminQueue();
+  var issue = getIssueById(id);
+  if (!issue) return;
+  document.getElementById('action-empty').style.display = 'none';
+  var panel = document.getElementById('action-panel');
+  panel.style.display = 'block';
+  panel.className = 'action-panel fade-in';
+  var scMap = { reported:'asb-reported', review:'asb-review', assigned:'asb-assigned', progress:'asb-progress', done:'asb-done' };
+  var sc    = scMap[issue.tag] || 'asb-review';
+  var isDone = issue.queueStatus === 'completed';
+  var tlChips = ['24h','48h','72h','5d','7d'].map(function(t) {
+    return '<div class="tl-chip ' + (selectedTimeline === t ? 'active' : '') + '" onclick="setTimeline(\'' + t + '\')">' + t + '</div>';
+  }).join('');
+  panel.innerHTML =
+    '<div class="action-id">' + issue.id + '</div>' +
+    '<div class="action-title">' + issue.title + '</div>' +
+    '<div style="margin-bottom:12px">' +
+      '<span class="action-status-badge ' + sc + '" id="action-status-badge">' + issue.statusLabel + '</span>' +
+      (issue.escalate ? '<span style="font-size:11px;color:var(--danger);margin-left:8px">Escalated</span>' : '') +
+    '</div>' +
+    '<div class="action-desc">' + issue.desc + '</div>' +
+    '<div class="action-chips" style="margin-bottom:4px">' +
+      '<div class="chip"><strong>Dept:</strong> ' + issue.dept + '</div>' +
+      '<div class="chip"><strong>Reported:</strong> ' + issue.time + '</div>' +
+      '<div class="chip"><strong>Notices:</strong> ' + (issue.noticeCount || 0) + ' residents</div>' +
+    '</div>' +
+    (!isDone ?
+      '<div class="section-title">Actions</div>' +
+      '<div class="action-btns" style="margin-bottom:16px">' +
+        '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')">Mark as Reviewed</button>' +
+        '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')">Escalate</button>' +
+        '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="border-color:rgba(34,197,94,.3);color:var(--green)">Mark as Completed</button>' +
+      '</div>' +
+      '<div class="section-title">Post Public Update</div>' +
+      '<textarea class="update-input" id="update-text" rows="2" placeholder="Write a public update residents will see on the map..."></textarea>' +
+      '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'public\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Public Update</button>' +
+      '<div class="section-title">Assign Department</div>' +
+      '<div class="assign-row">' +
+        '<select class="dept-select" id="dept-assign-select">' +
+          '<option ' + (issue.dept === 'Street Department'      ? 'selected' : '') + '>Street Department</option>' +
+          '<option ' + (issue.dept === 'Hastings Utilities'     ? 'selected' : '') + '>Hastings Utilities</option>' +
+          '<option ' + (issue.dept === 'Hastings Police'        ? 'selected' : '') + '>Hastings Police</option>' +
+          '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
+        '</select>' +
+        '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
+      '</div>' +
+      '<div class="section-title">Escalation Deadline</div>' +
+      '<div class="tl-chips">' + tlChips + '</div>'
+    : '') +
+    '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
+    '<div class="activity-log" id="admin-log">' + renderLog(issue.log) + '</div>';
+}
+
+function renderLog(log) {
+  var tmap = {
+    system:   { cls:'',             dot:'var(--muted)',   pre:'' },
+    review:   { cls:'',             dot:'var(--accent)',  pre:'🔍 ' },
+    assign:   { cls:'log-assign',   dot:'var(--accent2)', pre:'📌 ' },
+    ack:      { cls:'',             dot:'var(--accent)',  pre:'✓ ' },
+    start:    { cls:'',             dot:'var(--accent2)', pre:'▶ ' },
+    update:   { cls:'log-public',   dot:'var(--accent)',  pre:'📢 ' },
+    public:   { cls:'log-public',   dot:'var(--accent)',  pre:'📢 ' },
+    complete: { cls:'log-complete', dot:'var(--green)',   pre:'✅ ' },
+    escalate: { cls:'log-escalate', dot:'var(--danger)',  pre:'🔴 ' },
+  };
+  return log.slice().reverse().map(function(e) {
+    var t = tmap[e.type] || tmap.system;
+    return '<div class="log-entry ' + t.cls + '">' +
+      '<div class="log-dot" style="background:' + t.dot + '"></div>' +
+      '<div class="log-body">' + t.pre + e.body + '</div>' +
+      '<div class="log-time">' + e.time + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function syncMapPin(issue) {
+  var marker = markerMap[issue.id];
+  if (marker) marker.setIcon(makeIcon(issue));
+  if (heatActive) buildHeatCanvas();
+}
+
+function adminAction(id, actionType) {
+  var issue = getIssueById(id);
+  if (!issue) return;
+  var now = 'Just now';
+  if (actionType === 'review') {
+    issue.statusLabel = 'Under Review'; issue.tag = 'review';
+    issue.log.push({ type:'review', body:'Marked as Reviewed by City Admin', time:now });
+  } else if (actionType === 'escalate') {
+    issue.escalate = true;
+    issue.log.push({ type:'escalate', body:'Escalated to Department Director by City Admin', time:now });
+    setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 350);
+  } else if (actionType === 'assign') {
+    var sel = document.getElementById('dept-assign-select');
+    var dept = sel ? sel.value : issue.dept;
+    issue.dept = dept; issue.statusLabel = 'Assigned'; issue.tag = 'assigned';
+    issue.log.push({ type:'assign', body:'Assigned to ' + dept + ' by City Admin', time:now });
+  } else if (actionType === 'public') {
+    var el2 = document.getElementById('update-text');
+    var msg = (el2 ? el2.value.trim() : '') || 'Status update posted';
+    issue.log.push({ type:'public', body:'Public update posted: "' + msg + '"', time:now });
+    if (el2) el2.value = '';
+  } else if (actionType === 'complete') {
+    issue.statusLabel  = 'Completed'; issue.tag = 'done'; issue.queueStatus = 'completed';
+    issue.status       = 'done';      issue.workStatus = 'completed';
+    issue.actionStatus = 'completed'; issue.progress = 100; issue.priority = 'done';
+    issue.log.push({ type:'complete', body:'Marked as Completed by City Admin', time:now });
+    syncMapPin(issue);
+    var qel = document.getElementById('qi-' + id);
+    if (qel) {
+      qel.classList.add('exiting');
+      setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 360);
+    } else { renderAdminQueue(); }
+    updateQueueBadge(); renderDeptAccountability(); return;
+  }
+  syncMapPin(issue);
+  var logEl = document.getElementById('admin-log');
+  if (logEl) logEl.innerHTML = renderLog(issue.log);
+  renderAdminQueue();
+}
+
+function setTimeline(t) {
+  selectedTimeline = t;
+  document.querySelectorAll('.tl-chip').forEach(function(c) {
+    c.classList.toggle('active', c.textContent === t);
+  });
+}
+
+/* -- Dept state -- */
+let selectedDeptId = null;
+let currentDeptTab = 'active';
+const ACTION_PROGRESS = { ack:10, start:30, update:15, complete:100 };
+
+function getDeptIssues() {
+  return ISSUES.filter(function(i) { return i.workStatus !== undefined; });
+}
+
+function getDeptSorted(tab) {
+  var order = { late:0, warn:1, ok:2, done:3 };
+  return getDeptIssues()
+    .filter(function(i) { return i.workStatus === tab; })
+    .sort(function(a, b) { return (order[a.priority] || 2) - (order[b.priority] || 2); });
+}
+
+function setDeptTab(tab) {
+  currentDeptTab = tab;
+  document.getElementById('dqtab-active').classList.toggle('active',    tab === 'active');
+  document.getElementById('dqtab-completed').classList.toggle('active', tab === 'completed');
+  selectedDeptId = null;
+  document.getElementById('dept-empty').style.display = 'flex';
+  document.getElementById('dept-panel').style.display = 'none';
+  renderDeptQueue();
+}
+
+function updateDeptWorkload() {
+  var active = getDeptIssues().filter(function(i) { return i.workStatus === 'active'; });
+  var late   = active.filter(function(i) { return i.priority === 'late'; });
+  var el = document.getElementById('dept-workload');
+  if (el) el.textContent = active.length + ' active · ' + late.length + ' late';
+}
+
+function renderDeptQueue() {
+  updateDeptWorkload();
+  var items = getDeptSorted(currentDeptTab);
+  var qel = document.getElementById('dept-queue');
+  if (!items.length) {
+    qel.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' +
+      (currentDeptTab === 'active' ? 'No active work items' : 'No completed items yet') + '</div>';
+    renderDeptAccountability(); return;
+  }
+  qel.innerHTML = items.map(function(issue) {
+    var bc = issue.priority === 'late' ? 'late' : issue.priority === 'warn' ? 'warn' : '';
+    var lc = issue.priority === 'late' ? 'var(--danger)' : issue.priority === 'warn' ? 'var(--warn)' : issue.priority === 'done' ? 'var(--muted)' : 'var(--accent2)';
+    var fc = issue.priority === 'late' ? 'fill-danger' : issue.priority === 'warn' ? 'fill-warn' : issue.priority === 'done' ? 'fill-green' : 'fill-blue';
+    var lblMap = { assigned:'Assigned', acknowledged:'Acknowledged', 'in-progress':'In Progress', completed:'Completed' };
+    return '<div class="dept-item ' + bc + ' ' + (selectedDeptId === issue.id ? 'selected' : '') +
+      '" id="dqi-' + issue.id + '" onclick="selectDeptById(\'' + issue.id + '\')">' +
+      '<div class="qi-top">' +
+        '<span style="font-size:11px;font-weight:700;color:' + lc + '">' + (lblMap[issue.actionStatus] || 'Assigned') + '</span>' +
+        '<span class="qi-time">' + (issue.deadline || '') + '</span>' +
+      '</div>' +
+      '<div class="qi-title">' + issue.title + '</div>' +
+      '<div class="progress-bar"><div class="progress-fill ' + fc + '" style="width:' + (issue.progress || 0) + '%;transition:width .6s ease"></div></div>' +
+    '</div>';
+  }).join('');
+  renderDeptAccountability();
+}
+
+function selectDeptById(id) {
+  selectedDeptId = id;
+  renderDeptQueue();
+  var issue = getIssueById(id);
+  if (!issue) return;
+  document.getElementById('dept-empty').style.display = 'none';
+  var panel = document.getElementById('dept-panel');
+  panel.style.display = 'block'; panel.className = 'action-panel fade-in';
+  renderDeptPanel(id);
+}
+
+function renderDeptPanel(id) {
+  var issue = getIssueById(id);
+  if (!issue) return;
+  var isDone = issue.workStatus === 'completed';
+  var fc = issue.priority === 'late' ? 'fill-danger' : issue.priority === 'done' ? 'fill-green' : issue.priority === 'warn' ? 'fill-warn' : 'fill-blue';
+  var slMap = { assigned:{text:'Assigned',cls:'asb-assigned'}, acknowledged:{text:'Acknowledged',cls:'asb-review'}, 'in-progress':{text:'In Progress',cls:'asb-progress'}, completed:{text:'Completed',cls:'asb-done'} };
+  var sl = slMap[issue.actionStatus] || slMap.assigned;
+  document.getElementById('dept-panel').innerHTML =
+    '<div class="action-id">' + issue.id + '</div>' +
+    '<div class="action-title">' + issue.title + '</div>' +
+    '<div style="margin-bottom:10px"><span class="action-status-badge ' + sl.cls + '" id="dept-status-badge">' + sl.text + '</span></div>' +
+    '<div class="action-desc">' + issue.desc + '</div>' +
+    '<div class="action-chips" style="margin-bottom:4px">' +
+      '<div class="chip"><strong>Dept:</strong> ' + issue.dept + '</div>' +
+      '<div class="chip"><strong>Deadline:</strong> ' + (issue.deadline || '') + '</div>' +
+    '</div>' +
+    (!isDone ?
+      '<div class="section-title">Work Actions</div>' +
+      '<div class="action-btns" style="margin-bottom:16px">' +
+        (issue.actionStatus === 'assigned'     ? '<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'ack\')">Acknowledge Assignment</button>' : '') +
+        (issue.actionStatus === 'acknowledged' ? '<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'start\')">Start Work</button>' : '') +
+        (issue.actionStatus === 'in-progress'  ? '<button class="action-btn primary" style="background:var(--green);border-color:var(--green)" onclick="deptAction(\'' + id + '\',\'complete\')">Mark as Completed</button>' : '') +
+        '<button class="action-btn danger" onclick="deptAction(\'' + id + '\',\'escalate\')" style="margin-left:auto">Escalate</button>' +
+      '</div>' +
+      '<div class="section-title">Post Public Update</div>' +
+      '<textarea class="update-input" id="dept-update-text" rows="2" placeholder="Describe crew status, materials, schedule..."></textarea>' +
+      '<button class="action-btn" onclick="deptAction(\'' + id + '\',\'update\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Update</button>'
+    : '') +
+    '<div class="section-title">Progress</div>' +
+    '<div class="progress-bar" style="height:9px;border-radius:5px;margin-bottom:6px"><div class="progress-fill ' + fc + '" id="dept-prog-bar" style="width:' + (issue.progress || 0) + '%;transition:width .7s cubic-bezier(.4,0,.2,1)"></div></div>' +
+    '<div id="dept-prog-label" style="font-size:11px;color:var(--muted)">' + (issue.progress || 0) + '% complete</div>' +
+    '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
+    '<div class="activity-log" id="dept-log">' + renderLog(issue.log) + '</div>';
+}
+
+function deptAction(id, actionType) {
+  var issue = getIssueById(id);
+  if (!issue) return;
+  var now = 'Just now';
+  if (actionType === 'ack') {
+    issue.actionStatus = 'acknowledged';
+    issue.progress = Math.max(issue.progress || 0, ACTION_PROGRESS.ack);
+    issue.log.push({ type:'ack', body:'Assignment acknowledged — crew being scheduled', time:now });
+  } else if (actionType === 'start') {
+    issue.actionStatus = 'in-progress'; issue.status = 'progress';
+    issue.progress = Math.max(issue.progress || 0, ACTION_PROGRESS.start);
+    issue.log.push({ type:'start', body:'Work started — ' + issue.dept + ' crew on site', time:now });
+    syncMapPin(issue);
+  } else if (actionType === 'update') {
+    var ta = document.getElementById('dept-update-text');
+    var msg = (ta ? ta.value.trim() : '') || 'Status update posted';
+    issue.progress = Math.min(85, (issue.progress || 0) + ACTION_PROGRESS.update);
+    issue.log.push({ type:'update', body:'Public update posted: "' + msg + '"', time:now });
+    if (ta) ta.value = '';
+  } else if (actionType === 'escalate') {
+    issue.priority = 'late'; issue.escalate = true;
+    issue.log.push({ type:'escalate', body:'Escalated — deadline at risk, supervisor notified', time:now });
+  } else if (actionType === 'complete') {
+    issue.actionStatus = 'completed'; issue.workStatus = 'completed'; issue.queueStatus = 'completed';
+    issue.status = 'done'; issue.priority = 'done'; issue.progress = 100;
+    issue.log.push({ type:'complete', body:'Marked as Completed — work inspected and signed off', time:now });
+    syncMapPin(issue);
+    var el3 = document.getElementById('dqi-' + id);
+    if (el3) {
+      el3.classList.add('exiting');
+      setTimeout(function() {
+        renderDeptQueue();
+        document.getElementById('dept-empty').style.display = 'flex';
+        document.getElementById('dept-panel').style.display = 'none';
+        selectedDeptId = null;
+      }, 360);
+    }
+    renderDeptAccountability(); return;
+  }
+  var logEl = document.getElementById('dept-log');
+  if (logEl) logEl.innerHTML = renderLog(issue.log);
+  var bar = document.getElementById('dept-prog-bar');
+  var lbl = document.getElementById('dept-prog-label');
+  if (bar) bar.style.width = (issue.progress || 0) + '%';
+  if (lbl) lbl.textContent = (issue.progress || 0) + '% complete';
+  var badge = document.getElementById('dept-status-badge');
+  if (badge) {
+    var lm = { assigned:'Assigned', acknowledged:'Acknowledged', 'in-progress':'In Progress', completed:'Completed' };
+    var cm = { assigned:'asb-assigned', acknowledged:'asb-review', 'in-progress':'asb-progress', completed:'asb-done' };
+    badge.textContent = lm[issue.actionStatus] || '';
+    badge.className = 'action-status-badge ' + (cm[issue.actionStatus] || '');
+    badge.style.transform = 'scale(1.1)';
+    setTimeout(function() { badge.style.transform = ''; }, 250);
+  }
+  renderDeptPanel(id); renderDeptQueue();
+}
+
+function renderDeptAccountability() {
+  var el = document.getElementById('dept-accountability');
+  if (!el) return;
+  var all       = getDeptIssues();
+  var active    = all.filter(function(i) { return i.workStatus === 'active'; });
+  var completed = all.filter(function(i) { return i.workStatus === 'completed'; });
+  var late      = active.filter(function(i) { return i.priority === 'late'; });
+  var pct       = all.length ? Math.round((completed.length / all.length) * 100) : 0;
+  var sc        = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
+  var tmap = { assign:{dot:'var(--muted)',icon:'📋',cls:''}, ack:{dot:'var(--accent)',icon:'✓',cls:''}, start:{dot:'var(--accent2)',icon:'▶',cls:''}, update:{dot:'var(--accent)',icon:'📢',cls:''}, public:{dot:'var(--accent)',icon:'📢',cls:''}, complete:{dot:'var(--green)',icon:'✅',cls:'log-complete'}, escalate:{dot:'var(--danger)',icon:'🔴',cls:'log-escalate'}, system:{dot:'var(--muted)',icon:'',cls:''} };
+  var evts = [];
+  all.forEach(function(issue) { issue.log.forEach(function(e) { evts.push({ type:e.type, body:e.body, time:e.time, title:issue.title }); }); });
+  evts.reverse();
+  el.innerHTML =
+    '<div class="insight-card" style="margin-bottom:10px">' +
+      '<div class="insight-label">Street Dept. Score</div>' +
+      '<div class="insight-val" style="color:' + sc + '">' + pct + '%</div>' +
+      '<div class="insight-sub">On-time completion this month</div>' +
+    '</div>' +
+    '<div class="metrics-row" style="margin-bottom:12px">' +
+      '<div class="metric-mini"><div class="metric-val" style="color:var(--danger)">' + late.length + '</div><div class="metric-label">Late</div></div>' +
+      '<div class="metric-mini"><div class="metric-val" style="color:var(--accent)">'  + active.length + '</div><div class="metric-label">Active</div></div>' +
+      '<div class="metric-mini"><div class="metric-val" style="color:var(--green)">'   + completed.length + '</div><div class="metric-label">Done</div></div>' +
+    '</div>' +
+    '<div class="section-title">Department Activity Log</div>' +
+    '<div class="activity-log">' +
+    evts.slice(0, 14).map(function(e) {
+      var t = tmap[e.type] || tmap.system;
+      var st = e.title.indexOf('\u2014') > -1 ? e.title.split('\u2014')[0].trim() : e.title;
+      return '<div class="log-entry ' + t.cls + '">' +
+        '<div class="log-dot" style="background:' + t.dot + '"></div>' +
+        '<div class="log-body">' + (t.icon ? t.icon + ' ' : '') + '<strong>' + st + '</strong> \u2014 ' + e.body + '</div>' +
+        '<div class="log-time">' + e.time + '</div>' +
+      '</div>';
+    }).join('') +
+    '</div>';
+}
+
+/* ══ VIEW SWITCHING ══ */
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  // Activate matching tab by data-view attribute
+  const tab = document.querySelector(`.nav-tab[data-view="${name}"]`);
+  if (tab) tab.classList.add('active');
+  // Show heat map button only on public map
+  document.getElementById('btn-heatmap').style.display = name === 'public' ? '' : 'none';
+  if (name === 'public') setTimeout(() => map.invalidateSize(), 50);
+}
+
+/* Init */
+try { buildTypePicker(); } catch(e) { console.warn('Report picker init failed:', e); }
+try { renderAdminQueue(); } catch(e) { console.warn('Admin queue init failed:', e); }
+try { renderDeptQueue(); }  catch(e) { console.warn('Dept queue init failed:', e); }
+try { renderDeptAccountability(); } catch(e) { console.warn('Accountability init failed:', e); }
+// Show heatmap button on initial public map view
+document.getElementById('btn-heatmap').style.display = '';
+
+/* ══════════════════════════════════════
+   MIC — Web Speech API voice-to-text
+══════════════════════════════════════ */
+let recognition = null;
+let micActive = false;
+
+// Single source of truth for mic status UI
+function setMicStatus(visible, msg, isError) {
+  const el  = document.getElementById('mic-status');
+  const dot = document.getElementById('mic-dot');
+  const lbl = document.getElementById('mic-label');
+  if (!el) return;
+  el.style.display = visible ? 'flex' : 'none';
+  if (msg) lbl.textContent = msg;
+  if (isError) {
+    el.style.background    = 'rgba(255,77,109,0.08)';
+    el.style.borderColor   = 'rgba(255,77,109,0.3)';
+    el.style.color         = 'var(--danger)';
+    dot.style.animation    = 'none';
+    dot.style.background   = 'var(--danger)';
+  } else {
+    el.style.background    = 'rgba(255,77,109,0.08)';
+    el.style.borderColor   = 'rgba(255,77,109,0.2)';
+    el.style.color         = 'var(--danger)';
+    dot.style.animation    = 'pulse-dot 1s ease-in-out infinite';
+    dot.style.background   = 'var(--danger)';
+  }
+}
+
+function toggleMic() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showMicError('Voice input is not supported in this browser. Try Chrome.');
+    return;
+  }
+  if (micActive) { stopMic(); return; }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  const textarea = document.getElementById('report-desc');
+  const baseText = textarea.value;
+
+  recognition.onstart = () => {
+    micActive = true;
+    const btn = document.getElementById('btn-mic');
+    btn.textContent = '⏹';
+    btn.style.borderColor = 'var(--danger)';
+    btn.style.color = 'var(--danger)';
+    setMicStatus(true, 'Listening… speak now', false);
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t; else interim += t;
+    }
+    const sep = baseText.trim() ? ' ' : '';
+    if (final) {
+      textarea.value = baseText + sep + final.trim();
+      setMicStatus(true, '✓ Captured — click 🎤 to add more', false);
+    } else {
+      textarea.value = baseText + sep + interim;
+      setMicStatus(true, `Hearing: "${interim}"`, false);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    let msg = 'Mic error.';
+    if (e.error === 'not-allowed') msg = 'Microphone access denied. Check browser settings.';
+    if (e.error === 'no-speech')   msg = 'No speech detected. Try again.';
+    if (e.error === 'network')     msg = 'Network error during voice recognition.';
+    showMicError(msg);
+    stopMic();
+  };
+
+  recognition.onend = () => { stopMic(); };
+  recognition.start();
+}
+
+function stopMic() {
+  micActive = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  const btn = document.getElementById('btn-mic');
+  if (btn) { btn.textContent = '🎤'; btn.style.borderColor = ''; btn.style.color = ''; }
+  setTimeout(() => setMicStatus(false), 3000);
+}
+
+function showMicError(msg) {
+  setMicStatus(true, msg, true);
+  setTimeout(() => setMicStatus(false), 5000);
+}
+
+/* ══════════════════════════════════════
+   PHOTO — file input + preview
+══════════════════════════════════════ */
+let photoFile = null;
+
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate it's an image and under 10 MB
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file.');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Photo must be under 10 MB.');
+    return;
+  }
+
+  photoFile = file;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    document.getElementById('photo-preview').src = ev.target.result;
+    document.getElementById('photo-preview-wrap').style.display = 'block';
+    // Update photo button to show filename
+    const btn = document.getElementById('btn-photo');
+    btn.textContent = '✅ ' + (file.name.length > 22 ? file.name.slice(0, 20) + '…' : file.name);
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  photoFile = null;
+  document.getElementById('photo-input').value = '';
+  document.getElementById('photo-preview-wrap').style.display = 'none';
+  const btn = document.getElementById('btn-photo');
+  btn.textContent = '📷 Add photo (optional)';
+  btn.style.borderColor = '';
+  btn.style.color = '';
+}
+
+/* ══════════════════════════════════════════════════════════
+   REPORT SYSTEM — multi-type AI council report generator
+══════════════════════════════════════════════════════════ */
+
+/* ── Report type definitions ── */
+const REPORT_TYPES = [
+  {
+    id: 'council',
+    icon: '🏛️',
+    name: 'Council Report',
+    desc: 'Bi-weekly briefing for elected officials',
+    periods: ['Since Last Meeting','Last 30 Days','This Quarter'],
+    defaultPeriod: 0,
+    audience: 'City Council members — elected officials, non-technical',
+    sections: [
+      { id:'changes',   label:'What Changed',         checked:true  },
+      { id:'ongoing',   label:'Active Issues',         checked:true  },
+      { id:'attention', label:'Needs Attention',       checked:true  },
+      { id:'plan',      label:'Path Forward',          checked:true  },
+      { id:'budget',    label:'Budget Considerations', checked:true  },
+      { id:'compplan',  label:'Comp Plan Alignment',   checked:true  },
+    ]
+  },
+  {
+    id: 'annual',
+    icon: '📅',
+    name: 'Annual Report',
+    desc: 'Year-in-review for public & leadership',
+    periods: ['FY 2024–2025','FY 2023–2024','Calendar Year 2025'],
+    defaultPeriod: 0,
+    audience: 'City leadership, residents, and the public',
+    sections: [
+      { id:'yearoverview', label:'Year Overview',           checked:true  },
+      { id:'bydepart',     label:'Department Performance',  checked:true  },
+      { id:'topissues',    label:'Top Issues & Resolutions',checked:true  },
+      { id:'metrics',      label:'Key Metrics & Trends',    checked:true  },
+      { id:'budget',       label:'Financial Summary',       checked:true  },
+      { id:'compplan',     label:'Strategic Plan Progress', checked:true  },
+      { id:'yearahead',    label:'Looking Ahead',           checked:true  },
+    ]
+  },
+  {
+    id: 'grant',
+    icon: '💵',
+    name: 'Grant Application',
+    desc: 'Federal/state funding narrative & data',
+    periods: ['Current Infrastructure Needs','5-Year Capital Plan','Emergency Needs'],
+    defaultPeriod: 0,
+    audience: 'Federal and state grant reviewers (CDBG, FEMA, USDA, DOT, EPA)',
+    sections: [
+      { id:'statement',   label:'Statement of Need',        checked:true  },
+      { id:'population',  label:'Community Profile',        checked:true  },
+      { id:'projectscope',label:'Project Scope',            checked:true  },
+      { id:'impact',      label:'Community Impact',         checked:true  },
+      { id:'budget',      label:'Budget Narrative',         checked:true  },
+      { id:'timeline',    label:'Project Timeline',         checked:true  },
+      { id:'capacity',    label:'Organizational Capacity',  checked:true  },
+    ]
+  },
+  {
+    id: 'internal',
+    icon: '⚙️',
+    name: 'Internal Admin',
+    desc: 'Operational summary for city leadership',
+    periods: ['This Week','Last 30 Days','This Quarter'],
+    defaultPeriod: 0,
+    audience: 'City Administrator and department heads',
+    sections: [
+      { id:'snapshot',   label:'Operational Snapshot',      checked:true  },
+      { id:'escalated',  label:'Escalated Items',           checked:true  },
+      { id:'staffing',   label:'Resource & Staffing Notes', checked:false },
+      { id:'risk',       label:'Risk & Liability Flags',    checked:true  },
+      { id:'budget',     label:'Budget Burn Rate',          checked:true  },
+      { id:'decisions',  label:'Decisions Needed',          checked:true  },
+    ]
+  },
+  {
+    id: 'dept-street',
+    icon: '🚧',
+    name: 'Street Dept.',
+    desc: 'Operations & maintenance report',
+    periods: ['This Week','Last 30 Days','This Quarter'],
+    defaultPeriod: 0,
+    audience: 'Street Department leadership and City Administrator',
+    sections: [
+      { id:'worklog',    label:'Work Completed',            checked:true  },
+      { id:'inprogress', label:'In Progress',               checked:true  },
+      { id:'backlog',    label:'Backlog & Upcoming',        checked:true  },
+      { id:'equipment',  label:'Equipment & Materials',     checked:false },
+      { id:'budget',     label:'Budget Status',             checked:true  },
+      { id:'metrics',    label:'Performance Metrics',       checked:true  },
+    ]
+  },
+  {
+    id: 'dept-utilities',
+    icon: '⚡',
+    name: 'Utilities Dept.',
+    desc: 'Electric, water, gas & sewer status',
+    periods: ['This Week','Last 30 Days','This Quarter'],
+    defaultPeriod: 0,
+    audience: 'Hastings Utilities management and City Administrator',
+    sections: [
+      { id:'outages',    label:'Outages & Incidents',       checked:true  },
+      { id:'maintenance',label:'Planned Maintenance',       checked:true  },
+      { id:'capital',    label:'Capital Projects',          checked:true  },
+      { id:'budget',     label:'Budget & Rate Impact',      checked:true  },
+      { id:'compliance', label:'Regulatory Compliance',     checked:false },
+      { id:'forecast',   label:'Demand Forecast',           checked:false },
+    ]
+  },
+  {
+    id: 'dept-police',
+    icon: '🚔',
+    name: 'Police Dept.',
+    desc: 'Community issues & non-emergency calls',
+    periods: ['This Week','Last 30 Days','This Quarter'],
+    defaultPeriod: 0,
+    audience: 'Police leadership and City Administrator',
+    sections: [
+      { id:'callsummary',label:'Non-Emergency Summary',     checked:true  },
+      { id:'patterns',   label:'Issue Patterns & Hotspots', checked:true  },
+      { id:'community',  label:'Community Engagement',      checked:true  },
+      { id:'openitems',  label:'Open Items',                checked:true  },
+      { id:'recommend',  label:'Recommendations',           checked:true  },
+    ]
+  },
+  {
+    id: 'citizen',
+    icon: '🏘️',
+    name: 'Public Summary',
+    desc: 'Plain-language transparency report',
+    periods: ['Last 30 Days','This Quarter','This Year'],
+    defaultPeriod: 0,
+    audience: 'Hastings residents — general public, plain language required',
+    sections: [
+      { id:'happening',  label:'What\'s Happening',         checked:true  },
+      { id:'fixed',      label:'What We Fixed',             checked:true  },
+      { id:'working',    label:'What We\'re Working On',    checked:true  },
+      { id:'coming',     label:'What\'s Coming',            checked:true  },
+      { id:'budget',     label:'Where Money Is Going',      checked:false },
+    ]
+  },
+];
+
+/* ── Section prompt library (keyed by section id) ── */
+const SECTION_PROMPTS = {
+  // Shared
+  budget:       'Analyze budget implications. Reference FY2025-2026 allocations, burn rates, and any items needing council appropriation or reallocation. Flag cost overruns.',
+  compplan:     'Assess alignment with the Hastings Comprehensive Plan. Reference specific goals (e.g., Goal 3.1 street PCI, Goal 5.1 ADA compliance). Flag deviations.',
+  metrics:      'Present key performance metrics. Include resolution time, issue volume trends, department response rates, and citizen engagement stats.',
+  recommend:    'Provide clear, actionable recommendations. Be specific about who should do what and by when.',
+  // Council
+  changes:      'What changed since the last report period? Highlight resolved issues, new issues that emerged, and significant status changes. Use bullets.',
+  ongoing:      'Summarize all currently active issues grouped by severity. Include department, resident engagement count, and current status for each.',
+  attention:    'What requires council attention or a decision? Flag anything escalated, overdue, or posing public safety or liability risk. Be direct.',
+  plan:         'Provide a concrete two-week action plan. Specify which department handles each item, what quick wins exist, and what requires longer planning.',
+  // Annual
+  yearoverview: 'Write an executive overview of the year. Summarize total issues reported vs. resolved, highlight major accomplishments, and describe the overall state of city services.',
+  bydepart:     'Summarize each department\'s performance over the year: Street Department, Hastings Utilities, Hastings Police, Hastings Fire & Rescue. Include volume handled and notable outcomes.',
+  topissues:    'Describe the top 5 recurring issue categories from this year. Explain what drove them, how they were addressed, and what patterns emerged.',
+  yearahead:    'Looking into the next fiscal year, what are the top infrastructure priorities, budget asks, and strategic initiatives the city should plan for?',
+  // Grant
+  statement:    'Write a compelling statement of need for federal/state grant funding. Reference specific infrastructure deficiencies, public safety impacts, and underserved population data for Hastings.',
+  population:   'Describe the community profile of Hastings, NE: population, demographics, income levels, geographic context, and why the community qualifies for this funding.',
+  projectscope: 'Define a specific project scope for the grant narrative based on the highest-severity infrastructure issues. Include location, scale, and technical description.',
+  impact:       'Describe the community impact of the proposed project. How many residents benefit? What safety or quality-of-life improvements result? Include quantifiable outcomes.',
+  timeline:     'Propose a realistic project timeline from award through completion. Include planning, procurement, construction, and closeout phases.',
+  capacity:     'Demonstrate organizational capacity to manage the grant. Describe city staff, contractor relationships, financial controls, and past project experience.',
+  // Internal
+  snapshot:     'Provide a quick operational snapshot: total open issues, critical items, department workload, and anything that deviates from normal operations.',
+  escalated:    'List and analyze all escalated or overdue items. Who owns them? Why are they delayed? What is the risk if not addressed this week?',
+  staffing:     'Note any staffing or resource constraints affecting service delivery. Flag overtime, equipment issues, or contractor delays.',
+  risk:         'Identify legal, liability, or reputational risks from current open issues. Flag any items that could result in claims, accidents, or public complaints.',
+  decisions:    'List decisions the City Administrator or department heads must make this week. Provide context and recommended options for each.',
+  // Street dept
+  worklog:      'List all work completed this period by the Street Department. Include location, issue type, crew size, and time to resolve.',
+  inprogress:   'Detail all work currently in progress. What is the status, expected completion, and any blockers?',
+  backlog:      'Describe the current backlog of unassigned or queued items. Prioritize by severity and suggest scheduling order.',
+  equipment:    'Report on equipment status, material inventory, and any procurement needs for the next 30 days.',
+  // Utilities
+  outages:      'Summarize all utility outages and incidents this period (electric, water, gas, sewer). Include cause, duration, customers affected, and resolution.',
+  maintenance:  'Describe planned maintenance activities — what is scheduled, what was completed, and what was deferred.',
+  capital:      'Update on capital improvement projects: storm sewer upgrades, water main work, and any major infrastructure investments. Budget status for each.',
+  compliance:   'Report on any regulatory compliance items, inspection results, permit status, or DEQ/EPA requirements.',
+  forecast:     'Provide a demand forecast for the next quarter: anticipated peak loads, maintenance triggers, and seasonal factors.',
+  // Police
+  callsummary:  'Summarize non-emergency calls and community issues handled this period. Categorize by type and compare to prior period.',
+  patterns:     'Identify geographic or temporal patterns in community issues. Are there hotspots, recurring problem types, or emerging trends?',
+  community:    'Describe community engagement activities and outcomes. How is the department building trust and responding to resident concerns?',
+  openitems:    'List all open non-emergency items and their current status. Flag any that are aging or require outside coordination.',
+  // Citizen
+  happening:    'In plain, friendly language explain what is currently going on in Hastings — active issues, city projects, and what residents can expect.',
+  fixed:        'List what the city has fixed or resolved recently. Be specific about locations so residents recognize the work. Keep it conversational.',
+  working:      'Explain what city crews are currently working on. Give residents a sense of progress and expected timelines without technical jargon.',
+  coming:       'Tell residents what is coming up — planned projects, improvements, or seasonal work. Build anticipation and demonstrate forward planning.',
+};
+
+/* ── State ── */
+let selectedReportType  = null;
+let selectedPeriod      = 'Since Last Meeting';
+const reportSections    = {};
+
+/* ── Build type picker grid ── */
+function buildTypePicker() {
+  const grid = document.getElementById('report-type-grid');
+  grid.innerHTML = REPORT_TYPES.map(rt => `
+    <div class="rtype-card" onclick="selectReportType('${rt.id}')">
+      <div class="rtype-icon">${rt.icon}</div>
+      <div class="rtype-name">${rt.name}</div>
+      <div class="rtype-sub">${rt.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectReportType(typeId) {
+  selectedReportType = REPORT_TYPES.find(r => r.id === typeId);
+  if (!selectedReportType) return;
+
+  // Update header
+  document.getElementById('rth-icon').textContent = selectedReportType.icon;
+  document.getElementById('rth-name').textContent = selectedReportType.name;
+  document.getElementById('rth-desc').textContent = selectedReportType.desc;
+
+  // Build period chips
+  document.getElementById('period-chips').innerHTML = selectedReportType.periods.map((p, i) =>
+    `<button class="tl-chip ${i===0?'active':''}" onclick="selectPeriodChip(this,'${p}')">${p}</button>`
+  ).join('');
+  selectedPeriod = selectedReportType.periods[0];
+
+  // Build section checkboxes
+  document.getElementById('section-checks').innerHTML = selectedReportType.sections.map(s =>
+    `<label class="report-check"><input type="checkbox" ${s.checked?'checked':''} data-section="${s.id}"> ${s.label}</label>`
+  ).join('');
+
+  document.getElementById('report-type-picker').style.display = 'none';
+  document.getElementById('report-config').style.display = 'block';
+  document.getElementById('report-col-title').textContent = selectedReportType.name;
+}
+
+function backToTypePicker() {
+  document.getElementById('report-type-picker').style.display = 'block';
+  document.getElementById('report-config').style.display = 'none';
+  document.getElementById('report-col-title').textContent = 'Reports';
+}
+
+function selectPeriodChip(btn, period) {
+  document.querySelectorAll('#period-chips .tl-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedPeriod = period;
+}
+
+function selectPeriod(btn) { selectPeriodChip(btn, btn.textContent); }
+
+function getCheckedSections() {
+  return Array.from(document.querySelectorAll('[data-section]'))
+    .filter(cb => cb.checked)
+    .map(cb => cb.dataset.section);
+}
+
+/* ── Rich data context for AI ── */
+function buildIssueContext() {
+  const active    = PINS.filter(p => p.status !== 'done');
+  const resolved  = PINS.filter(p => p.status === 'done');
+  const escalated = active.filter(p => p.escalate);
+  const critical  = active.filter(p => calcScore(p) >= 61);
+  const moderate  = active.filter(p => calcScore(p) >= 31 && calcScore(p) < 61);
+  const low       = active.filter(p => calcScore(p) < 31);
+  const fmt = p =>
+    `  • [${p.id}] ${p.title} | Dept: ${p.dept} | Status: ${p.status} | Severity: ${calcScore(p)}/100 | ${p.noticeCount||0} residents flagged | Reported: ${p.time}${p.escalate?' | ⚠ ESCALATED':''}`;
+
+  return `
+════════════════════════════════════
+CITY PROFILE — HASTINGS, NEBRASKA
+════════════════════════════════════
+Population: ~25,152 (2020 Census) | County seat of Adams County
+Incorporated: 1872 | Form of government: Administrator/Mayor/Council
+Location: South-central Nebraska, ~14 mi south of I-80 via US-281
+
+REPORT TYPE: ${selectedReportType?.name || 'Council Report'}
+AUDIENCE: ${selectedReportType?.audience || 'City Council'}
+PERIOD: ${selectedPeriod}
+DATE: ${new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+
+════════════════════════════════════
+CURRENT ISSUE DATA — LIVE
+════════════════════════════════════
+CRITICAL SEVERITY (${critical.length} issues):
+${critical.map(fmt).join('\n') || '  None'}
+
+MODERATE SEVERITY (${moderate.length} issues):
+${moderate.map(fmt).join('\n') || '  None'}
+
+LOW SEVERITY (${low.length} issues):
+${low.map(fmt).join('\n') || '  None'}
+
+ESCALATED / OVERDUE:
+${escalated.map(fmt).join('\n') || '  None'}
+
+RECENTLY RESOLVED (${resolved.length}):
+${resolved.map(fmt).join('\n') || '  None'}
+
+OPERATIONAL METRICS:
+  • Total active issues: ${active.length}
+  • Avg. resolution time: 2.6 days (↓14% vs prior period)
+  • Issues closed this period: 41
+  • Resident engagement (notices): ${PINS.reduce((a,p)=>a+(p.noticeCount||0),0)} total across all pins
+  • Top category: Street & Pavement (42% of open issues)
+  • Departments: Street Department, Hastings Utilities, Hastings Police, Hastings Fire & Rescue
+
+════════════════════════════════════
+BUDGET — FY 2025-2026
+════════════════════════════════════
+STREET DEPARTMENT:
+  • Annual maintenance budget: $2,100,000
+  • YTD allocated: ~65% ($1,365,000) | Remaining: ~$735,000
+  • Major expenditures: pothole repair crews, asphalt materials, equipment fuel
+  • Capital items pending: Burlington Ave corridor resurfacing ($380,000 est.)
+
+HASTINGS UTILITIES:
+  • Capital improvement budget: $3,800,000
+  • Active projects: storm sewer system upgrade ($1.2M), N Burlington water main ($450,000)
+  • Electric operations: fully allocated, solar initiative grant in process
+  • Water/sewer maintenance reserve: $620,000
+
+PUBLIC SAFETY (Police + Fire):
+  • Combined budget: $5,200,000 | Fully allocated
+  • Police staffing: 51 FT employees (35 officers) | No vacancies
+  • Fire & Rescue: 2 stations | All-hazards certified
+
+PARKS & RECREATION:
+  • Budget: $890,000 | 58% allocated YTD
+  • Levee Park renovation: $145,000 in FY26 capital plan
+
+TOTAL GENERAL FUND (FY2025-2026): ~$18.4M
+  • Property tax revenue: $7.2M
+  • State aid/highway allocation: $1.8M
+  • Utility transfers: $2.1M
+
+════════════════════════════════════
+HASTINGS COMPREHENSIVE PLAN 2040
+════════════════════════════════════
+KEY INFRASTRUCTURE GOALS:
+  • Goal 3.1: Maintain citywide street PCI rating ≥70 (current avg: 64 — BELOW TARGET)
+  • Goal 3.2: Resurface 8–10 lane-miles of priority streets annually
+  • Goal 3.3: Address all ADA ramp deficiencies on school pedestrian routes by 2026
+  • Goal 4.1: Reduce water main breaks by 20% by 2027 via proactive replacement
+  • Goal 4.2: Zero main breaks on N Burlington Ave corridor by 2027
+  • Goal 4.3: Complete storm sewer capacity study and Phase 1 upgrades by 2026
+
+SAFETY & COMMUNITY:
+  • Goal 5.1: ADA sidewalk compliance on all school routes by Dec 2026
+  • Goal 5.2: Street lighting coverage in all residential areas by 2028
+  • Goal 6.1: Reduce average emergency response time to <5 min citywide
+  • Goal 6.3: Unified dispatch coordination between Police, Fire & Utilities
+
+ECONOMIC DEVELOPMENT:
+  • Goal 7.1: Downtown Burlington Ave corridor beautification (active)
+  • Goal 7.2: Industrial park expansion near Hwy 281 interchange
+  • Goal 8.1: Kool-Aid Days festival infrastructure improvements (annual)
+
+GRANT OPPORTUNITIES IDENTIFIED:
+  • FEMA BRIC: Stormwater resilience — N Kansas Ave sewer ($500K–$2M eligible)
+  • USDA Community Facilities: Rural infrastructure, water/sewer ($250K–$5M)
+  • CDBG (NE DED): Low-income area infrastructure — sidewalk/ADA ($200K–$750K)
+  • DOT RAISE: Multimodal — Burlington Ave corridor ($1M–$25M eligible)
+  • EPA Clean Water SRF: Storm sewer / water quality ($500K–$3M)
+  • EDA Public Works: Economic distress infrastructure ($300K–$3M)
+
+HISTORICAL CONTEXT:
+  • Hastings hosted largest Naval Ammunition Depot in WWII — American WWII Heritage City (2023)
+  • Edwin Perkins invented Kool-Aid here (1927) — signature annual festival draws 40,000+ visitors
+  • Infrastructure aging: most water mains 40–60 years old; street network 165+ lane-miles
+  • Recent major projects: Levee Park trail extension (2023), N Denver Ave reconstruction (2024)`;
+}
+
+/* ── Generate report ── */
+async function generateReport() {
+  const sections = getCheckedSections();
+  if (!sections.length) { alert('Select at least one section.'); return; }
+
+  document.getElementById('btn-generate').disabled = true;
+  document.getElementById('report-config').style.display = 'none';
+  document.getElementById('report-output').style.display = 'block';
+  document.getElementById('report-date-label').textContent =
+    `${selectedReportType.icon} ${selectedReportType.name} · ` +
+    new Date().toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+
+  // Build tabs
+  const tabsEl = document.getElementById('report-tabs');
+  const sectionDefs = selectedReportType.sections.filter(s => sections.includes(s.id));
+  tabsEl.innerHTML = sectionDefs.map((s, i) =>
+    `<button class="report-tab${i===0?' active':''}" data-tab="${s.id}" onclick="showTab('${s.id}',this)">${s.label}</button>`
+  ).join('');
+
+  for (const s of sectionDefs) {
+    await generateSection(s);
+  }
+
+  showTab(sectionDefs[0].id, tabsEl.querySelector('.report-tab'));
+  document.getElementById('btn-generate').disabled = false;
+}
+
+async function generateSection(sectionDef) {
+  const sectionId = sectionDef.id;
+  const label     = sectionDef.label;
+  const prompt    = SECTION_PROMPTS[sectionId] || `Write the "${label}" section for this report.`;
+  const context   = buildIssueContext();
+  const streaming = document.getElementById('report-streaming');
+  document.getElementById('streaming-label').textContent = `Writing ${label}…`;
+  streaming.style.display = 'block';
+
+  reportSections[sectionId] = `<div class="report-section" style="opacity:.4">Writing ${label}…</div>`;
+  const activeTab = document.querySelector(`.report-tab[data-tab="${sectionId}"]`);
+  if (activeTab?.classList.contains('active')) renderSection(sectionId);
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 900,
+        system: `You are an expert municipal analyst and grant writer for the City of Hastings, Nebraska.
+Report type: ${selectedReportType.name}
+Audience: ${selectedReportType.audience}
+Tone: Professional, clear, and specific. Use plain language appropriate to the audience.
+Format rules (STRICT):
+- Use HTML only: <p>, <ul>, <li>, <strong>, <em>
+- For callout labels use: <span class="highlight hl-danger">CRITICAL</span>, <span class="highlight hl-warn">MODERATE</span>, <span class="highlight hl-green">RESOLVED</span>, <span class="highlight hl-blue">IN PROGRESS</span>
+- Lead with a short orienting paragraph (2–3 sentences) then use bullet lists for specifics
+- Reference real street names, issue IDs, department names, budget figures, and Comp Plan goals from the data
+- For grant reports: use formal grant-writing voice with measurable outcomes and community benefit language
+- For public-facing reports: use friendly, plain language — no jargon
+- For internal/department reports: be direct and operational — what, who, by when
+- Do NOT use markdown. Do NOT use <h1> <h2> <h3> headers. Do NOT use code blocks.
+- Target length: 250–350 words per section`,
+        messages: [{
+          role: 'user',
+          content: `${context}\n\n---\nSECTION: ${label}\nINSTRUCTION: ${prompt}\n\nWrite this section now. Begin directly with the content — no preamble or "Here is the section:" intro.`
+        }]
+      })
+    });
+
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    const data = await resp.json();
+    const text = data.content?.map(b => b.text || '').join('') || '';
+
+    reportSections[sectionId] = `
+      <div class="report-section">
+        <h3>${label}</h3>
+        ${text}
+      </div>`;
+  } catch (err) {
+    // CORS errors from direct browser API calls surface as generic "Script error."
+    // Catch silently and show a clean message — never let this crash the page
+    const isCors = err.message === 'Script error.' || err.message === 'Failed to fetch' || err.message === 'Load failed';
+    reportSections[sectionId] =
+      '<div class="report-section">' +
+        '<h3>' + label + '</h3>' +
+        '<p style="color:var(--warn)"><strong>Report generation requires a server connection.</strong></p>' +
+        '<p style="font-size:12px;color:var(--muted);margin-top:6px">' +
+        (isCors
+          ? 'The AI report generator cannot be called directly from the browser. To enable reports, connect PublicPulse to a backend API proxy that holds the Anthropic key.'
+          : 'Error: ' + err.message) +
+        '</p>' +
+      '</div>';
+    console.warn('Report section failed:', sectionId, err.message);
+  }
+
+  if (activeTab?.classList.contains('active')) renderSection(sectionId);
+  streaming.style.display = 'none';
+}
+
+function showTab(sectionId, btn) {
+  document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSection(sectionId);
+}
+
+function renderSection(sectionId) {
+  document.getElementById('report-section-content').innerHTML =
+    reportSections[sectionId] || '<div class="report-section"><p style="color:var(--muted)">Generating…</p></div>';
+}
+
+function resetReport() {
+  Object.keys(reportSections).forEach(k => delete reportSections[k]);
+  document.getElementById('report-output').style.display = 'none';
+  document.getElementById('report-config').style.display = 'block';
+  document.getElementById('btn-generate').disabled = false;
+  document.getElementById('report-tabs').innerHTML = '';
+  document.getElementById('report-section-content').innerHTML = '';
+  document.getElementById('report-streaming').style.display = 'none';
+}
+
+// Initialize on load
+buildTypePicker();
+</script>
+</body>
+</html>
