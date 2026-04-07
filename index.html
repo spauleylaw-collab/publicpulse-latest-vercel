@@ -220,18 +220,66 @@ body {
   top: -10px;
 }
 
+/* ══ CARD REDESIGN ══ */
+#map-card {
+  display: none;
+  position: absolute;
+  z-index: 600;
+  width: 300px;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.75), 0 0 0 1px rgba(61,142,248,0.08);
+}
+#map-card.open {
+  display: block;
+  animation: card-pop 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes card-pop {
+  from { opacity:0; transform:scale(0.9) translateY(8px); }
+  to   { opacity:1; transform:scale(1)   translateY(0);   }
+}
+
+/* Tail — points toward pin */
+#card-tail {
+  position: absolute;
+  width: 0; height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  display: none;
+  pointer-events: none;
+  z-index: 1;
+}
+#card-tail.tail-down {
+  display: block;
+  border-top: 10px solid var(--surface);
+  bottom: -10px;
+}
+#card-tail.tail-up {
+  display: block;
+  border-bottom: 10px solid var(--surface);
+  top: -10px;
+}
+
+/* Header strip — status + close */
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
 .card-close {
-  position: absolute; top: 10px; right: 10px;
   background: none; border: none; color: var(--muted);
-  cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px;
-  border-radius: 4px; transition: color 0.15s;
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;
+  border-radius: 4px; transition: color 0.15s; flex-shrink: 0;
 }
 .card-close:hover { color: var(--text); }
 
+/* Status pill */
 .card-status {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
-  padding: 3px 9px; border-radius: 100px; margin-bottom: 10px;
+  padding: 3px 9px; border-radius: 100px;
 }
 .s-reported  { background: rgba(245,166,35,.15);  color: var(--warn); }
 .s-review    { background: rgba(61,142,248,.12);   color: var(--accent); }
@@ -239,11 +287,67 @@ body {
 .s-done      { background: rgba(34,197,94,.12);    color: var(--green); }
 .s-escalated { background: rgba(255,10,60,.15);    color: #ff0a3c; }
 
-.card-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
-.card-desc  { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
-.card-meta  { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); margin-bottom: 12px; }
-.card-meta span { display: flex; align-items: center; gap: 5px; }
+/* Photo strip */
+.card-photo-strip {
+  position: relative;
+  width: 100%; height: 120px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+.card-photo-strip img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.card-photo-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 4px;
+  font-size: 11px; color: var(--muted);
+}
+.card-photo-empty span { font-size: 22px; opacity: 0.4; }
+.card-add-photo {
+  position: absolute; bottom: 8px; right: 8px;
+  background: rgba(11,15,26,0.82); border: 1px solid rgba(255,255,255,0.15);
+  color: var(--muted); border-radius: 20px; padding: 4px 10px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  backdrop-filter: blur(6px); transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.card-add-photo:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
 
+/* Body */
+.card-body { padding: 12px 14px; }
+.card-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; line-height: 1.3; margin-bottom: 5px; }
+.card-desc  { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+
+/* Last city action block */
+.card-last-action {
+  background: rgba(61,142,248,0.07);
+  border: 1px solid rgba(61,142,248,0.15);
+  border-radius: 9px; padding: 8px 10px; margin-bottom: 10px;
+}
+.card-last-action-label {
+  font-size: 9px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 4px;
+}
+.card-last-action-text {
+  font-size: 11px; color: var(--text); line-height: 1.4;
+}
+.card-last-action-time {
+  font-size: 10px; color: var(--muted); margin-top: 2px;
+}
+
+/* Chips */
+.card-chips {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.card-chip {
+  font-size: 10px; color: var(--muted);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 100px; padding: 2px 8px;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* Noticed button */
 .card-noticed {
   width: 100%; background: rgba(61,142,248,.1); border: 1px solid rgba(61,142,248,.25);
   color: var(--accent); border-radius: 8px; padding: 8px;
@@ -252,21 +356,6 @@ body {
 }
 .card-noticed:hover { background: rgba(61,142,248,.18); }
 .card-noticed.confirmed { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); color: var(--green); }
-
-/* Photo in card */
-.card-photo {
-  width: 100%; height: 130px; object-fit: cover;
-  border-radius: 9px; margin-bottom: 12px; display: block;
-  border: 1px solid var(--border);
-}
-.card-no-photo {
-  width: 100%; height: 72px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 9px; margin-bottom: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: var(--muted); gap: 6px;
-}
-.card-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
 .card-noticed-count { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
 
 /* Report form overlay */
@@ -628,12 +717,33 @@ body {
     <!-- Our custom card popup -->
     <div id="map-card">
       <div id="card-tail"></div>
-      <button class="card-close" onclick="closeCard()">×</button>
-      <div id="card-status" class="card-status s-reported">Reported</div>
-      <div id="card-title"  class="card-title"></div>
-      <div id="card-desc"   class="card-desc"></div>
-      <div id="card-meta"   class="card-meta"></div>
-      <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
+      <!-- Header: status + close -->
+      <div class="card-header">
+        <div id="card-status" class="card-status s-reported">Just reported — under review</div>
+        <button class="card-close" onclick="closeCard()">×</button>
+      </div>
+      <!-- Photo strip -->
+      <div class="card-photo-strip" id="card-photo-strip">
+        <div class="card-photo-empty"><span>📷</span>No photo attached</div>
+        <button class="card-add-photo" id="card-add-photo-btn" onclick="triggerCardPhoto()">+ Add Photo</button>
+        <input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(event)">
+      </div>
+      <!-- Body -->
+      <div class="card-body">
+        <div id="card-title" class="card-title"></div>
+        <div id="card-desc"  class="card-desc"></div>
+        <!-- Last city action -->
+        <div id="card-last-action" class="card-last-action" style="display:none">
+          <div class="card-last-action-label">Last City Action</div>
+          <div id="card-last-action-text" class="card-last-action-text"></div>
+          <div id="card-last-action-time" class="card-last-action-time"></div>
+        </div>
+        <!-- Chips -->
+        <div id="card-chips" class="card-chips"></div>
+        <!-- Noticed -->
+        <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
+        <div id="card-noticed-count" class="card-noticed-count"></div>
+      </div>
     </div>
 
     <!-- Report button -->
@@ -1396,45 +1506,75 @@ function openCard(pin, cp) {
   const card = document.getElementById('map-card');
   const tail = document.getElementById('card-tail');
 
-  // Status badge
+  // ── Status badge ──
   const statusEl = document.getElementById('card-status');
   const escalatedLabel = pin.escalate && pin.status !== 'done' ? '⚠ Critical — Escalated' : STATUS_LABELS[pin.status];
   statusEl.textContent = escalatedLabel;
   statusEl.className   = 'card-status ' + (pin.escalate && pin.status !== 'done' ? 's-escalated' : STATUS_CLASS[pin.status]);
 
+  // ── Title + desc ──
   document.getElementById('card-title').textContent = pin.title;
   document.getElementById('card-desc').textContent  = pin.desc;
 
-  // Photo — show only if present
-  const photoHTML = pin.photo
-    ? `<img class="card-photo" src="${pin.photo}" alt="Photo of issue">`
-    : '';
+  // ── Photo strip ──
+  const strip = document.getElementById('card-photo-strip');
+  if (pin.photo) {
+    strip.innerHTML =
+      `<img src="${pin.photo}" alt="Photo of issue" style="width:100%;height:100%;object-fit:cover;display:block">` +
+      `<button class="card-add-photo" onclick="triggerCardPhoto()">+ Replace Photo</button>` +
+      `<input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(event)">`;
+  } else {
+    strip.innerHTML =
+      `<div class="card-photo-empty"><span>📷</span>No photo attached</div>` +
+      `<button class="card-add-photo" onclick="triggerCardPhoto()">+ Add Photo</button>` +
+      `<input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(event)">`;
+  }
 
-  // Clean public-facing meta — no scores, no AI language
-  // Merge "Just now" + "Just submitted" into a single timestamp line
+  // ── Last city action — derive from log ──
+  const lastActionEl   = document.getElementById('card-last-action');
+  const lastActionText = document.getElementById('card-last-action-text');
+  const lastActionTime = document.getElementById('card-last-action-time');
+  const actionTypes = ['complete','start','update','public','ack','review','assign','escalate'];
+  const lastAction = pin.log
+    ? [...pin.log].reverse().find(e => actionTypes.includes(e.type))
+    : null;
+  if (lastAction && pin.status !== 'reported') {
+    lastActionEl.style.display = 'block';
+    // Human-readable action text
+    const actionCopy = {
+      complete: 'Work completed and verified',
+      start:    'City crews are on site',
+      update:   lastAction.body.replace(/^Public update posted:\s*[""]?/i,'').replace(/[""]$/,''),
+      public:   lastAction.body.replace(/^Public update posted:\s*[""]?/i,'').replace(/[""]$/,''),
+      ack:      'Crew scheduled — work beginning soon',
+      review:   'City staff reviewing the report',
+      assign:   'Assigned to ' + pin.dept,
+      escalate: 'Escalated — priority response activated',
+    };
+    lastActionText.textContent = actionCopy[lastAction.type] || lastAction.body;
+    lastActionTime.textContent = lastAction.time;
+  } else {
+    lastActionEl.style.display = 'none';
+  }
+
+  // ── Chips ──
+  const chips = document.getElementById('card-chips');
   const timeLabel = pin.isNew ? 'Just submitted' : pin.time;
-  const noticeCount = pin.noticeCount || 0;
-  document.getElementById('card-meta').innerHTML =
-    `${photoHTML}
-     <span>🏢 <strong>${pin.dept}</strong></span>
-     <span>🕐 ${timeLabel}</span>
-     ${pin.escalate ? `<span style="color:var(--danger)">⚠ Escalated</span>` : ''}`;
+  chips.innerHTML =
+    `<div class="card-chip">🏢 ${pin.dept}</div>` +
+    `<div class="card-chip">🕐 ${timeLabel}</div>` +
+    (pin.escalate && pin.status !== 'done' ? `<div class="card-chip" style="color:var(--danger);border-color:rgba(255,10,60,.3)">⚠ Escalated</div>` : '');
 
+  // ── Noticed button + count ──
   const noticedBtn = document.getElementById('card-noticed');
   noticedBtn.className = pin.noticed ? 'card-noticed confirmed' : 'card-noticed';
   noticedBtn.textContent = pin.noticed ? '✓ You noticed this' : '👁 I noticed this too';
-
-  let countEl = document.getElementById('card-noticed-count');
-  if (!countEl) {
-    countEl = document.createElement('div');
-    countEl.id = 'card-noticed-count';
-    countEl.className = 'card-noticed-count';
-    noticedBtn.parentNode.insertBefore(countEl, noticedBtn.nextSibling);
-  }
+  const countEl = document.getElementById('card-noticed-count');
+  const noticeCount = pin.noticeCount || 0;
   countEl.textContent = noticeCount > 0
     ? `${noticeCount} resident${noticeCount > 1 ? 's' : ''} noticed this` : '';
 
-  // Position card off-screen to measure
+  // ── Position ──
   card.style.visibility = 'hidden';
   card.style.display    = 'block';
   card.style.left = '-2000px';
@@ -1468,6 +1608,31 @@ function openCard(pin, cp) {
     card.style.visibility = '';
     card.className        = 'open';
   });
+}
+
+function triggerCardPhoto() {
+  const input = document.getElementById('card-photo-input');
+  if (input) input.click();
+}
+
+function handleCardPhoto(e) {
+  if (!activePin) return;
+  const file = e.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    activePin.photo = ev.target.result;
+    // Re-render the photo strip
+    const strip = document.getElementById('card-photo-strip');
+    strip.innerHTML =
+      `<img src="${activePin.photo}" alt="Photo of issue" style="width:100%;height:100%;object-fit:cover;display:block">` +
+      `<button class="card-add-photo" onclick="triggerCardPhoto()">+ Replace Photo</button>` +
+      `<input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(event)">`;
+    // Add log entry
+    activePin.log = activePin.log || [];
+    activePin.log.push({ type:'update', body:'Resident added a photo to this report', time:'Just now' });
+  };
+  reader.readAsDataURL(file);
 }
 
 function closeCard() {
