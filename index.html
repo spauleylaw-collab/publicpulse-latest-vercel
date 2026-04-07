@@ -233,10 +233,11 @@ body {
   font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
   padding: 3px 9px; border-radius: 100px; margin-bottom: 10px;
 }
-.s-reported { background: rgba(245,166,35,.15); color: var(--warn); }
-.s-review   { background: rgba(61,142,248,.12);  color: var(--accent); }
-.s-progress { background: rgba(61,142,248,.15);  color: var(--accent); }
-.s-done     { background: rgba(34,197,94,.12);   color: var(--green); }
+.s-reported  { background: rgba(245,166,35,.15);  color: var(--warn); }
+.s-review    { background: rgba(61,142,248,.12);   color: var(--accent); }
+.s-progress  { background: rgba(61,142,248,.15);   color: var(--accent); }
+.s-done      { background: rgba(34,197,94,.12);    color: var(--green); }
+.s-escalated { background: rgba(255,10,60,.15);    color: #ff0a3c; }
 
 .card-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
 .card-desc  { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
@@ -643,7 +644,8 @@ body {
     <!-- Legend -->
     <div id="legend">
       <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Issue Priority</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Critical</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Urgent</div>
       <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
       <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
       <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
@@ -1031,7 +1033,7 @@ function getIssueById(id) { return ISSUES.find(i => i.id === id); }
 // ── Public map: ISSUES with lat/lng ──
 const PINS = ISSUES; // same array — public map reads directly from ISSUES
 
-const STATUS_LABELS = { reported:'Reported', review:'Under Review', progress:'In Progress', done:'Completed' };
+const STATUS_LABELS = { reported:'Just reported — under review', review:'City is investigating', progress:'City crews are working on this now', done:'Resolved — work complete' };
 const STATUS_CLASS  = { reported:'s-reported', review:'s-review', progress:'s-progress', done:'s-done' };
 
 /* ── SEVERITY SCORING ──
@@ -1051,18 +1053,24 @@ function pinStyle(pin) {
   if (pin.status === 'done') return { color:'#6b7280', r:7, pulseScale:0, glowAlpha:0 };
   const score = calcScore(pin);
   let color, r, pulseScale, glowAlpha;
-  if (score < 31) {
+  // Escalated = Critical — visually distinct from Urgent
+  if (pin.escalate) {
+    color = '#ff0a3c';      // bright crimson — critical (escalated)
+    r = 16 + Math.round((score / 100) * 4);  // 16–20
+    pulseScale = 2.4;
+    glowAlpha = 0.65;
+  } else if (score < 31) {
     color = '#22c55e';      // green — low
     r = 8;
     pulseScale = 1.4;
     glowAlpha = 0.25;
   } else if (score < 61) {
-    color = '#f59e0b';      // amber — medium
+    color = '#f59e0b';      // amber — moderate
     r = 10 + Math.round((score - 31) / 30 * 3);  // 10–13
     pulseScale = 1.6;
     glowAlpha = 0.35;
   } else {
-    color = '#ef4444';      // red — critical
+    color = '#ef4444';      // red — urgent
     r = 13 + Math.round((score - 61) / 39 * 5);  // 13–18
     pulseScale = 2.0;
     glowAlpha = 0.5;
@@ -1143,6 +1151,23 @@ function pinStyle(pin) {
       100% { transform:scale(4.0);  opacity:0;    border-width:0.3px; }
     }
 
+    /* CRITICAL rings — escalated, fast and aggressive */
+    @keyframes wave-critical-1 {
+      0%   { transform:scale(1);    opacity:0.85; border-width:4px;   }
+      20%  { transform:scale(1.4);  opacity:0.55; border-width:3px;   }
+      50%  { transform:scale(2.2);  opacity:0.22; border-width:1.8px; }
+      100% { transform:scale(3.4);  opacity:0;    border-width:0.8px; }
+    }
+    @keyframes wave-critical-2 {
+      0%   { transform:scale(1);    opacity:0.55; border-width:3px;   }
+      30%  { transform:scale(1.9);  opacity:0.25; border-width:1.8px; }
+      100% { transform:scale(3.8);  opacity:0;    border-width:0.5px; }
+    }
+    @keyframes wave-critical-3 {
+      0%   { transform:scale(1);    opacity:0.30; border-width:2px;   }
+      100% { transform:scale(4.4);  opacity:0;    border-width:0.3px; }
+    }
+
     /* soft inner glow aura — depth layer behind pin */
     @keyframes aura-pulse {
       0%,100% { transform:scale(0.9);  opacity:0.18; }
@@ -1170,14 +1195,16 @@ function makeIcon(pin) {
   const cx = w / 2;
   const cy = r + pad + pulseRoom;
 
-  // Cycle duration — slow: 5–8s
+  // Cycle duration — escalated fastest, then score-based
   const dur = pin.status === 'done' ? 0
+    : pin.escalate ? 3.2
     : score < 31 ? 7.5
     : score < 61 ? 6.0
     : 4.8;
 
   // Which keyframe family to use
   const family = pin.status === 'done' ? null
+    : pin.escalate ? 'critical'
     : score < 31 ? 'green'
     : score < 61 ? 'amber'
     : 'red';
@@ -1371,8 +1398,9 @@ function openCard(pin, cp) {
 
   // Status badge
   const statusEl = document.getElementById('card-status');
-  statusEl.textContent = STATUS_LABELS[pin.status];
-  statusEl.className   = 'card-status ' + STATUS_CLASS[pin.status];
+  const escalatedLabel = pin.escalate && pin.status !== 'done' ? '⚠ Critical — Escalated' : STATUS_LABELS[pin.status];
+  statusEl.textContent = escalatedLabel;
+  statusEl.className   = 'card-status ' + (pin.escalate && pin.status !== 'done' ? 's-escalated' : STATUS_CLASS[pin.status]);
 
   document.getElementById('card-title').textContent = pin.title;
   document.getElementById('card-desc').textContent  = pin.desc;
@@ -1617,7 +1645,7 @@ function noticeThis() {
   // Re-render AI score bar in card with updated score
   const score = calcScore(activePin);
   const { color } = pinStyle(activePin);
-  const scoreLabel = score >= 61 ? 'Critical' : score >= 31 ? 'Moderate' : 'Low';
+  const scoreLabel = score >= 61 ? 'Urgent' : score >= 31 ? 'Moderate' : 'Low';
   const bar = document.querySelector('#map-card .ai-score-bar');
   if (bar) {
     bar.style.width = score + '%';
@@ -2587,8 +2615,11 @@ DATE: ${new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric',
 ════════════════════════════════════
 CURRENT ISSUE DATA — LIVE
 ════════════════════════════════════
-CRITICAL SEVERITY (${critical.length} issues):
-${critical.map(fmt).join('\n') || '  None'}
+CRITICAL (escalated — requires immediate attention):
+${escalated.map(fmt).join('\n') || '  None'}
+
+URGENT SEVERITY (score 61-100, not escalated):
+${critical.filter(p => !p.escalate).map(fmt).join('\n') || '  None'}
 
 MODERATE SEVERITY (${moderate.length} issues):
 ${moderate.map(fmt).join('\n') || '  None'}
