@@ -784,124 +784,84 @@ body {
 }
 /* ══════════════════════════════════════
    MOBILE RESPONSIVE — ≤768px
-   Three-column layouts collapse to single
-   column with tabbed navigation between sections
+   Stacks three columns vertically.
+   Mobile section tabs control which column shows.
+   IMPORTANT: .view.active stays display:flex at all sizes.
 ══════════════════════════════════════ */
 @media (max-width: 768px) {
 
-  /* ── Nav ── */
-  nav {
-    padding: 0 12px;
-    height: 52px;
-  }
-  :root { --nav-h: 52px; }
-  .nav-logo { font-size: 15px; }
-  .nav-tabs { gap: 2px; }
-  .nav-tab {
-    padding: 5px 10px;
-    font-size: 12px;
-  }
+  /* Nav — compress */
+  nav { padding: 0 10px; height: 50px; }
+  :root { --nav-h: 50px; }
+  .nav-logo { font-size: 14px; }
+  .nav-tab { padding: 5px 9px; font-size: 11px; }
   .nav-city { display: none; }
-  #btn-heatmap { font-size: 11px; padding: 5px 10px; }
+  #btn-heatmap { font-size: 11px; padding: 5px 8px; }
 
-  /* ── Views — full height, scroll ── */
-  .view { position: fixed; inset: var(--nav-h) 0 0 0; overflow-y: auto; }
-  .view.active { display: block; }
-
-  /* ── Three-column → stacked ── */
+  /* Views — keep display:flex but change direction to vertical */
   #view-admin, #view-dept {
-    display: block !important;
+    flex-direction: column;
+    overflow-y: auto;
   }
 
+  /* Columns — full width stacked */
   .admin-col {
     width: 100% !important;
-    flex-shrink: unset;
+    flex-shrink: 0;
     border-right: none !important;
     border-left: none !important;
     border-bottom: 1px solid var(--border);
-    overflow: visible;
-    max-height: none;
+    min-height: 0;
   }
-
   .col-left  { width: 100% !important; }
-  .col-mid   { width: 100% !important; }
+  .col-mid   { width: 100% !important; flex: none; }
   .col-right { width: 100% !important; }
 
-  .col-body {
-    overflow-y: visible;
-    max-height: none;
-  }
+  /* col-body — don't constrain height on mobile */
+  .col-body { overflow-y: visible; }
 
-  /* ── Admin — hide right column by default, show via mobile tab ── */
-  #view-admin .col-right { display: none; }
-  #view-admin .col-right.mob-active { display: block; }
-
-  /* ── Mobile section toggle strip ── */
+  /* Mobile section tab strip */
   .mob-section-tabs {
     display: flex;
     background: var(--surface2);
     border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
   }
   .mob-section-tab {
-    flex: 1;
-    padding: 10px 4px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    font-family: var(--font-body);
-    text-align: center;
-    transition: all 0.15s;
+    flex: 1; padding: 11px 4px;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted); background: none;
+    border: none; border-bottom: 2px solid transparent;
+    cursor: pointer; font-family: var(--font-body);
+    text-align: center; transition: all 0.15s;
   }
   .mob-section-tab.active {
     color: var(--accent);
     border-bottom-color: var(--accent);
   }
 
-  /* ── Action center full width ── */
-  .action-panel { padding: 16px; }
-  .action-btns { flex-wrap: wrap; gap: 8px; }
-  .action-btn { font-size: 12px; padding: 8px 12px; }
-
-  /* ── Public map card ── */
-  #map-card { width: calc(100vw - 32px); max-width: 340px; }
-
-  /* ── Banner ── */
+  /* Public map adjustments */
   #banner { min-width: 0; max-width: calc(100vw - 32px); }
+  #btn-report { bottom: 20px; right: 14px; font-size: 14px; padding: 12px 18px; }
+  #legend { bottom: 20px; left: 10px; padding: 9px 11px; }
+  #map-card { width: calc(100vw - 28px); max-width: 340px; }
 
-  /* ── Report Issue button ── */
-  #btn-report { bottom: 20px; right: 16px; font-size: 14px; padding: 12px 20px; }
+  /* Action panel */
+  .action-panel { padding: 14px; }
+  .action-btns { flex-wrap: wrap; gap: 8px; }
+  .action-btn { font-size: 12px; padding: 8px 10px; }
 
-  /* ── Legend ── */
-  #legend { bottom: 20px; left: 12px; padding: 10px 12px; }
-
-  /* ── Dept queue items ── */
-  .dept-item { padding: 10px 12px; }
-
-  /* ── Queue items ── */
-  .queue-item { padding: 12px; }
-
-  /* ── Report grid ── */
+  /* Report grid */
   #report-type-grid { grid-template-columns: 1fr 1fr; }
 
-  /* ── Metric rows ── */
+  /* Metrics */
   .metrics-row { gap: 6px; }
-  .metric-mini { padding: 8px 6px; }
   .metric-val { font-size: 20px; }
 }
-
-/* ── Mobile section show/hide helpers ── */
-@media (max-width: 768px) {
-  .mob-hidden { display: none !important; }
-  .mob-visible { display: block !important; }
-}
-
+</style>
 </head>
 <body>
 
@@ -1041,7 +1001,6 @@ body {
 
 <!-- ════════ VIEW 2 — ADMIN ════════ -->
 <div id="view-admin" class="view">
-  <!-- Mobile section tabs — hidden on desktop via CSS -->
   <div class="mob-section-tabs" id="admin-mob-tabs" style="display:none">
     <button class="mob-section-tab active" onclick="setAdminMobSection('queue')">Queue</button>
     <button class="mob-section-tab" onclick="setAdminMobSection('action')">Action</button>
@@ -1148,7 +1107,6 @@ body {
 
 <!-- ════════ VIEW 3 — DEPT ════════ -->
 <div id="view-dept" class="view">
-  <!-- Mobile section tabs -->
   <div class="mob-section-tabs" id="dept-mob-tabs" style="display:none">
     <button class="mob-section-tab active" onclick="setDeptMobSection('queue')">Queue</button>
     <button class="mob-section-tab" onclick="setDeptMobSection('work')">Work Item</button>
@@ -2332,7 +2290,6 @@ function selectAdminById(id, isAdvancing) {
     : '') +
     '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
     '<div class="activity-log" id="admin-log">' + renderLog(issue.log) + '</div>';
-  // On mobile — auto-switch to action section so user sees the panel
   if (isMobile()) setAdminMobSection('action');
 }
 
@@ -2656,7 +2613,6 @@ function selectDeptById(id) {
   var panel = document.getElementById('dept-panel');
   panel.style.display = 'block'; panel.className = 'action-panel fade-in';
   renderDeptPanel(id);
-  // On mobile — auto-switch to work item section
   if (isMobile()) setDeptMobSection('work');
 }
 
@@ -2854,65 +2810,44 @@ function renderDeptPriority() {
 }
 
 /* ══ VIEW SWITCHING ══ */
-/* ══ MOBILE SECTION SWITCHERS ══ */
-var isMobile = function() { return window.innerWidth <= 768; };
+/* ══ MOBILE RESPONSIVE JS ══ */
+function isMobile() { return window.innerWidth <= 768; }
 
 function setAdminMobSection(section) {
-  // Update tab active state
-  document.querySelectorAll('#admin-mob-tabs .mob-section-tab').forEach(function(t, i) {
-    var sections = ['queue','action','intel'];
-    t.classList.toggle('active', sections[i] === section);
+  ['queue','action','intel'].forEach(function(s, i) {
+    var btns = document.querySelectorAll('#admin-mob-tabs .mob-section-tab');
+    if (btns[i]) btns[i].classList.toggle('active', s === section);
+    var cols = document.querySelectorAll('#view-admin > .admin-col');
+    if (cols[i]) cols[i].style.display = s === section ? 'flex' : 'none';
   });
-  // Show/hide columns
-  var left  = document.querySelector('#view-admin .col-left');
-  var mid   = document.querySelector('#view-admin .col-mid');
-  var right = document.querySelector('#view-admin .col-right');
-  if (left)  left.style.display  = section === 'queue'  ? 'flex' : 'none';
-  if (mid)   mid.style.display   = section === 'action' ? 'flex' : 'none';
-  if (right) right.style.display = section === 'intel'  ? 'flex' : 'none';
 }
 
 function setDeptMobSection(section) {
-  document.querySelectorAll('#dept-mob-tabs .mob-section-tab').forEach(function(t, i) {
-    var sections = ['queue','work','account'];
-    t.classList.toggle('active', sections[i] === section);
+  ['queue','work','account'].forEach(function(s, i) {
+    var btns = document.querySelectorAll('#dept-mob-tabs .mob-section-tab');
+    if (btns[i]) btns[i].classList.toggle('active', s === section);
+    var cols = document.querySelectorAll('#view-dept > .admin-col');
+    if (cols[i]) cols[i].style.display = s === section ? 'flex' : 'none';
   });
-  var left  = document.querySelector('#view-dept .col-left');
-  var mid   = document.querySelector('#view-dept .col-mid');
-  var right = document.querySelector('#view-dept .col-right');
-  if (left)  left.style.display  = section === 'queue'   ? 'flex' : 'none';
-  if (mid)   mid.style.display   = section === 'work'    ? 'flex' : 'none';
-  if (right) right.style.display = section === 'account' ? 'flex' : 'none';
 }
 
 function applyMobileLayout() {
   var mobile = isMobile();
-  // Admin
   var adminTabs = document.getElementById('admin-mob-tabs');
+  var deptTabs  = document.getElementById('dept-mob-tabs');
   if (adminTabs) adminTabs.style.display = mobile ? 'flex' : 'none';
+  if (deptTabs)  deptTabs.style.display  = mobile ? 'flex' : 'none';
   if (mobile) {
-    setAdminMobSection('queue'); // default to queue on mobile
+    setAdminMobSection('queue');
+    setDeptMobSection('queue');
   } else {
     // Restore all columns on desktop
-    ['col-left','col-mid','col-right'].forEach(function(cls) {
-      var el = document.querySelector('#view-admin .' + cls);
-      if (el) el.style.display = '';
-    });
-  }
-  // Dept
-  var deptTabs = document.getElementById('dept-mob-tabs');
-  if (deptTabs) deptTabs.style.display = mobile ? 'flex' : 'none';
-  if (mobile) {
-    setDeptMobSection('queue'); // default to queue on mobile
-  } else {
-    ['col-left','col-mid','col-right'].forEach(function(cls) {
-      var el = document.querySelector('#view-dept .' + cls);
-      if (el) el.style.display = '';
+    document.querySelectorAll('#view-admin > .admin-col, #view-dept > .admin-col').forEach(function(col) {
+      col.style.display = '';
     });
   }
 }
 
-// Run on load and on resize
 window.addEventListener('resize', applyMobileLayout);
 
 function switchView(name) {
@@ -2933,7 +2868,6 @@ function switchView(name) {
     if (!deptInsightsCache) refreshDeptInsights();
     else renderInsightItems(deptInsightsCache, 'dept-insights-body');
   }
-  // Apply mobile layout whenever switching views
   applyMobileLayout();
 }
 
@@ -2944,10 +2878,10 @@ try { renderAdminLog(); }          catch(e) { console.warn('Admin log init faile
 try { renderDeptQueue(); }         catch(e) { console.warn('Dept queue init failed:', e); }
 try { renderDeptAccountability(); } catch(e) { console.warn('Accountability init failed:', e); }
 try { renderDeptPriority(); }      catch(e) { console.warn('Priority init failed:', e); }
+// Apply mobile layout on load
+applyMobileLayout();
 // Show heatmap button on initial public map view
 document.getElementById('btn-heatmap').style.display = '';
-// Apply mobile layout on initial load
-applyMobileLayout();
 
 /* ══════════════════════════════════════
    MIC — Web Speech API voice-to-text
