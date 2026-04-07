@@ -2442,6 +2442,8 @@ function adminAction(id, actionType) {
   if (logEl) logEl.innerHTML = renderLog(issue.log);
   renderAdminQueue();
   renderAdminLog();
+  // Re-render panel so button states (e.g. Reviewed → greyed) update immediately
+  selectAdminById(id);
 }
 
 function setTimeline(t) {
