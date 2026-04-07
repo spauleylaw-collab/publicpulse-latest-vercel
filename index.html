@@ -894,70 +894,75 @@ body {
   </div>
   <div class="admin-col col-right" id="report-col">
     <div class="col-header">
-      <div class="col-title" id="report-col-title">Reports</div>
+      <div class="col-title" id="report-col-title">Intelligence</div>
       <div class="ai-badge">AI</div>
+    </div>
+    <!-- Tab bar -->
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="queue-tab active" id="artab-activity" onclick="setAdminRightTab('activity')">Activity</button>
+      <button class="queue-tab"        id="artab-insights" onclick="setAdminRightTab('insights')">Insights</button>
+      <button class="queue-tab"        id="artab-reports"  onclick="setAdminRightTab('reports')">Reports</button>
     </div>
     <div class="col-body" id="report-col-body">
 
-      <!-- Quick stats row -->
-      <div class="metrics-row">
-        <div class="metric-mini"><div class="metric-val" style="color:var(--danger)">3</div><div class="metric-label">Escalated</div></div>
-        <div class="metric-mini"><div class="metric-val" style="color:var(--accent)">12</div><div class="metric-label">Open</div></div>
-        <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
-      </div>
-
-      <!-- Live activity log -->
-      <div style="margin-bottom:14px">
+      <!-- ── TAB: Activity ── -->
+      <div id="artab-panel-activity">
+        <div class="metrics-row" style="margin-bottom:12px">
+          <div class="metric-mini"><div class="metric-val" style="color:var(--danger)">3</div><div class="metric-label">Escalated</div></div>
+          <div class="metric-mini"><div class="metric-val" style="color:var(--accent)">12</div><div class="metric-label">Open</div></div>
+          <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
+        </div>
         <div class="section-title" style="margin-bottom:8px">Recent Activity</div>
-        <div id="admin-activity-log" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
+        <div id="admin-activity-log" style="overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
       </div>
 
-      <!-- AI Insights for today -->
-      <div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div class="section-title" style="margin-bottom:0">Today's Insights</div>
-          <button onclick="refreshAdminInsights()" id="admin-insights-refresh" title="Refresh insights" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
+      <!-- ── TAB: Insights ── -->
+      <div id="artab-panel-insights" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;color:var(--muted)">AI analysis of today's issues</div>
+          <button onclick="refreshAdminInsights()" title="Refresh" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
         </div>
         <div id="admin-insights-body">
           <div style="font-size:11px;color:var(--muted);padding:10px 0">Generating insights…</div>
         </div>
       </div>
 
-      <!-- Step 1: Report type picker -->
-      <div id="report-type-picker">
-        <div class="section-title" style="margin-top:4px">Select Report Type</div>
-        <div id="report-type-grid"></div>
-      </div>
-
-      <!-- Step 2: Report config (shown after type selected) -->
-      <div id="report-config" style="display:none">
-        <button onclick="backToTypePicker()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 0 10px 0;display:flex;align-items:center;gap:4px">← All Reports</button>
-        <div id="report-type-header" style="margin-bottom:14px">
-          <div id="rth-icon" style="font-size:22px;margin-bottom:4px"></div>
-          <div id="rth-name" style="font-family:var(--font-display);font-size:15px;font-weight:800;margin-bottom:2px"></div>
-          <div id="rth-desc" style="font-size:11px;color:var(--muted);line-height:1.4"></div>
+      <!-- ── TAB: Reports ── -->
+      <div id="artab-panel-reports" style="display:none">
+        <!-- Step 1: Report type picker -->
+        <div id="report-type-picker">
+          <div class="section-title" style="margin-bottom:10px">Select Report Type</div>
+          <div id="report-type-grid"></div>
         </div>
-        <div class="section-title">Period</div>
-        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="period-chips"></div>
-        <div class="section-title">Sections</div>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="section-checks"></div>
-        <button class="btn-gen-report" id="btn-generate" onclick="generateReport()">
-          <span id="gen-btn-text">📊 Generate Report</span>
-        </button>
-      </div>
-
-      <!-- Step 3: Report output -->
-      <div id="report-output" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:11px;color:var(--muted)" id="report-date-label"></div>
-          <button onclick="resetReport()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">← New Report</button>
+        <!-- Step 2: Report config -->
+        <div id="report-config" style="display:none">
+          <button onclick="backToTypePicker()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 0 10px 0;display:flex;align-items:center;gap:4px">← All Reports</button>
+          <div id="report-type-header" style="margin-bottom:14px">
+            <div id="rth-icon" style="font-size:22px;margin-bottom:4px"></div>
+            <div id="rth-name" style="font-family:var(--font-display);font-size:15px;font-weight:800;margin-bottom:2px"></div>
+            <div id="rth-desc" style="font-size:11px;color:var(--muted);line-height:1.4"></div>
+          </div>
+          <div class="section-title">Period</div>
+          <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="period-chips"></div>
+          <div class="section-title">Sections</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="section-checks"></div>
+          <button class="btn-gen-report" id="btn-generate" onclick="generateReport()">
+            <span id="gen-btn-text">📊 Generate Report</span>
+          </button>
         </div>
-        <div id="report-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px"></div>
-        <div id="report-section-content"></div>
-        <div id="report-streaming" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:12px">
-          <div style="display:inline-flex;gap:4px;align-items:center">
-            <span class="stream-dot"></span><span class="stream-dot" style="animation-delay:.2s"></span><span class="stream-dot" style="animation-delay:.4s"></span>
-            <span style="margin-left:6px" id="streaming-label">Generating…</span>
+        <!-- Step 3: Report output -->
+        <div id="report-output" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--muted)" id="report-date-label"></div>
+            <button onclick="resetReport()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">← New Report</button>
+          </div>
+          <div id="report-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px"></div>
+          <div id="report-section-content"></div>
+          <div id="report-streaming" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:12px">
+            <div style="display:inline-flex;gap:4px;align-items:center">
+              <span class="stream-dot"></span><span class="stream-dot" style="animation-delay:.2s"></span><span class="stream-dot" style="animation-delay:.4s"></span>
+              <span style="margin-left:6px" id="streaming-label">Generating…</span>
+            </div>
           </div>
         </div>
       </div>
@@ -994,23 +999,41 @@ body {
     <div id="dept-panel" class="action-panel" style="display:none"></div>
   </div>
 
-  <!-- RIGHT: Accountability Timeline -->
+  <!-- RIGHT: Accountability -->
   <div class="admin-col col-right">
     <div class="col-header">
       <div class="col-title">Accountability</div>
-      <button onclick="refreshDeptInsights()" title="Refresh insights" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
     </div>
-    <div class="col-body" id="dept-accountability">
-      <!-- populated by renderDeptAccountability() -->
+    <!-- Tab bar -->
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="queue-tab active" id="drtab-overview"  onclick="setDeptRightTab('overview')">Overview</button>
+      <button class="queue-tab"        id="drtab-priority"  onclick="setDeptRightTab('priority')">Priority</button>
+      <button class="queue-tab"        id="drtab-insights"  onclick="setDeptRightTab('insights')">Insights</button>
     </div>
-    <!-- Dept AI insights — below crew guidance -->
-    <div style="padding:0 14px 14px;border-top:1px solid var(--border);margin-top:4px">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px">
-        <div class="section-title" style="margin-bottom:0">Today's Insights</div>
+    <!-- Tab panels -->
+    <div class="col-body" style="padding:14px">
+
+      <!-- ── TAB: Overview (score + metrics) ── -->
+      <div id="drtab-panel-overview" id="dept-accountability">
+        <!-- populated by renderDeptAccountability() -->
       </div>
-      <div id="dept-insights-body">
-        <div style="font-size:11px;color:var(--muted)">Generating insights…</div>
+
+      <!-- ── TAB: Priority (crew guidance) ── -->
+      <div id="drtab-panel-priority" style="display:none">
+        <!-- populated by renderDeptPriority() -->
       </div>
+
+      <!-- ── TAB: Insights ── -->
+      <div id="drtab-panel-insights" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;color:var(--muted)">AI analysis for today's crew</div>
+          <button onclick="refreshDeptInsights()" title="Refresh" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
+        </div>
+        <div id="dept-insights-body">
+          <div style="font-size:11px;color:var(--muted)">Generating insights…</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -2344,7 +2367,7 @@ function renderDeptQueue() {
   if (!items.length) {
     qel.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' +
       (currentDeptTab === 'active' ? 'No active work items' : 'No completed items yet') + '</div>';
-    renderDeptAccountability(); return;
+    renderDeptAccountability(); renderDeptPriority(); return;
   }
   qel.innerHTML = items.map(function(issue) {
     var bc = issue.priority === 'late' ? 'late' : issue.priority === 'warn' ? 'warn' : '';
@@ -2362,6 +2385,7 @@ function renderDeptQueue() {
     '</div>';
   }).join('');
   renderDeptAccountability();
+  renderDeptPriority();
 }
 
 function selectDeptById(id) {
@@ -2455,6 +2479,7 @@ function deptAction(id, actionType) {
       selectedDeptId = null;
     }
     renderDeptAccountability();
+    renderDeptPriority();
     renderAdminQueue();
     renderAdminLog();
     return;
@@ -2478,7 +2503,7 @@ function deptAction(id, actionType) {
 }
 
 function renderDeptAccountability() {
-  var el = document.getElementById('dept-accountability');
+  var el = document.getElementById('drtab-panel-overview');
   if (!el) return;
   var all       = getDeptIssues();
   var active    = all.filter(function(i) { return i.workStatus === 'active'; });
@@ -2487,13 +2512,49 @@ function renderDeptAccountability() {
   var pct       = all.length ? Math.round((completed.length / all.length) * 100) : 0;
   var sc        = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
 
-  // Build priority-ordered work list for crew guidance
+  el.innerHTML =
+    '<div class="insight-card" style="margin-bottom:10px">' +
+      '<div class="insight-label">Street Dept. Score</div>' +
+      '<div class="insight-val" style="color:' + sc + '">' + pct + '%</div>' +
+      '<div class="insight-sub">On-time completion this month</div>' +
+    '</div>' +
+    '<div class="metrics-row">' +
+      '<div class="metric-mini"><div class="metric-val" style="color:var(--danger)">' + late.length + '</div><div class="metric-label">Late</div></div>' +
+      '<div class="metric-mini"><div class="metric-val" style="color:var(--accent)">'  + active.length + '</div><div class="metric-label">Active</div></div>' +
+      '<div class="metric-mini"><div class="metric-val" style="color:var(--green)">'   + completed.length + '</div><div class="metric-label">Done</div></div>' +
+    '</div>';
+}
+
+/* ══ RIGHT COLUMN TAB SWITCHERS ══ */
+function setAdminRightTab(name) {
+  ['activity','insights','reports'].forEach(function(t) {
+    var tab = document.getElementById('artab-' + t);
+    var panel = document.getElementById('artab-panel-' + t);
+    if (tab)   tab.classList.toggle('active', t === name);
+    if (panel) panel.style.display = t === name ? '' : 'none';
+  });
+  // Lazy-load insights on first visit to that tab
+  if (name === 'insights' && !adminInsightsCache) refreshAdminInsights();
+}
+
+function setDeptRightTab(name) {
+  ['overview','priority','insights'].forEach(function(t) {
+    var tab = document.getElementById('drtab-' + t);
+    var panel = document.getElementById('drtab-panel-' + t);
+    if (tab)   tab.classList.toggle('active', t === name);
+    if (panel) panel.style.display = t === name ? '' : 'none';
+  });
+  if (name === 'insights' && !deptInsightsCache) refreshDeptInsights();
+}
+
+function renderDeptPriority() {
+  var el = document.getElementById('drtab-panel-priority');
+  if (!el) return;
+  var active = getDeptIssues().filter(function(i) { return i.workStatus === 'active'; });
   var priorityOrder = { late:0, warn:1, ok:2, done:3 };
   var sorted = active.slice().sort(function(a,b) {
     return (priorityOrder[a.priority]||2) - (priorityOrder[b.priority]||2);
   });
-
-  // Crew insight text per item
   function crewInsight(issue) {
     if (issue.priority === 'late')
       return 'Overdue — assign crew immediately. All other work secondary.';
@@ -2511,14 +2572,16 @@ function renderDeptAccountability() {
       return 'Active. No action needed — track to completion.';
     return 'Monitor status.';
   }
-
-  var insightRows = sorted.map(function(issue, idx) {
+  if (!sorted.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px 0">No active work items.</div>';
+    return;
+  }
+  el.innerHTML = sorted.map(function(issue, idx) {
     var dot = issue.priority === 'late' ? 'var(--danger)'
             : issue.priority === 'warn' ? 'var(--warn)'
             : 'var(--accent2)';
     var shortTitle = issue.title.indexOf('\u2014') > -1
-      ? issue.title.split('\u2014')[0].trim()
-      : issue.title;
+      ? issue.title.split('\u2014')[0].trim() : issue.title;
     return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start">' +
       '<div style="width:20px;height:20px;border-radius:50%;background:' + dot + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#0b0f1a;flex-shrink:0;margin-top:1px">' + (idx+1) + '</div>' +
       '<div>' +
@@ -2527,22 +2590,6 @@ function renderDeptAccountability() {
       '</div>' +
     '</div>';
   }).join('');
-
-  el.innerHTML =
-    '<div class="insight-card" style="margin-bottom:10px">' +
-      '<div class="insight-label">Street Dept. Score</div>' +
-      '<div class="insight-val" style="color:' + sc + '">' + pct + '%</div>' +
-      '<div class="insight-sub">On-time completion this month</div>' +
-    '</div>' +
-    '<div class="metrics-row" style="margin-bottom:14px">' +
-      '<div class="metric-mini"><div class="metric-val" style="color:var(--danger)">' + late.length + '</div><div class="metric-label">Late</div></div>' +
-      '<div class="metric-mini"><div class="metric-val" style="color:var(--accent)">'  + active.length + '</div><div class="metric-label">Active</div></div>' +
-      '<div class="metric-mini"><div class="metric-val" style="color:var(--green)">'   + completed.length + '</div><div class="metric-label">Done</div></div>' +
-    '</div>' +
-    '<div class="section-title">Work Priority & Crew Guidance</div>' +
-    '<div style="margin-top:4px">' +
-    (insightRows || '<div style="font-size:12px;color:var(--muted);padding:12px 0">No active work items.</div>') +
-    '</div>';
 }
 
 /* ══ VIEW SWITCHING ══ */
@@ -2560,7 +2607,7 @@ function switchView(name) {
     else renderInsightItems(adminInsightsCache, 'admin-insights-body');
   }
   if (name === 'dept') {
-    renderDeptQueue(); renderDeptAccountability();
+    renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
     if (!deptInsightsCache) refreshDeptInsights();
     else renderInsightItems(deptInsightsCache, 'dept-insights-body');
   }
@@ -2572,6 +2619,7 @@ try { renderAdminQueue(); }        catch(e) { console.warn('Admin queue init fai
 try { renderAdminLog(); }          catch(e) { console.warn('Admin log init failed:', e); }
 try { renderDeptQueue(); }         catch(e) { console.warn('Dept queue init failed:', e); }
 try { renderDeptAccountability(); } catch(e) { console.warn('Accountability init failed:', e); }
+try { renderDeptPriority(); }      catch(e) { console.warn('Priority init failed:', e); }
 // Show heatmap button on initial public map view
 document.getElementById('btn-heatmap').style.display = '';
 
