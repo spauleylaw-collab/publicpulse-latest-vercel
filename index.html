@@ -834,6 +834,7 @@ body {
    Public map reads lat/lng/status/severity
    Admin reads queueStatus/statusLabel/tag/log
    Dept reads workStatus/actionStatus/progress/deadline
+   grants: array of applicable grant programs for this issue type
 ══════════════════════════════════════════════════════════════ */
 const ISSUES = [
   {
@@ -843,6 +844,10 @@ const ISSUES = [
     desc:'Large pothole at Burlington Ave and W 2nd St intersection. Multiple reports since spring thaw. Vehicle damage risk.',
     dept:'Street Department', time:'18 min ago',
     category:'infrastructure', severity:78, noticeCount:11,
+    grants:[
+      { name:'DOT RAISE', range:'$1M–$25M', note:'Burlington Ave corridor multimodal eligible' },
+      { name:'EDA Public Works', range:'$300K–$3M', note:'Economic distress infrastructure' },
+    ],
     // ── public map ──
     status:'reported', escalate:true,
     // ── admin ──
@@ -861,6 +866,7 @@ const ISSUES = [
     desc:'Resident reports faint gas odor near E 3rd St intersection. Hastings Utilities crew dispatched to investigate.',
     dept:'Hastings Utilities', time:'30 min ago',
     category:'safety', severity:92, noticeCount:8,
+    grants:[],
     status:'review', escalate:true,
     statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
     workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Immediate', priority:'late',
@@ -875,6 +881,11 @@ const ISSUES = [
     desc:'Storm sewer overflowing on N Kansas Ave. Hastings Utilities crews assessing pipe capacity before next rain.',
     dept:'Hastings Utilities', time:'2 hrs ago',
     category:'utility', severity:65, noticeCount:6,
+    grants:[
+      { name:'FEMA BRIC', range:'$500K–$2M', note:'Stormwater resilience — N Kansas Ave sewer directly eligible' },
+      { name:'EPA Clean Water SRF', range:'$500K–$3M', note:'Storm sewer / water quality improvement' },
+      { name:'USDA Community Facilities', range:'$250K–$5M', note:'Rural water/sewer infrastructure' },
+    ],
     status:'progress', escalate:false,
     statusLabel:'In Progress', tag:'progress', queueStatus:'active', warn:true,
     workStatus:'active', actionStatus:'in-progress', progress:35, deadline:'Due in 12h', priority:'warn',
@@ -892,6 +903,7 @@ const ISSUES = [
     desc:'Vehicle parked on W 9th St near N Denver Ave for over 72 hours. No registration visible.',
     dept:'Hastings Police', time:'45 min ago',
     category:'police', severity:35, noticeCount:3,
+    grants:[],
     status:'reported', escalate:false,
     statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
     workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 24h', priority:'ok',
@@ -906,6 +918,9 @@ const ISSUES = [
     desc:'Tree roots causing concrete heave near W 7th and N Colorado Ave. Significant trip hazard for pedestrians.',
     dept:'Street Department', time:'1 hr ago',
     category:'infrastructure', severity:48, noticeCount:5,
+    grants:[
+      { name:'CDBG (NE DED)', range:'$200K–$750K', note:'ADA sidewalk / low-income area infrastructure eligible' },
+    ],
     status:'reported', escalate:false,
     statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
     workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 8h', priority:'warn',
@@ -920,6 +935,10 @@ const ISSUES = [
     desc:'Scheduled resurfacing of W 12th St between N Burlington and N Denver Ave. Street crews active on site.',
     dept:'Street Department', time:'4 days ago',
     category:'infrastructure', severity:30, noticeCount:2,
+    grants:[
+      { name:'DOT RAISE', range:'$1M–$25M', note:'Multimodal corridor — Burlington Ave area eligible' },
+      { name:'EDA Public Works', range:'$300K–$3M', note:'Economic distress infrastructure' },
+    ],
     status:'progress', escalate:false,
     statusLabel:'In Progress', tag:'progress', queueStatus:'active', warn:false,
     workStatus:'active', actionStatus:'in-progress', progress:55, deadline:'Due in 2 days', priority:'ok',
@@ -938,6 +957,7 @@ const ISSUES = [
     desc:'Street light on N Hastings Ave replaced and fully operational. Work completed same day as report.',
     dept:'Hastings Utilities', time:'3 days ago',
     category:'infrastructure', severity:20, noticeCount:1,
+    grants:[],
     status:'done', escalate:false,
     statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
     workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 3 days ago', priority:'done',
@@ -955,6 +975,10 @@ const ISSUES = [
     desc:'Water main fully repaired. Service restored to all affected addresses on N Burlington Ave. Area cleared.',
     dept:'Hastings Utilities', time:'5 days ago',
     category:'utility', severity:15, noticeCount:0,
+    grants:[
+      { name:'USDA Community Facilities', range:'$250K–$5M', note:'Water/sewer infrastructure — N Burlington Ave corridor' },
+      { name:'EPA Clean Water SRF', range:'$500K–$3M', note:'Water quality and main replacement eligible' },
+    ],
     status:'done', escalate:false,
     statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
     workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 5 days ago', priority:'done',
@@ -973,6 +997,7 @@ const ISSUES = [
     desc:'Park bench near the river overlook has broken slats. Splinter/cut hazard for visitors.',
     dept:'Street Department', time:'2 days ago',
     category:'park', severity:12, noticeCount:1,
+    grants:[],
     status:'reported', escalate:false,
     statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
     workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed Apr 1', priority:'done',
@@ -990,6 +1015,7 @@ const ISSUES = [
     desc:'Large graffiti tag on the south-facing wall of the school. Visible from street.',
     dept:'Hastings Police', time:'6 hrs ago',
     category:'police', severity:25, noticeCount:4,
+    grants:[],
     status:'reported', escalate:false,
     statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
     workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Due in 48h', priority:'ok',
@@ -1715,6 +1741,7 @@ function selectAdminById(id) {
       '<div class="chip"><strong>Reported:</strong> ' + issue.time + '</div>' +
       '<div class="chip"><strong>Notices:</strong> ' + (issue.noticeCount || 0) + ' residents</div>' +
     '</div>' +
+    renderGrantBadge(issue.grants) +
     (!isDone ?
       '<div class="section-title">Actions</div>' +
       '<div class="action-btns" style="margin-bottom:16px">' +
@@ -1795,6 +1822,23 @@ function renderAdminLog() {
       '<div class="log-time">' + e.time + '</div>' +
     '</div>';
   }).join('');
+}
+
+function renderGrantBadge(grants) {
+  if (!grants || !grants.length) return '';
+  var items = grants.map(function(g) {
+    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,229,176,0.1)">' +
+      '<div>' +
+        '<div style="font-size:12px;font-weight:700;color:var(--accent2)">' + g.name + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);line-height:1.3;margin-top:1px">' + g.note + '</div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--accent2);white-space:nowrap;font-weight:600;flex-shrink:0">' + g.range + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div style="background:rgba(0,229,176,0.06);border:1px solid rgba(0,229,176,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px">' +
+    '<div style="font-size:10px;font-weight:800;color:var(--accent2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">💵 Grant Eligible</div>' +
+    items +
+  '</div>';
 }
 
 function syncMapPin(issue) {
@@ -1942,6 +1986,7 @@ function renderDeptPanel(id) {
       '<div class="chip"><strong>Dept:</strong> ' + issue.dept + '</div>' +
       '<div class="chip"><strong>Deadline:</strong> ' + (issue.deadline || '') + '</div>' +
     '</div>' +
+    renderGrantBadge(issue.grants) +
     (!isDone ?
       '<div class="section-title">Work Actions</div>' +
       '<div class="action-btns" style="margin-bottom:16px">' +
