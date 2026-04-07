@@ -2005,6 +2005,7 @@ function deptAction(id, actionType) {
       selectedDeptId = null;
     }
     renderDeptAccountability();
+    renderAdminQueue();
     renderAdminLog();
     return;
   }
@@ -2099,12 +2100,12 @@ function switchView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  // Activate matching tab by data-view attribute
   const tab = document.querySelector(`.nav-tab[data-view="${name}"]`);
   if (tab) tab.classList.add('active');
-  // Show heat map button only on public map
   document.getElementById('btn-heatmap').style.display = name === 'public' ? '' : 'none';
   if (name === 'public') setTimeout(() => map.invalidateSize(), 50);
+  if (name === 'admin') { renderAdminQueue(); renderAdminLog(); }
+  if (name === 'dept')  { renderDeptQueue(); renderDeptAccountability(); }
 }
 
 /* Init */
