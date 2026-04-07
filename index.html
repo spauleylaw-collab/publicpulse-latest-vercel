@@ -9,6 +9,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
+<!-- Leaflet MarkerCluster -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -358,7 +363,47 @@ body {
 .card-noticed.confirmed { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); color: var(--green); }
 .card-noticed-count { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
 
-/* ══ PIN HOVER TOOLTIP ══ */
+/* ══ MARKER CLUSTER OVERRIDES ══ */
+.marker-cluster {
+  background: transparent !important;
+}
+.marker-cluster div {
+  background: transparent !important;
+}
+.pp-cluster {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.pp-cluster:hover { transform: scale(1.1); }
+.pp-cluster-critical {
+  background: radial-gradient(circle at 35% 35%, #ff3a5c, #c0001f);
+  box-shadow: 0 0 18px rgba(255,10,60,0.55), 0 4px 20px rgba(0,0,0,0.5);
+}
+.pp-cluster-urgent {
+  background: radial-gradient(circle at 35% 35%, #f87171, #dc2626);
+  box-shadow: 0 0 14px rgba(239,68,68,0.45), 0 4px 20px rgba(0,0,0,0.5);
+}
+.pp-cluster-moderate {
+  background: radial-gradient(circle at 35% 35%, #fbbf24, #d97706);
+  box-shadow: 0 0 12px rgba(245,158,11,0.4), 0 4px 20px rgba(0,0,0,0.5);
+}
+.pp-cluster-low {
+  background: radial-gradient(circle at 35% 35%, #4ade80, #16a34a);
+  box-shadow: 0 0 10px rgba(34,197,94,0.35), 0 4px 20px rgba(0,0,0,0.5);
+}
+
+/* Leaflet cluster default overrides */
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow {
+  transition: left 0.3s ease-out, top 0.3s ease-out;
+}
 #pin-tooltip {
   display: none;
   position: absolute;
@@ -1515,7 +1560,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 map.zoomControl.setPosition('bottomright');
 
-/* Place markers */
+/* Place markers in a cluster group */
 const markerMap = {};
 const tooltip   = document.getElementById('pin-tooltip');
 const ttStatus  = document.getElementById('tt-status');
@@ -1523,7 +1568,6 @@ const ttTitle   = document.getElementById('tt-title');
 const ttSummary = document.getElementById('tt-summary');
 
 function showPinTooltip(pin, containerPoint) {
-  // Status color + label
   const isEsc = pin.escalate && pin.status !== 'done';
   const statusColor = isEsc ? '#ff0a3c'
     : pin.status === 'done' ? 'var(--green)'
@@ -1531,15 +1575,11 @@ function showPinTooltip(pin, containerPoint) {
     : pin.status === 'review' ? 'var(--accent)'
     : 'var(--warn)';
   const statusText = isEsc ? '⚠ Critical — Escalated' : STATUS_LABELS[pin.status];
-
   ttStatus.textContent  = statusText;
   ttStatus.style.color  = statusColor;
   ttTitle.textContent   = pin.title;
-  // Brief summary — first sentence or 80 chars
   const summary = pin.desc.length > 80 ? pin.desc.slice(0, 78) + '…' : pin.desc;
   ttSummary.textContent = summary;
-
-  // Position above the pin — offset so it clears the pin body
   const mapEl = document.getElementById('map-container');
   const mw = mapEl.offsetWidth;
   tooltip.classList.add('visible');
@@ -1547,7 +1587,6 @@ function showPinTooltip(pin, containerPoint) {
   const th = tooltip.offsetHeight;
   let left = containerPoint.x - tw / 2;
   let top  = containerPoint.y - th - 18;
-  // Clamp within map
   left = Math.max(8, Math.min(left, mw - tw - 8));
   top  = Math.max(8, top);
   tooltip.style.left = left + 'px';
@@ -1558,8 +1597,45 @@ function hidePinTooltip() {
   tooltip.classList.remove('visible');
 }
 
+// Determine cluster severity class from its child markers
+function clusterSeverityClass(cluster) {
+  const children = cluster.getAllChildMarkers();
+  let maxScore = 0;
+  let hasEscalated = false;
+  children.forEach(m => {
+    const pin = m.options._pin;
+    if (!pin || pin.status === 'done') return;
+    if (pin.escalate) hasEscalated = true;
+    maxScore = Math.max(maxScore, calcScore(pin));
+  });
+  if (hasEscalated) return 'critical';
+  if (maxScore >= 61) return 'urgent';
+  if (maxScore >= 31) return 'moderate';
+  return 'low';
+}
+
+const clusterGroup = L.markerClusterGroup({
+  disableClusteringAtZoom: 16,   // at zoom 16+ individual pins always show
+  maxClusterRadius: 60,          // pixels — tighter clustering
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  zoomToBoundsOnClick: true,
+  iconCreateFunction: function(cluster) {
+    const count  = cluster.getChildCount();
+    const sev    = clusterSeverityClass(cluster);
+    const size   = count < 5 ? 36 : count < 10 ? 42 : 50;
+    const fontSize = count < 10 ? 13 : count < 100 ? 11 : 10;
+    return L.divIcon({
+      html: `<div class="pp-cluster pp-cluster-${sev}" style="width:${size}px;height:${size}px;font-size:${fontSize}px">${count}</div>`,
+      className: '',
+      iconSize: [size, size],
+      iconAnchor: [size/2, size/2],
+    });
+  },
+});
+
 PINS.forEach(pin => {
-  const m = L.marker([pin.lat, pin.lng], { icon: makeIcon(pin) }).addTo(map);
+  const m = L.marker([pin.lat, pin.lng], { icon: makeIcon(pin), _pin: pin });
   m.on('click', e => {
     hidePinTooltip();
     openCard(pin, e.containerPoint);
@@ -1568,7 +1644,10 @@ PINS.forEach(pin => {
   m.on('mouseover', e => { showPinTooltip(pin, e.containerPoint); });
   m.on('mouseout',  () => { hidePinTooltip(); });
   markerMap[pin.id] = m;
+  clusterGroup.addLayer(m);
 });
+
+map.addLayer(clusterGroup);
 
 /* ══════════════════════════════════════
    HEAT MAP — canvas layer drawn over map
@@ -1906,20 +1985,24 @@ function submitReport() {
     isNew: true,
   };
 
-  // Add permanent pin to map
+  // Add permanent pin to cluster group
   const m = L.marker([newPin.lat, newPin.lng], {
     icon: makeIcon(newPin),
     zIndexOffset: 900,
-  }).addTo(map);
+    _pin: newPin,
+  });
   m.on('click', ev => {
     hidePinTooltip();
     openCard(newPin, ev.containerPoint);
     L.DomEvent.stopPropagation(ev);
   });
+  m.on('mouseover', ev => { showPinTooltip(newPin, ev.containerPoint); });
+  m.on('mouseout',  () => { hidePinTooltip(); });
 
   // Also add to PINS array so it's accessible
   PINS.push(newPin);
   markerMap[newPin.id] = m;
+  clusterGroup.addLayer(m);
 
   // Refresh heatmap if active
   if (heatActive) buildHeatCanvas();
@@ -2092,7 +2175,11 @@ function selectAdminById(id, isAdvancing) {
     (!isDone ?
       '<div class="section-title">Actions</div>' +
       '<div class="action-btns" style="margin-bottom:16px">' +
-        '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')">Mark as Reviewed</button>' +
+        // Mark as Reviewed — grey/strikethrough once already reviewed or beyond
+        (issue.tag === 'reported'
+          ? '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')">Mark as Reviewed</button>'
+          : '<button class="action-btn" disabled style="opacity:.35;cursor:default;text-decoration:line-through;border-color:var(--border);color:var(--muted)" title="Already reviewed">✓ Reviewed</button>'
+        ) +
         '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')">Escalate</button>' +
         '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="border-color:rgba(34,197,94,.3);color:var(--green)">Mark as Completed</button>' +
       '</div>' +
@@ -2276,7 +2363,11 @@ async function refreshDeptInsights() {
 
 function syncMapPin(issue) {
   var marker = markerMap[issue.id];
-  if (marker) marker.setIcon(makeIcon(issue));
+  if (marker) {
+    marker.setIcon(makeIcon(issue));
+    // Refresh cluster so color/severity recalculates
+    if (clusterGroup) { clusterGroup.refreshClusters(marker); }
+  }
   if (heatActive) buildHeatCanvas();
 }
 
