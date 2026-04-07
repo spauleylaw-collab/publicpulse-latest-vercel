@@ -358,6 +358,42 @@ body {
 .card-noticed.confirmed { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); color: var(--green); }
 .card-noticed-count { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
 
+/* ══ PIN HOVER TOOLTIP ══ */
+#pin-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 650;
+  pointer-events: none;
+  background: rgba(11,15,26,0.93);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 9px;
+  padding: 7px 11px;
+  max-width: 200px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  animation: tooltip-in 0.12s ease-out;
+}
+@keyframes tooltip-in {
+  from { opacity:0; transform:translateY(4px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+#pin-tooltip.visible { display: block; }
+.tt-title {
+  font-family: var(--font-display);
+  font-size: 12px; font-weight: 700;
+  color: var(--text); line-height: 1.3;
+  margin-bottom: 3px;
+}
+.tt-summary {
+  font-size: 10px; color: var(--muted);
+  line-height: 1.4; white-space: normal;
+}
+.tt-status {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
 /* Report form overlay */
 #report-overlay {
   display: none;
@@ -706,6 +742,13 @@ body {
     <div id="banner">
       <div class="banner-dot"></div>
       <div id="banner-text">Pothole reported on Burlington Ave — 18 minutes ago</div>
+    </div>
+
+    <!-- Pin hover tooltip -->
+    <div id="pin-tooltip">
+      <div class="tt-status" id="tt-status"></div>
+      <div class="tt-title"  id="tt-title"></div>
+      <div class="tt-summary" id="tt-summary"></div>
     </div>
 
     <!-- Pin-drop prompt bar -->
@@ -1408,12 +1451,56 @@ map.zoomControl.setPosition('bottomright');
 
 /* Place markers */
 const markerMap = {};
+const tooltip   = document.getElementById('pin-tooltip');
+const ttStatus  = document.getElementById('tt-status');
+const ttTitle   = document.getElementById('tt-title');
+const ttSummary = document.getElementById('tt-summary');
+
+function showPinTooltip(pin, containerPoint) {
+  // Status color + label
+  const isEsc = pin.escalate && pin.status !== 'done';
+  const statusColor = isEsc ? '#ff0a3c'
+    : pin.status === 'done' ? 'var(--green)'
+    : pin.status === 'progress' ? 'var(--accent)'
+    : pin.status === 'review' ? 'var(--accent)'
+    : 'var(--warn)';
+  const statusText = isEsc ? '⚠ Critical — Escalated' : STATUS_LABELS[pin.status];
+
+  ttStatus.textContent  = statusText;
+  ttStatus.style.color  = statusColor;
+  ttTitle.textContent   = pin.title;
+  // Brief summary — first sentence or 80 chars
+  const summary = pin.desc.length > 80 ? pin.desc.slice(0, 78) + '…' : pin.desc;
+  ttSummary.textContent = summary;
+
+  // Position above the pin — offset so it clears the pin body
+  const mapEl = document.getElementById('map-container');
+  const mw = mapEl.offsetWidth;
+  tooltip.classList.add('visible');
+  const tw = tooltip.offsetWidth;
+  const th = tooltip.offsetHeight;
+  let left = containerPoint.x - tw / 2;
+  let top  = containerPoint.y - th - 18;
+  // Clamp within map
+  left = Math.max(8, Math.min(left, mw - tw - 8));
+  top  = Math.max(8, top);
+  tooltip.style.left = left + 'px';
+  tooltip.style.top  = top  + 'px';
+}
+
+function hidePinTooltip() {
+  tooltip.classList.remove('visible');
+}
+
 PINS.forEach(pin => {
   const m = L.marker([pin.lat, pin.lng], { icon: makeIcon(pin) }).addTo(map);
   m.on('click', e => {
+    hidePinTooltip();
     openCard(pin, e.containerPoint);
     L.DomEvent.stopPropagation(e);
   });
+  m.on('mouseover', e => { showPinTooltip(pin, e.containerPoint); });
+  m.on('mouseout',  () => { hidePinTooltip(); });
   markerMap[pin.id] = m;
 });
 
@@ -1759,6 +1846,7 @@ function submitReport() {
     zIndexOffset: 900,
   }).addTo(map);
   m.on('click', ev => {
+    hidePinTooltip();
     openCard(newPin, ev.containerPoint);
     L.DomEvent.stopPropagation(ev);
   });
