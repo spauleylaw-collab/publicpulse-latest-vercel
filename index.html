@@ -1795,7 +1795,11 @@ function adminAction(id, actionType) {
     if (qel) {
       qel.classList.add('exiting');
       setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 360);
-    } else { renderAdminQueue(); }
+    } else {
+      // Element not found — just re-render immediately so item disappears
+      renderAdminQueue();
+      selectAdminById(id);
+    }
     updateQueueBadge(); renderDeptAccountability(); return;
   }
   syncMapPin(issue);
@@ -1953,6 +1957,11 @@ function deptAction(id, actionType) {
         document.getElementById('dept-panel').style.display = 'none';
         selectedDeptId = null;
       }, 360);
+    } else {
+      renderDeptQueue();
+      document.getElementById('dept-empty').style.display = 'flex';
+      document.getElementById('dept-panel').style.display = 'none';
+      selectedDeptId = null;
     }
     renderDeptAccountability(); return;
   }
