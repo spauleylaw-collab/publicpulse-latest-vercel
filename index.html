@@ -530,6 +530,21 @@ body {
 .insight-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
 .insight-val   { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
 .insight-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.ai-insight-item {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--text); line-height: 1.5;
+}
+.ai-insight-item:last-child { border-bottom: none; }
+.ai-insight-tag {
+  display: inline-block;
+  font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 100px; margin-bottom: 4px;
+}
+.ait-pattern  { background: rgba(245,158,11,.12); color: var(--warn); }
+.ait-suggest  { background: rgba(61,142,248,.12);  color: var(--accent); }
+.ait-alert    { background: rgba(255,10,60,.12);   color: #ff0a3c; }
+.ait-good     { background: rgba(34,197,94,.12);   color: var(--green); }
 .insight-trend { font-size: 12px; font-weight: 600; color: var(--green); margin-top: 5px; display: block; }
 .insight-trend.down { color: var(--danger); }
 
@@ -897,6 +912,17 @@ body {
         <div id="admin-activity-log" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
       </div>
 
+      <!-- AI Insights for today -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="section-title" style="margin-bottom:0">Today's Insights</div>
+          <button onclick="refreshAdminInsights()" id="admin-insights-refresh" title="Refresh insights" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
+        </div>
+        <div id="admin-insights-body">
+          <div style="font-size:11px;color:var(--muted);padding:10px 0">Generating insights…</div>
+        </div>
+      </div>
+
       <!-- Step 1: Report type picker -->
       <div id="report-type-picker">
         <div class="section-title" style="margin-top:4px">Select Report Type</div>
@@ -970,9 +996,21 @@ body {
 
   <!-- RIGHT: Accountability Timeline -->
   <div class="admin-col col-right">
-    <div class="col-header"><div class="col-title">Accountability</div></div>
+    <div class="col-header">
+      <div class="col-title">Accountability</div>
+      <button onclick="refreshDeptInsights()" title="Refresh insights" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
+    </div>
     <div class="col-body" id="dept-accountability">
       <!-- populated by renderDeptAccountability() -->
+    </div>
+    <!-- Dept AI insights — below crew guidance -->
+    <div style="padding:0 14px 14px;border-top:1px solid var(--border);margin-top:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px">
+        <div class="section-title" style="margin-bottom:0">Today's Insights</div>
+      </div>
+      <div id="dept-insights-body">
+        <div style="font-size:11px;color:var(--muted)">Generating insights…</div>
+      </div>
     </div>
   </div>
 
@@ -2122,6 +2160,92 @@ function renderGrantBadge(grants) {
   '</div>';
 }
 
+/* ══ AI INSIGHTS — Today's analysis for Admin and Dept views ══ */
+let adminInsightsCache = null;
+let deptInsightsCache  = null;
+
+function buildInsightsContext() {
+  var active    = ISSUES.filter(function(i){ return i.status !== 'done'; });
+  var escalated = active.filter(function(i){ return i.escalate; });
+  var late      = ISSUES.filter(function(i){ return i.priority === 'late'; });
+  var fmt = function(i) {
+    return '[' + i.id + '] ' + i.title +
+      ' | Dept: ' + i.dept +
+      ' | Score: ' + calcScore(i) + '/100' +
+      ' | Notices: ' + (i.noticeCount||0) +
+      ' | Status: ' + i.status +
+      (i.escalate ? ' | ESCALATED' : '') +
+      (i.priority === 'late' ? ' | OVERDUE' : '');
+  };
+  return 'CITY: Hastings, NE — ' + new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) + '\n' +
+    'ACTIVE ISSUES (' + active.length + '):\n' + active.map(fmt).join('\n') + '\n' +
+    'ESCALATED: ' + escalated.length + '\n' +
+    'OVERDUE: ' + late.length + '\n' +
+    'DEPARTMENTS: Street Department, Hastings Utilities, Hastings Police\n' +
+    'STREET DEPT SCORE: ' + (function(){
+      var all = ISSUES.filter(function(i){ return i.dept === 'Street Department'; });
+      var done = all.filter(function(i){ return i.workStatus === 'completed'; });
+      return all.length ? Math.round((done.length/all.length)*100) : 0;
+    })() + '% on-time completion';
+}
+
+function renderInsightItems(items, targetId) {
+  var el = document.getElementById(targetId);
+  if (!el) return;
+  var tagClass = { pattern:'ait-pattern', suggest:'ait-suggest', alert:'ait-alert', good:'ait-good' };
+  var tagLabel = { pattern:'Pattern', suggest:'Suggestion', alert:'Alert', good:'Good News' };
+  el.innerHTML = items.map(function(item) {
+    var tc = tagClass[item.type] || 'ait-suggest';
+    var tl = tagLabel[item.type] || 'Insight';
+    return '<div class="ai-insight-item">' +
+      '<div class="ai-insight-tag ' + tc + '">' + tl + '</div>' +
+      '<div>' + item.text + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function fetchInsights(systemPrompt, userPrompt) {
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    if (!response.ok) throw new Error('API ' + response.status);
+    var data = await response.json();
+    var text = (data.content || []).map(function(b){ return b.text || ''; }).join('');
+    var clean = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    return [{ type:'suggest', text:'Could not load insights. Check connection and refresh.' }];
+  }
+}
+
+async function refreshAdminInsights() {
+  var el = document.getElementById('admin-insights-body');
+  if (el) el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 0">Generating…</div>';
+  var context = buildInsightsContext();
+  var system = 'You are a civic operations analyst for Hastings, Nebraska. Analyze the current issue data and return 3-4 sharp, actionable insights for the City Administrator. Return ONLY valid JSON — an array of objects with keys "type" (one of: pattern, suggest, alert, good) and "text" (1-2 plain English sentences, specific to the data, no fluff). Example: [{"type":"alert","text":"Two escalated issues have had no activity in 12+ hours."}]';
+  var prompt = context + '\n\nReturn 3-4 insights as a JSON array. Be specific — reference actual issue IDs, street names, departments. No markdown, no explanation, just the JSON array.';
+  adminInsightsCache = await fetchInsights(system, prompt);
+  renderInsightItems(adminInsightsCache, 'admin-insights-body');
+}
+
+async function refreshDeptInsights() {
+  var el = document.getElementById('dept-insights-body');
+  if (el) el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 0">Generating…</div>';
+  var context = buildInsightsContext();
+  var system = 'You are a field operations advisor for the Hastings, NE Street Department. Analyze the active workload and return 3-4 sharp, practical insights for the crew supervisor. Return ONLY valid JSON — an array of objects with keys "type" (one of: pattern, suggest, alert, good) and "text" (1-2 plain English sentences). Focus on: recurring problem locations, crew sequencing, material prep, safety flags, and workload balance. Be specific — reference actual street names and issue IDs.';
+  var prompt = context + '\n\nReturn 3-4 crew-level insights as a JSON array. No markdown, no explanation, just the JSON array.';
+  deptInsightsCache = await fetchInsights(system, prompt);
+  renderInsightItems(deptInsightsCache, 'dept-insights-body');
+}
+
 function syncMapPin(issue) {
   var marker = markerMap[issue.id];
   if (marker) marker.setIcon(makeIcon(issue));
@@ -2430,15 +2554,23 @@ function switchView(name) {
   if (tab) tab.classList.add('active');
   document.getElementById('btn-heatmap').style.display = name === 'public' ? '' : 'none';
   if (name === 'public') setTimeout(() => map.invalidateSize(), 50);
-  if (name === 'admin') { renderAdminQueue(); renderAdminLog(); }
-  if (name === 'dept')  { renderDeptQueue(); renderDeptAccountability(); }
+  if (name === 'admin') {
+    renderAdminQueue(); renderAdminLog();
+    if (!adminInsightsCache) refreshAdminInsights();
+    else renderInsightItems(adminInsightsCache, 'admin-insights-body');
+  }
+  if (name === 'dept') {
+    renderDeptQueue(); renderDeptAccountability();
+    if (!deptInsightsCache) refreshDeptInsights();
+    else renderInsightItems(deptInsightsCache, 'dept-insights-body');
+  }
 }
 
 /* Init */
-try { buildTypePicker(); } catch(e) { console.warn('Report picker init failed:', e); }
-try { renderAdminQueue(); } catch(e) { console.warn('Admin queue init failed:', e); }
-try { renderAdminLog(); }   catch(e) { console.warn('Admin log init failed:', e); }
-try { renderDeptQueue(); }  catch(e) { console.warn('Dept queue init failed:', e); }
+try { buildTypePicker(); }         catch(e) { console.warn('Report picker init failed:', e); }
+try { renderAdminQueue(); }        catch(e) { console.warn('Admin queue init failed:', e); }
+try { renderAdminLog(); }          catch(e) { console.warn('Admin log init failed:', e); }
+try { renderDeptQueue(); }         catch(e) { console.warn('Dept queue init failed:', e); }
 try { renderDeptAccountability(); } catch(e) { console.warn('Accountability init failed:', e); }
 // Show heatmap button on initial public map view
 document.getElementById('btn-heatmap').style.display = '';
