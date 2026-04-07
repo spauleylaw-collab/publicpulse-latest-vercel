@@ -736,6 +736,12 @@ body {
         <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
       </div>
 
+      <!-- Live activity log -->
+      <div style="margin-bottom:14px">
+        <div class="section-title" style="margin-bottom:8px">Recent Activity</div>
+        <div id="admin-activity-log" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
+      </div>
+
       <!-- Step 1: Report type picker -->
       <div id="report-type-picker">
         <div class="section-title" style="margin-top:4px">Select Report Type</div>
@@ -1758,6 +1764,39 @@ function renderLog(log) {
   }).join('');
 }
 
+function renderAdminLog() {
+  var el = document.getElementById('admin-activity-log');
+  if (!el) return;
+  // Gather all log entries across all ISSUES, newest first
+  var evts = [];
+  ISSUES.forEach(function(issue) {
+    issue.log.forEach(function(e) {
+      evts.push({ type:e.type, body:e.body, time:e.time, title:issue.title, id:issue.id });
+    });
+  });
+  evts.reverse();
+  var tmap = {
+    system:   { dot:'var(--muted)',   pre:'' },
+    review:   { dot:'var(--accent)',  pre:'🔍 ' },
+    assign:   { dot:'var(--accent2)', pre:'📌 ' },
+    ack:      { dot:'var(--accent)',  pre:'✓ ' },
+    start:    { dot:'var(--accent2)', pre:'▶ ' },
+    update:   { dot:'var(--accent)',  pre:'📢 ' },
+    public:   { dot:'var(--accent)',  pre:'📢 ' },
+    complete: { dot:'var(--green)',   pre:'✅ ' },
+    escalate: { dot:'var(--danger)',  pre:'🔴 ' },
+  };
+  el.innerHTML = evts.slice(0, 20).map(function(e) {
+    var t = tmap[e.type] || tmap.system;
+    var st = e.title.indexOf('\u2014') > -1 ? e.title.split('\u2014')[0].trim() : e.title;
+    return '<div class="log-entry">' +
+      '<div class="log-dot" style="background:' + t.dot + '"></div>' +
+      '<div class="log-body">' + t.pre + '<strong>' + st + '</strong> \u2014 ' + e.body + '</div>' +
+      '<div class="log-time">' + e.time + '</div>' +
+    '</div>';
+  }).join('');
+}
+
 function syncMapPin(issue) {
   var marker = markerMap[issue.id];
   if (marker) marker.setIcon(makeIcon(issue));
@@ -1806,6 +1845,7 @@ function adminAction(id, actionType) {
   var logEl = document.getElementById('admin-log');
   if (logEl) logEl.innerHTML = renderLog(issue.log);
   renderAdminQueue();
+  renderAdminLog();
 }
 
 function setTimeline(t) {
@@ -1946,6 +1986,7 @@ function deptAction(id, actionType) {
   } else if (actionType === 'complete') {
     issue.actionStatus = 'completed'; issue.workStatus = 'completed'; issue.queueStatus = 'completed';
     issue.status = 'done'; issue.priority = 'done'; issue.progress = 100;
+    issue.statusLabel = 'Completed'; issue.tag = 'done';
     issue.log.push({ type:'complete', body:'Marked as Completed — work inspected and signed off', time:now });
     syncMapPin(issue);
     var el3 = document.getElementById('dqi-' + id);
@@ -1963,7 +2004,9 @@ function deptAction(id, actionType) {
       document.getElementById('dept-panel').style.display = 'none';
       selectedDeptId = null;
     }
-    renderDeptAccountability(); return;
+    renderDeptAccountability();
+    renderAdminLog();
+    return;
   }
   var logEl = document.getElementById('dept-log');
   if (logEl) logEl.innerHTML = renderLog(issue.log);
@@ -1992,32 +2035,62 @@ function renderDeptAccountability() {
   var late      = active.filter(function(i) { return i.priority === 'late'; });
   var pct       = all.length ? Math.round((completed.length / all.length) * 100) : 0;
   var sc        = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
-  var tmap = { assign:{dot:'var(--muted)',icon:'📋',cls:''}, ack:{dot:'var(--accent)',icon:'✓',cls:''}, start:{dot:'var(--accent2)',icon:'▶',cls:''}, update:{dot:'var(--accent)',icon:'📢',cls:''}, public:{dot:'var(--accent)',icon:'📢',cls:''}, complete:{dot:'var(--green)',icon:'✅',cls:'log-complete'}, escalate:{dot:'var(--danger)',icon:'🔴',cls:'log-escalate'}, system:{dot:'var(--muted)',icon:'',cls:''} };
-  var evts = [];
-  all.forEach(function(issue) { issue.log.forEach(function(e) { evts.push({ type:e.type, body:e.body, time:e.time, title:issue.title }); }); });
-  evts.reverse();
+
+  // Build priority-ordered work list for crew guidance
+  var priorityOrder = { late:0, warn:1, ok:2, done:3 };
+  var sorted = active.slice().sort(function(a,b) {
+    return (priorityOrder[a.priority]||2) - (priorityOrder[b.priority]||2);
+  });
+
+  // Crew insight text per item
+  function crewInsight(issue) {
+    if (issue.priority === 'late')
+      return 'Overdue — assign crew immediately. All other work secondary.';
+    if (issue.priority === 'warn' && issue.actionStatus === 'assigned')
+      return 'Deadline approaching. Acknowledge and stage crew now.';
+    if (issue.priority === 'warn' && issue.actionStatus === 'acknowledged')
+      return 'Crew should be en route. Confirm materials on hand.';
+    if (issue.priority === 'warn' && issue.actionStatus === 'in-progress')
+      return 'In progress — monitor for completion before deadline.';
+    if (issue.actionStatus === 'assigned')
+      return 'Not yet acknowledged. Confirm crew availability.';
+    if (issue.actionStatus === 'acknowledged')
+      return 'Acknowledged. Schedule into next available crew slot.';
+    if (issue.actionStatus === 'in-progress')
+      return 'Active. No action needed — track to completion.';
+    return 'Monitor status.';
+  }
+
+  var insightRows = sorted.map(function(issue, idx) {
+    var dot = issue.priority === 'late' ? 'var(--danger)'
+            : issue.priority === 'warn' ? 'var(--warn)'
+            : 'var(--accent2)';
+    var shortTitle = issue.title.indexOf('\u2014') > -1
+      ? issue.title.split('\u2014')[0].trim()
+      : issue.title;
+    return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start">' +
+      '<div style="width:20px;height:20px;border-radius:50%;background:' + dot + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#0b0f1a;flex-shrink:0;margin-top:1px">' + (idx+1) + '</div>' +
+      '<div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">' + shortTitle + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);line-height:1.4">' + crewInsight(issue) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
   el.innerHTML =
     '<div class="insight-card" style="margin-bottom:10px">' +
       '<div class="insight-label">Street Dept. Score</div>' +
       '<div class="insight-val" style="color:' + sc + '">' + pct + '%</div>' +
       '<div class="insight-sub">On-time completion this month</div>' +
     '</div>' +
-    '<div class="metrics-row" style="margin-bottom:12px">' +
+    '<div class="metrics-row" style="margin-bottom:14px">' +
       '<div class="metric-mini"><div class="metric-val" style="color:var(--danger)">' + late.length + '</div><div class="metric-label">Late</div></div>' +
       '<div class="metric-mini"><div class="metric-val" style="color:var(--accent)">'  + active.length + '</div><div class="metric-label">Active</div></div>' +
       '<div class="metric-mini"><div class="metric-val" style="color:var(--green)">'   + completed.length + '</div><div class="metric-label">Done</div></div>' +
     '</div>' +
-    '<div class="section-title">Department Activity Log</div>' +
-    '<div class="activity-log">' +
-    evts.slice(0, 14).map(function(e) {
-      var t = tmap[e.type] || tmap.system;
-      var st = e.title.indexOf('\u2014') > -1 ? e.title.split('\u2014')[0].trim() : e.title;
-      return '<div class="log-entry ' + t.cls + '">' +
-        '<div class="log-dot" style="background:' + t.dot + '"></div>' +
-        '<div class="log-body">' + (t.icon ? t.icon + ' ' : '') + '<strong>' + st + '</strong> \u2014 ' + e.body + '</div>' +
-        '<div class="log-time">' + e.time + '</div>' +
-      '</div>';
-    }).join('') +
+    '<div class="section-title">Work Priority & Crew Guidance</div>' +
+    '<div style="margin-top:4px">' +
+    (insightRows || '<div style="font-size:12px;color:var(--muted);padding:12px 0">No active work items.</div>') +
     '</div>';
 }
 
@@ -2037,6 +2110,7 @@ function switchView(name) {
 /* Init */
 try { buildTypePicker(); } catch(e) { console.warn('Report picker init failed:', e); }
 try { renderAdminQueue(); } catch(e) { console.warn('Admin queue init failed:', e); }
+try { renderAdminLog(); }   catch(e) { console.warn('Admin log init failed:', e); }
 try { renderDeptQueue(); }  catch(e) { console.warn('Dept queue init failed:', e); }
 try { renderDeptAccountability(); } catch(e) { console.warn('Accountability init failed:', e); }
 // Show heatmap button on initial public map view
