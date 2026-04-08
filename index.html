@@ -782,6 +782,66 @@ body {
   0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.8; }
   100% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; }
 }
+/* ══ QUEUE SEARCH / FILTER ══ */
+.queue-search-wrap {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.queue-search-input {
+  width: 100%; box-sizing: border-box;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px 7px 30px;
+  font-size: 12px; color: var(--text);
+  font-family: var(--font-body); outline: none;
+  transition: border-color 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237a8299' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 9px center;
+}
+.queue-search-input:focus { border-color: rgba(61,142,248,0.4); }
+.queue-search-input::placeholder { color: var(--muted); }
+.queue-filter-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.queue-filter-chip {
+  font-size: 10px; font-weight: 600; padding: 3px 9px;
+  border-radius: 100px; cursor: pointer;
+  border: 1px solid var(--border);
+  background: none; color: var(--muted);
+  font-family: var(--font-body); transition: all 0.15s; white-space: nowrap;
+}
+.queue-filter-chip.active { background: rgba(61,142,248,0.12); border-color: rgba(61,142,248,0.3); color: var(--accent); }
+.queue-filter-chip.chip-escalated.active { background: rgba(255,10,60,0.1); border-color: rgba(255,10,60,0.3); color: #ff0a3c; }
+
+/* ══ ISSUE TIMELINE (public card) ══ */
+.card-timeline { margin-bottom: 10px; }
+.card-timeline-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; position: relative; }
+.card-timeline-row:not(:last-child)::after { content:''; position:absolute; left:5px; top:18px; width:1px; bottom:-4px; background:var(--border); }
+.card-timeline-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; margin-top:2px; border:2px solid var(--surface); }
+.card-timeline-text { font-size:11px; color:var(--muted); line-height:1.3; }
+.card-timeline-text strong { color:var(--text); font-weight:600; }
+
+/* ══ DEPT SELECTOR ══ */
+.dept-selector-wrap { padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.dept-selector {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
+  color: var(--text); font-family: var(--font-body); outline: none; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.dept-selector:focus { border-color: rgba(61,142,248,0.4); }
+
+/* ══ COPY REPORT BUTTON ══ */
+.btn-copy-report {
+  width: 100%; margin-top: 10px;
+  background: rgba(0,229,176,0.08); border: 1px solid rgba(0,229,176,0.2);
+  color: var(--accent2); border-radius: 8px; padding: 9px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.btn-copy-report:hover { background: rgba(0,229,176,0.14); }
+
 /* ══════════════════════════════════════
    MOBILE RESPONSIVE — ≤768px
    Stacks three columns vertically.
@@ -919,6 +979,8 @@ body {
       <div class="card-body">
         <div id="card-title" class="card-title"></div>
         <div id="card-desc"  class="card-desc"></div>
+        <!-- Issue timeline -->
+        <div id="card-timeline-wrap"></div>
         <!-- Last city action -->
         <div id="card-last-action" class="card-last-action" style="display:none">
           <div class="card-last-action-label">Last City Action</div>
@@ -1016,6 +1078,16 @@ body {
       <button class="queue-tab active" id="qtab-active"   onclick="setQueueTab('active')">Active</button>
       <button class="queue-tab"        id="qtab-completed" onclick="setQueueTab('completed')">Completed</button>
     </div>
+    <!-- Search + filter -->
+    <div class="queue-search-wrap">
+      <input class="queue-search-input" id="queue-search" type="text" placeholder="Search issues…" oninput="renderAdminQueue()" autocomplete="off">
+      <div class="queue-filter-chips">
+        <button class="queue-filter-chip chip-escalated" id="qf-escalated" onclick="toggleQueueFilter('escalated')">⚠ Escalated</button>
+        <button class="queue-filter-chip" id="qf-street"    onclick="toggleQueueFilter('street')">Street</button>
+        <button class="queue-filter-chip" id="qf-utilities" onclick="toggleQueueFilter('utilities')">Utilities</button>
+        <button class="queue-filter-chip" id="qf-police"    onclick="toggleQueueFilter('police')">Police</button>
+      </div>
+    </div>
     <div class="col-body" id="admin-queue"></div>
   </div>
   <div class="admin-col col-mid">
@@ -1092,6 +1164,7 @@ body {
           </div>
           <div id="report-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px"></div>
           <div id="report-section-content"></div>
+          <button class="btn-copy-report" onclick="copyReportToClipboard()">📋 Copy Report to Clipboard</button>
           <div id="report-streaming" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:12px">
             <div style="display:inline-flex;gap:4px;align-items:center">
               <span class="stream-dot"></span><span class="stream-dot" style="animation-delay:.2s"></span><span class="stream-dot" style="animation-delay:.4s"></span>
@@ -1117,9 +1190,18 @@ body {
   <div class="admin-col col-left">
     <div class="col-header">
       <div>
-        <div class="col-title">Street Department</div>
+        <div class="col-title" id="dept-col-title">Street Department</div>
         <div id="dept-workload" style="font-size:11px;color:var(--muted);margin-top:2px">4 active · 1 late</div>
       </div>
+    </div>
+    <!-- Department selector -->
+    <div class="dept-selector-wrap">
+      <select class="dept-selector" id="dept-view-select" onchange="setActiveDept(this.value)">
+        <option value="Street Department">Street Department</option>
+        <option value="Hastings Utilities">Hastings Utilities</option>
+        <option value="Hastings Police">Hastings Police</option>
+        <option value="Hastings Fire &amp; Rescue">Hastings Fire &amp; Rescue</option>
+      </select>
     </div>
     <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
       <button class="queue-tab active" id="dqtab-active"    onclick="setDeptTab('active')">Active</button>
@@ -1376,6 +1458,236 @@ const ISSUES = [
     workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Due in 48h', priority:'ok',
     log:[
       { type:'system', body:'Issue submitted by resident via PublicPulse', time:'6 hrs ago' },
+    ]
+  },
+
+  /* ── NEW ISSUES — Hastings Utilities ── */
+  {
+    id:'PP-0225', lat:40.5868, lng:-98.3975,
+    title:'Water Pressure Loss — N Burlington Ave',
+    desc:'Several residents on N Burlington Ave reporting low water pressure since yesterday morning. Possible main issue near 5th St.',
+    dept:'Hastings Utilities', time:'1 day ago',
+    category:'utility', severity:58, noticeCount:9,
+    grants:[{ name:'USDA Water & Waste Disposal', range:'$50K–$500K', note:'Rural/small city water infrastructure eligible' }],
+    status:'review', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:true,
+    workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 24h', priority:'warn',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'1 day ago' },
+      { type:'assign', body:'Assigned to Hastings Utilities by City Admin', time:'22 hrs ago' },
+      { type:'ack', body:'Assignment acknowledged by Hastings Utilities', time:'20 hrs ago' },
+    ]
+  },
+  {
+    id:'PP-0224', lat:40.5958, lng:-98.3842,
+    title:'Sewer Smell — E 14th St',
+    desc:'Persistent sulfur odor near E 14th St and Elm Ave intersection. Residents concerned about sewer vent or line issue.',
+    dept:'Hastings Utilities', time:'3 days ago',
+    category:'utility', severity:44, noticeCount:7,
+    grants:[],
+    status:'progress', escalate:false,
+    statusLabel:'In Progress', tag:'progress', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'in-progress', progress:45, deadline:'Due in 2 days', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'3 days ago' },
+      { type:'assign', body:'Assigned to Hastings Utilities by City Admin', time:'3 days ago' },
+      { type:'ack', body:'Assignment acknowledged', time:'2 days ago' },
+      { type:'start', body:'Work started — crew on site at E 14th St', time:'1 day ago' },
+    ]
+  },
+  {
+    id:'PP-0223', lat:40.5825, lng:-98.3912,
+    title:'Street Light Out — W South St',
+    desc:'Two consecutive street lights out on W South St between Pine Ave and Colorado Ave. Safety concern for pedestrians at night.',
+    dept:'Hastings Utilities', time:'2 days ago',
+    category:'utility', severity:30, noticeCount:5,
+    grants:[],
+    status:'reported', escalate:false,
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Due in 48h', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'2 days ago' },
+    ]
+  },
+  {
+    id:'PP-0222', lat:40.5878, lng:-98.4012,
+    title:'Fire Hydrant Leaking — Laird Ave & 4th St',
+    desc:'Fire hydrant at Laird Ave and W 4th St intersection has a slow but steady leak. Water pooling on sidewalk.',
+    dept:'Hastings Utilities', time:'5 hrs ago',
+    category:'utility', severity:52, noticeCount:3,
+    grants:[{ name:'EPA Clean Water SRF', range:'$500K–$3M', note:'Infrastructure repair/replacement eligible' }],
+    status:'review', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:5, deadline:'Due in 24h', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'5 hrs ago' },
+      { type:'review', body:'Marked as Reviewed by City Admin', time:'4 hrs ago' },
+    ]
+  },
+
+  /* ── NEW ISSUES — Street Department ── */
+  {
+    id:'PP-0221', lat:40.5850, lng:-98.3870,
+    title:'Crumbling Curb — E 7th St near Kingswood',
+    desc:'Curb along E 7th St near Kingswood Plaza has significant cracking. Vehicle damage risk and trip hazard for pedestrians.',
+    dept:'Street Department', time:'4 days ago',
+    category:'road', severity:38, noticeCount:6,
+    grants:[{ name:'DOT RAISE Grant', range:'$1M–$5M', note:'Transportation infrastructure improvement' }],
+    status:'review', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 5 days', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'4 days ago' },
+      { type:'assign', body:'Assigned to Street Department by City Admin', time:'4 days ago' },
+      { type:'ack', body:'Assignment acknowledged', time:'3 days ago' },
+    ]
+  },
+  {
+    id:'PP-0220', lat:40.5932, lng:-98.3960,
+    title:'Tree Debris Blocking Drain — W 12th & Osborne',
+    desc:'Storm debris from last week has accumulated at drain on W 12th and Osborne Dr. Standing water after light rain.',
+    dept:'Street Department', time:'2 days ago',
+    category:'road', severity:33, noticeCount:4,
+    grants:[],
+    status:'reported', escalate:false,
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Due in 48h', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'2 days ago' },
+    ]
+  },
+  {
+    id:'PP-0219', lat:40.5800, lng:-98.3888,
+    title:'Speed Bump Needed — Levee Park Drive',
+    desc:'Residents requesting traffic calming on Levee Park Drive. Vehicles frequently exceeding speed limit near park entrance.',
+    dept:'Street Department', time:'1 week ago',
+    category:'road', severity:22, noticeCount:14,
+    grants:[{ name:'CDBG (NE DED)', range:'$200K–$750K', note:'Neighborhood infrastructure improvements' }],
+    status:'review', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:5, deadline:'Due in 2 weeks', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'1 week ago' },
+      { type:'review', body:'Marked as Reviewed by City Admin', time:'6 days ago' },
+    ]
+  },
+  {
+    id:'PP-0218', lat:40.5870, lng:-98.3920,
+    title:'Alley Flooding — Behind N Kansas Ave Businesses',
+    desc:'Alley behind N Kansas Ave businesses floods during heavy rain. Grading issue directing water toward building foundations.',
+    dept:'Street Department', time:'3 days ago',
+    category:'road', severity:47, noticeCount:8,
+    grants:[{ name:'FEMA BRIC', range:'$500K–$2M', note:'Stormwater resilience infrastructure' }],
+    status:'progress', escalate:false,
+    statusLabel:'In Progress', tag:'progress', queueStatus:'active', warn:true,
+    workStatus:'active', actionStatus:'in-progress', progress:30, deadline:'Due in 24h', priority:'warn',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'3 days ago' },
+      { type:'assign', body:'Assigned to Street Department', time:'3 days ago' },
+      { type:'ack', body:'Assignment acknowledged', time:'2 days ago' },
+      { type:'start', body:'Work started — crew assessing grading', time:'1 day ago' },
+    ]
+  },
+
+  /* ── NEW ISSUES — Hastings Police ── */
+  {
+    id:'PP-0217', lat:40.5892, lng:-98.3800,
+    title:'Speeding Complaint — N Hastings Ave School Zone',
+    desc:'Multiple residents report vehicles speeding through the school zone on N Hastings Ave during pickup/dropoff hours.',
+    dept:'Hastings Police', time:'5 days ago',
+    category:'police', severity:41, noticeCount:16,
+    grants:[],
+    status:'review', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 1 week', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'5 days ago' },
+      { type:'review', body:'Marked as Reviewed by City Admin', time:'4 days ago' },
+    ]
+  },
+  {
+    id:'PP-0216', lat:40.5845, lng:-98.3858,
+    title:'Illegal Dumping — Alley off E 2nd St',
+    desc:'Household appliances and construction debris dumped in alley behind E 2nd St. Has been there over a week.',
+    dept:'Hastings Police', time:'6 days ago',
+    category:'police', severity:28, noticeCount:5,
+    grants:[],
+    status:'reported', escalate:false,
+    statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Due in 3 days', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'6 days ago' },
+    ]
+  },
+  {
+    id:'PP-0215', lat:40.5920, lng:-98.3870,
+    title:'Noise Complaint — Recurring Commercial District',
+    desc:'Late night noise from commercial area on Baltimore Ave. Multiple complaints past 11pm on weekends.',
+    dept:'Hastings Police', time:'4 days ago',
+    category:'police', severity:18, noticeCount:9,
+    grants:[],
+    status:'review', escalate:false,
+    statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false,
+    workStatus:'active', actionStatus:'acknowledged', progress:5, deadline:'Due in 1 week', priority:'ok',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'4 days ago' },
+      { type:'review', body:'Marked as Reviewed by City Admin', time:'3 days ago' },
+    ]
+  },
+
+  /* ── COMPLETED ── */
+  {
+    id:'PP-0214', lat:40.5812, lng:-98.3940,
+    title:'Broken Playground Equipment — Caldwell Park',
+    desc:'Swing set chain broken at Caldwell Park. Safety hazard for children.',
+    dept:'Street Department', time:'2 weeks ago',
+    category:'park', severity:35, noticeCount:11,
+    grants:[],
+    status:'done', escalate:false,
+    statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
+    workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 1 week ago', priority:'done',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'2 weeks ago' },
+      { type:'assign', body:'Assigned to Street Department', time:'2 weeks ago' },
+      { type:'ack', body:'Assignment acknowledged', time:'12 days ago' },
+      { type:'start', body:'Work started — parts ordered', time:'10 days ago' },
+      { type:'complete', body:'Marked as Completed — chain replaced and inspected', time:'1 week ago' },
+    ]
+  },
+  {
+    id:'PP-0213', lat:40.5948, lng:-98.3895,
+    title:'Dead Tree Hazard — W 16th St',
+    desc:'Large dead tree leaning toward power line on W 16th St. Wind risk.',
+    dept:'Street Department', time:'3 weeks ago',
+    category:'road', severity:62, noticeCount:7,
+    grants:[],
+    status:'done', escalate:false,
+    statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
+    workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 2 weeks ago', priority:'done',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'3 weeks ago' },
+      { type:'escalate', body:'Escalated — utility hazard', time:'3 weeks ago' },
+      { type:'assign', body:'Assigned to Street Department', time:'3 weeks ago' },
+      { type:'start', body:'Work started — crew dispatched', time:'3 weeks ago' },
+      { type:'complete', body:'Tree removed and area cleared', time:'2 weeks ago' },
+    ]
+  },
+  {
+    id:'PP-0212', lat:40.5835, lng:-98.3998,
+    title:'Broken Water Meter — Highland Subdivision',
+    desc:'Water meter showing erratic readings in Highland subdivision. Several homes affected.',
+    dept:'Hastings Utilities', time:'1 month ago',
+    category:'utility', severity:45, noticeCount:6,
+    grants:[],
+    status:'done', escalate:false,
+    statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false,
+    workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 3 weeks ago', priority:'done',
+    log:[
+      { type:'system', body:'Issue submitted by resident via PublicPulse', time:'1 month ago' },
+      { type:'assign', body:'Assigned to Hastings Utilities', time:'1 month ago' },
+      { type:'start', body:'Crew on site — meters inspected', time:'4 weeks ago' },
+      { type:'public', body:'Public update posted: "Meters recalibrated — billing adjusted"', time:'3 weeks ago' },
+      { type:'complete', body:'Marked as Completed — all meters verified', time:'3 weeks ago' },
     ]
   },
 ];
@@ -1837,6 +2149,10 @@ function openCard(pin, cp) {
   document.getElementById('card-title').textContent = pin.title;
   document.getElementById('card-desc').textContent  = pin.desc;
 
+  // ── Timeline ──
+  var tlWrap = document.getElementById('card-timeline-wrap');
+  if (tlWrap) tlWrap.innerHTML = buildCardTimeline(pin);
+
   // ── Photo strip ──
   const strip = document.getElementById('card-photo-strip');
   if (pin.photo) {
@@ -2181,6 +2497,19 @@ setInterval(() => {
 let selectedAdminId  = null;
 let selectedTimeline = '48h';
 let currentQueueTab  = 'active';
+let activeQueueFilters = new Set(); // 'escalated','street','utilities','police'
+
+function toggleQueueFilter(name) {
+  if (activeQueueFilters.has(name)) activeQueueFilters.delete(name);
+  else activeQueueFilters.add(name);
+  // Update chip appearance
+  var chipMap = { escalated:'qf-escalated', street:'qf-street', utilities:'qf-utilities', police:'qf-police' };
+  Object.keys(chipMap).forEach(function(k) {
+    var el = document.getElementById(chipMap[k]);
+    if (el) el.classList.toggle('active', activeQueueFilters.has(k));
+  });
+  renderAdminQueue();
+}
 
 function getSortedAdminQueue(tab) {
   return ISSUES
@@ -2189,6 +2518,32 @@ function getSortedAdminQueue(tab) {
       if (a.escalate !== b.escalate) return b.escalate ? 1 : -1;
       return (b.severity || 0) - (a.severity || 0);
     });
+}
+
+function getFilteredAdminQueue(tab) {
+  var items = getSortedAdminQueue(tab);
+  // Text search
+  var search = (document.getElementById('queue-search') || {}).value || '';
+  if (search.trim()) {
+    var q = search.toLowerCase();
+    items = items.filter(function(i) {
+      return i.title.toLowerCase().includes(q) ||
+             i.dept.toLowerCase().includes(q) ||
+             i.desc.toLowerCase().includes(q) ||
+             i.id.toLowerCase().includes(q);
+    });
+  }
+  // Chip filters
+  if (activeQueueFilters.size > 0) {
+    items = items.filter(function(i) {
+      if (activeQueueFilters.has('escalated') && !i.escalate) return false;
+      if (activeQueueFilters.has('street')    && i.dept !== 'Street Department') return false;
+      if (activeQueueFilters.has('utilities') && i.dept !== 'Hastings Utilities') return false;
+      if (activeQueueFilters.has('police')    && i.dept !== 'Hastings Police') return false;
+      return true;
+    });
+  }
+  return items;
 }
 
 function setQueueTab(tab) {
@@ -2208,12 +2563,12 @@ function updateQueueBadge() {
 }
 
 function renderAdminQueue() {
-  var items = getSortedAdminQueue(currentQueueTab);
+  var items = getFilteredAdminQueue(currentQueueTab);
   updateQueueBadge();
   var qel = document.getElementById('admin-queue');
   if (!items.length) {
     qel.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' +
-      (currentQueueTab === 'active' ? 'No active issues' : 'No completed issues yet') + '</div>';
+      (currentQueueTab === 'active' ? 'No matching issues' : 'No completed issues yet') + '</div>';
     return;
   }
   qel.innerHTML = items.map(function(issue) {
@@ -2231,6 +2586,25 @@ function renderAdminQueue() {
     '</div>';
   }).join('');
 }
+
+/* ── Keyboard navigation in admin queue ── */
+document.addEventListener('keydown', function(e) {
+  // Only when City Admin view is active
+  if (!document.getElementById('view-admin').classList.contains('active')) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  var items = getFilteredAdminQueue(currentQueueTab);
+  if (!items.length) return;
+  var idx = items.findIndex(function(i) { return i.id === selectedAdminId; });
+  if (e.key === 'ArrowDown') idx = Math.min(idx + 1, items.length - 1);
+  else idx = Math.max(idx - 1, 0);
+  if (idx < 0) idx = 0;
+  selectAdminById(items[idx].id);
+  // Scroll selected item into view
+  var el = document.getElementById('qi-' + items[idx].id);
+  if (el) el.scrollIntoView({ block: 'nearest' });
+});
 
 function selectAdminById(id, isAdvancing) {
   selectedAdminId = id;
@@ -2411,7 +2785,7 @@ function renderInsightItems(items, targetId) {
 
 async function fetchInsights(systemPrompt, userPrompt) {
   try {
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
+    var response = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2546,10 +2920,23 @@ function setTimeline(t) {
 /* -- Dept state -- */
 let selectedDeptId = null;
 let currentDeptTab = 'active';
+let activeDept = 'Street Department';
 const ACTION_PROGRESS = { ack:10, start:30, update:15, complete:100 };
 
+function setActiveDept(dept) {
+  activeDept = dept;
+  var title = document.getElementById('dept-col-title');
+  if (title) title.textContent = dept;
+  selectedDeptId = null;
+  document.getElementById('dept-empty').style.display = 'flex';
+  document.getElementById('dept-panel').style.display = 'none';
+  renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
+}
+
 function getDeptIssues() {
-  return ISSUES.filter(function(i) { return i.workStatus !== undefined; });
+  return ISSUES.filter(function(i) {
+    return i.workStatus !== undefined && i.dept === activeDept;
+  });
 }
 
 function getDeptSorted(tab) {
@@ -3441,7 +3828,7 @@ async function generateSection(sectionDef) {
   if (activeTab?.classList.contains('active')) renderSection(sectionId);
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3517,6 +3904,54 @@ function resetReport() {
   document.getElementById('report-tabs').innerHTML = '';
   document.getElementById('report-section-content').innerHTML = '';
   document.getElementById('report-streaming').style.display = 'none';
+}
+
+/* ── Copy report to clipboard ── */
+function copyReportToClipboard() {
+  var sections = Object.values(reportSections);
+  if (!sections.length) return;
+  // Strip HTML tags for plain text
+  var tmp = document.createElement('div');
+  var text = sections.map(function(html) {
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  }).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.querySelector('.btn-copy-report');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(function(){ btn.textContent = '📋 Copy Report to Clipboard'; }, 2000); }
+  }).catch(function() {
+    var btn = document.querySelector('.btn-copy-report');
+    if (btn) btn.textContent = '⚠ Copy failed — try selecting text manually';
+  });
+}
+
+/* ── Public card issue timeline ── */
+function buildCardTimeline(pin) {
+  var steps = [];
+  var logTypes = { review:'review', assign:'assign', ack:'ack', start:'start', public:'update', complete:'complete', escalate:'escalate' };
+  // Always starts with reported
+  steps.push({ dot:'var(--muted)', label:'Reported', done: true });
+  if (pin.log && pin.log.length) {
+    var seen = new Set();
+    pin.log.forEach(function(e) {
+      if (e.type === 'review'   && !seen.has('review'))   { steps.push({ dot:'var(--accent)',  label:'Under Review', done:true }); seen.add('review'); }
+      if (e.type === 'assign'   && !seen.has('assign'))   { steps.push({ dot:'var(--accent)',  label:'Assigned to ' + pin.dept, done:true }); seen.add('assign'); }
+      if (e.type === 'ack'      && !seen.has('ack'))      { steps.push({ dot:'var(--accent2)', label:'Crew Scheduled', done:true }); seen.add('ack'); }
+      if (e.type === 'start'    && !seen.has('start'))    { steps.push({ dot:'var(--accent2)', label:'Work Started', done:true }); seen.add('start'); }
+      if (e.type === 'public'   && !seen.has('public'))   { steps.push({ dot:'var(--accent)',  label:'City Posted Update', done:true }); seen.add('public'); }
+      if (e.type === 'complete' && !seen.has('complete')) { steps.push({ dot:'var(--green)',   label:'Completed', done:true }); seen.add('complete'); }
+      if (e.type === 'escalate' && !seen.has('escalate')) { steps.push({ dot:'#ff0a3c',       label:'Escalated — Priority Response', done:true }); seen.add('escalate'); }
+    });
+  }
+  if (!steps.length || steps.length === 1) return ''; // Only "Reported" — don't show
+  return '<div class="card-timeline">' +
+    steps.map(function(s) {
+      return '<div class="card-timeline-row">' +
+        '<div class="card-timeline-dot" style="background:' + s.dot + '"></div>' +
+        '<div class="card-timeline-text"><strong>' + s.label + '</strong></div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
 }
 
 // Initialize on load
