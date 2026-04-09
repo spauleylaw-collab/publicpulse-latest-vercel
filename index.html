@@ -962,7 +962,7 @@ function submitReport() {
   if (previewMarker) { map.removeLayer(previewMarker); previewMarker = null; }
   var photoSrc = photoFile ? document.getElementById('photo-preview').src : null;
   var newId = 'PP-0' + newPinCounter++;
-  var newPin = { id:newId, lat:droppedLatLng ? droppedLatLng.lat : 40.5888, lng:droppedLatLng ? droppedLatLng.lng : -98.3910, status:'reported', title:desc.length > 50 ? desc.slice(0,48)+'\u2026' : desc, desc:desc, dept:'Pending Assignment', time:'Just now', escalate:false, photo:photoSrc, isNew:true, severity:30, noticeCount:0, log:[] };
+  var newPin = { id:newId, lat:droppedLatLng ? droppedLatLng.lat : 40.5888, lng:droppedLatLng ? droppedLatLng.lng : -98.3910, status:'reported', statusLabel:'Reported', tag:'reported', queueStatus:'active', workStatus:'active', actionStatus:'assigned', progress:0, priority:'ok', warn:false, deadline:'Just now', title:desc.length > 50 ? desc.slice(0,48)+'\u2026' : desc, desc:desc, dept:'Pending Assignment', time:'Just now', category:'general', escalate:false, photo:photoSrc, isNew:true, severity:30, noticeCount:0, grants:[], log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'Just now'}] };
   var m = L.marker([newPin.lat, newPin.lng], { icon:makeIcon(newPin), zIndexOffset:900, _pin:newPin });
   m.on('click', function(ev) { hidePinTooltip(); openCard(newPin, ev.containerPoint); L.DomEvent.stopPropagation(ev); });
   m.on('mouseover', function(ev) { showPinTooltip(newPin, ev.containerPoint); });
