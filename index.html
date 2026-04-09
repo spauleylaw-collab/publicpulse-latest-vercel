@@ -402,7 +402,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
           <div id="card-last-action-time" class="card-last-action-time"></div>
         </div>
         <div id="card-chips" class="card-chips"></div>
-        <button id="card-noticed" class="card-noticed" onclick="noticeThis()">&#128065; I noticed this too</button>
+        <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
         <div id="card-noticed-count" class="card-noticed-count"></div>
       </div>
     </div>
@@ -873,7 +873,7 @@ function openCard(pin, cp) {
     (pin.escalate && pin.status !== 'done' ? '<div class="card-chip" style="color:var(--danger);border-color:rgba(255,10,60,.3)">\u26a0 Escalated</div>' : '');
   var noticedBtn = document.getElementById('card-noticed');
   noticedBtn.className = pin.noticed ? 'card-noticed confirmed' : 'card-noticed';
-  noticedBtn.textContent = pin.noticed ? '\u2713 You noticed this' : '&#128065; I noticed this too';
+  noticedBtn.textContent = pin.noticed ? '\u2713 You noticed this' : '👁 I noticed this too';
   var countEl = document.getElementById('card-noticed-count');
   var noticeCount = pin.noticeCount || 0;
   countEl.textContent = noticeCount > 0 ? noticeCount + ' resident' + (noticeCount > 1 ? 's' : '') + ' noticed this' : '';
@@ -1551,7 +1551,7 @@ function switchView(name) {
   if (tab) tab.classList.add('active');
   document.getElementById('btn-heatmap').style.display = name === 'public' ? '' : 'none';
   if (name === 'public') setTimeout(function() { map.invalidateSize(); }, 50);
-  if (name === 'admin') { renderAdminQueue(); renderAdminLog(); if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, 'admin-insights-body'); }
+  if (name === 'admin') { var qs = document.getElementById('queue-search'); if (qs) qs.value = ''; activeQueueFilters.clear(); document.querySelectorAll('.queue-filter-chip').forEach(function(c){c.classList.remove('active');}); renderAdminQueue(); renderAdminLog(); if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, 'admin-insights-body'); }
   if (name === 'dept')  { renderDeptQueue(); renderDeptAccountability(); renderDeptPriority(); if (!deptInsightsCache) refreshDeptInsights(); else renderInsightItems(deptInsightsCache, 'dept-insights-body'); }
   applyMobileLayout();
 }
