@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,15 +7,18 @@
 <title>PublicPulse — Hastings, NE</title>
 
 <!-- Leaflet -->
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <!-- Leaflet MarkerCluster -->
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 
 <!-- Fonts -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
@@ -88,7 +92,6 @@ body {
 .leaflet-popup { display: none !important; }
 .leaflet-popup-pane { display: none !important; }
 
-/* Rotating banner */
 #banner {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
   z-index: 500;
@@ -922,10 +925,12 @@ body {
   .metric-val { font-size: 20px; }
 }
 </style>
+
 </head>
 <body>
 
 <!-- NAV -->
+
 <nav id="nav">
   <div class="nav-logo">Public<span>Pulse</span></div>
   <div class="nav-tabs">
@@ -938,130 +943,135 @@ body {
 </nav>
 
 <!-- ════════ VIEW 1 — PUBLIC MAP ════════ -->
+
 <div id="view-public" class="view active">
   <div id="map-container">
     <div id="map"></div>
 
-    <!-- Banner -->
-    <div id="banner">
-      <div class="banner-dot"></div>
-      <div id="banner-text">Pothole reported on Burlington Ave — 18 minutes ago</div>
+```
+<!-- Banner -->
+<div id="banner">
+  <div class="banner-dot"></div>
+  <div id="banner-text">Pothole reported on Burlington Ave — 18 minutes ago</div>
+</div>
+
+<!-- Pin hover tooltip -->
+<div id="pin-tooltip">
+  <div class="tt-status" id="tt-status"></div>
+  <div class="tt-title"  id="tt-title"></div>
+  <div class="tt-summary" id="tt-summary"></div>
+</div>
+
+<!-- Pin-drop prompt bar -->
+<div id="drop-hint">
+  <span>📍 Click on the map to mark the location of your concern</span>
+  <button id="drop-cancel" onclick="cancelReport()">✕ Cancel</button>
+</div>
+
+<!-- Our custom card popup -->
+<div id="map-card">
+  <div id="card-tail"></div>
+  <!-- Header: status + close -->
+  <div class="card-header">
+    <div id="card-status" class="card-status s-reported">Just reported — under review</div>
+    <button class="card-close" onclick="closeCard()">×</button>
+  </div>
+  <!-- Photo strip -->
+  <div class="card-photo-strip" id="card-photo-strip">
+    <div class="card-photo-empty"><span>📷</span>No photo attached</div>
+    <button class="card-add-photo" id="card-add-photo-btn" onclick="triggerCardPhoto()">+ Add Photo</button>
+    <input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(event)">
+  </div>
+  <!-- Body -->
+  <div class="card-body">
+    <div id="card-title" class="card-title"></div>
+    <div id="card-desc"  class="card-desc"></div>
+    <!-- Issue timeline -->
+    <div id="card-timeline-wrap"></div>
+    <!-- Last city action -->
+    <div id="card-last-action" class="card-last-action" style="display:none">
+      <div class="card-last-action-label">Last City Action</div>
+      <div id="card-last-action-text" class="card-last-action-text"></div>
+      <div id="card-last-action-time" class="card-last-action-time"></div>
     </div>
+    <!-- Chips -->
+    <div id="card-chips" class="card-chips"></div>
+    <!-- Noticed -->
+    <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
+    <div id="card-noticed-count" class="card-noticed-count"></div>
+  </div>
+</div>
 
-    <!-- Pin hover tooltip -->
-    <div id="pin-tooltip">
-      <div class="tt-status" id="tt-status"></div>
-      <div class="tt-title"  id="tt-title"></div>
-      <div class="tt-summary" id="tt-summary"></div>
-    </div>
+<!-- Report button -->
+<button id="btn-report" onclick="startReport()">
+  <span style="font-size:18px;line-height:1">+</span> Report Issue
+</button>
 
-    <!-- Pin-drop prompt bar -->
-    <div id="drop-hint">
-      <span>📍 Click on the map to mark the location of your concern</span>
-      <button id="drop-cancel" onclick="cancelReport()">✕ Cancel</button>
-    </div>
+<!-- Legend -->
+<div id="legend">
+  <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Issue Priority</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Urgent</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
+  <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
+  <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Larger, brighter pins reflect<br>urgency and resident activity</div>
+</div>
 
-    <!-- Our custom card popup -->
-    <div id="map-card">
-      <div id="card-tail"></div>
-      <!-- Header: status + close -->
-      <div class="card-header">
-        <div id="card-status" class="card-status s-reported">Just reported — under review</div>
-        <button class="card-close" onclick="closeCard()">×</button>
-      </div>
-      <!-- Photo strip -->
-      <div class="card-photo-strip" id="card-photo-strip">
-        <div class="card-photo-empty"><span>📷</span>No photo attached</div>
-        <button class="card-add-photo" id="card-add-photo-btn" onclick="triggerCardPhoto()">+ Add Photo</button>
-        <input type="file" id="card-photo-input" accept="image/*" style="display:none" onchange="handleCardPhoto(event)">
-      </div>
-      <!-- Body -->
-      <div class="card-body">
-        <div id="card-title" class="card-title"></div>
-        <div id="card-desc"  class="card-desc"></div>
-        <!-- Issue timeline -->
-        <div id="card-timeline-wrap"></div>
-        <!-- Last city action -->
-        <div id="card-last-action" class="card-last-action" style="display:none">
-          <div class="card-last-action-label">Last City Action</div>
-          <div id="card-last-action-text" class="card-last-action-text"></div>
-          <div id="card-last-action-time" class="card-last-action-time"></div>
-        </div>
-        <!-- Chips -->
-        <div id="card-chips" class="card-chips"></div>
-        <!-- Noticed -->
-        <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
-        <div id="card-noticed-count" class="card-noticed-count"></div>
-      </div>
-    </div>
-
-    <!-- Report button -->
-    <button id="btn-report" onclick="startReport()">
-      <span style="font-size:18px;line-height:1">+</span> Report Issue
-    </button>
-
-    <!-- Legend -->
-    <div id="legend">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Issue Priority</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Urgent</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
-      <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Larger, brighter pins reflect<br>urgency and resident activity</div>
-    </div>
-
-    <!-- Report form overlay — click backdrop to cancel -->
-    <div id="report-overlay" onclick="handleOverlayClick(event)">
-      <div id="report-form">
-        <div class="form-header">
-          <div>
-            <div class="form-title">Report an Issue</div>
-            <div class="form-sub">Pin dropped on your selected location</div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:8px">
-            <div class="form-loc-badge">📍 Location set</div>
-            <button onclick="cancelReport()" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;transition:color .15s;margin-top:1px" title="Cancel report">×</button>
-          </div>
-        </div>
-        <div class="form-field">
-          <label class="form-label">What's happening? *</label>
-          <textarea id="report-desc" class="form-textarea" rows="4" placeholder="Describe what you see — street, cross street, details…"></textarea>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Additional options</label>
-          <div class="form-row">
-            <button class="btn-mic" id="btn-mic" title="Voice input" onclick="toggleMic()">🎤</button>
-            <button class="btn-photo" id="btn-photo" onclick="document.getElementById('photo-input').click()">📷 Add photo (optional)</button>
-            <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
-          </div>
-          <!-- Mic status -->
-          <div id="mic-status" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:8px;font-size:12px;color:var(--danger);align-items:center;gap:8px">
-            <span id="mic-dot" style="width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;animation:pulse-dot 1s ease-in-out infinite"></span>
-            <span id="mic-label">Listening…</span>
-          </div>
-          <!-- Photo preview -->
-          <div id="photo-preview-wrap" style="display:none;margin-top:10px;position:relative">
-            <img id="photo-preview" style="width:100%;max-height:160px;object-fit:cover;border-radius:9px;display:block">
-            <button onclick="removePhoto()" style="position:absolute;top:6px;right:6px;background:rgba(11,15,26,0.8);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">✕ Remove</button>
-          </div>
-        </div>
-        <button class="btn-submit" onclick="submitReport()">Submit Report →</button>
-      </div>
-    </div>
-
-    <!-- Toast -->
-    <div id="confirm-toast">
-      <div style="font-size:20px">✅</div>
+<!-- Report form overlay — click backdrop to cancel -->
+<div id="report-overlay" onclick="handleOverlayClick(event)">
+  <div id="report-form">
+    <div class="form-header">
       <div>
-        <div class="toast-msg">Thanks for sharing your voice.</div>
-        <div class="toast-sub">You will receive direct updates on this issue.</div>
+        <div class="form-title">Report an Issue</div>
+        <div class="form-sub">Pin dropped on your selected location</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div class="form-loc-badge">📍 Location set</div>
+        <button onclick="cancelReport()" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;transition:color .15s;margin-top:1px" title="Cancel report">×</button>
       </div>
     </div>
+    <div class="form-field">
+      <label class="form-label">What's happening? *</label>
+      <textarea id="report-desc" class="form-textarea" rows="4" placeholder="Describe what you see — street, cross street, details…"></textarea>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Additional options</label>
+      <div class="form-row">
+        <button class="btn-mic" id="btn-mic" title="Voice input" onclick="toggleMic()">🎤</button>
+        <button class="btn-photo" id="btn-photo" onclick="document.getElementById('photo-input').click()">📷 Add photo (optional)</button>
+        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+      </div>
+      <!-- Mic status -->
+      <div id="mic-status" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:8px;font-size:12px;color:var(--danger);align-items:center;gap:8px">
+        <span id="mic-dot" style="width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;animation:pulse-dot 1s ease-in-out infinite"></span>
+        <span id="mic-label">Listening…</span>
+      </div>
+      <!-- Photo preview -->
+      <div id="photo-preview-wrap" style="display:none;margin-top:10px;position:relative">
+        <img id="photo-preview" style="width:100%;max-height:160px;object-fit:cover;border-radius:9px;display:block">
+        <button onclick="removePhoto()" style="position:absolute;top:6px;right:6px;background:rgba(11,15,26,0.8);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">✕ Remove</button>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="submitReport()">Submit Report →</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="confirm-toast">
+  <div style="font-size:20px">✅</div>
+  <div>
+    <div class="toast-msg">Thanks for sharing your voice.</div>
+    <div class="toast-sub">You will receive direct updates on this issue.</div>
+  </div>
+</div>
+```
+
   </div>
 </div>
 
 <!-- ════════ VIEW 2 — ADMIN ════════ -->
+
 <div id="view-admin" class="view">
   <div class="mob-section-tabs" id="admin-mob-tabs" style="display:none">
     <button class="mob-section-tab active" onclick="setAdminMobSection('queue')">Queue</button>
@@ -1111,74 +1121,78 @@ body {
     </div>
     <div class="col-body" id="report-col-body">
 
-      <!-- ── TAB: Activity ── -->
-      <div id="artab-panel-activity">
-        <div class="metrics-row" style="margin-bottom:12px">
-          <div class="metric-mini"><div class="metric-val" style="color:var(--danger)">3</div><div class="metric-label">Escalated</div></div>
-          <div class="metric-mini"><div class="metric-val" style="color:var(--accent)">12</div><div class="metric-label">Open</div></div>
-          <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
-        </div>
-        <div class="section-title" style="margin-bottom:8px">Recent Activity</div>
-        <div id="admin-activity-log" style="overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
-      </div>
-
-      <!-- ── TAB: Insights ── -->
-      <div id="artab-panel-insights" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:11px;color:var(--muted)">AI analysis of today's issues</div>
-          <button onclick="refreshAdminInsights()" title="Refresh" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
-        </div>
-        <div id="admin-insights-body">
-          <div style="font-size:11px;color:var(--muted);padding:10px 0">Generating insights…</div>
-        </div>
-      </div>
-
-      <!-- ── TAB: Reports ── -->
-      <div id="artab-panel-reports" style="display:none">
-        <!-- Step 1: Report type picker -->
-        <div id="report-type-picker">
-          <div class="section-title" style="margin-bottom:10px">Select Report Type</div>
-          <div id="report-type-grid"></div>
-        </div>
-        <!-- Step 2: Report config -->
-        <div id="report-config" style="display:none">
-          <button onclick="backToTypePicker()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 0 10px 0;display:flex;align-items:center;gap:4px">← All Reports</button>
-          <div id="report-type-header" style="margin-bottom:14px">
-            <div id="rth-icon" style="font-size:22px;margin-bottom:4px"></div>
-            <div id="rth-name" style="font-family:var(--font-display);font-size:15px;font-weight:800;margin-bottom:2px"></div>
-            <div id="rth-desc" style="font-size:11px;color:var(--muted);line-height:1.4"></div>
-          </div>
-          <div class="section-title">Period</div>
-          <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="period-chips"></div>
-          <div class="section-title">Sections</div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="section-checks"></div>
-          <button class="btn-gen-report" id="btn-generate" onclick="generateReport()">
-            <span id="gen-btn-text">📊 Generate Report</span>
-          </button>
-        </div>
-        <!-- Step 3: Report output -->
-        <div id="report-output" style="display:none">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:11px;color:var(--muted)" id="report-date-label"></div>
-            <button onclick="resetReport()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">← New Report</button>
-          </div>
-          <div id="report-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px"></div>
-          <div id="report-section-content"></div>
-          <button class="btn-copy-report" onclick="copyReportToClipboard()">📋 Copy Report to Clipboard</button>
-          <div id="report-streaming" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:12px">
-            <div style="display:inline-flex;gap:4px;align-items:center">
-              <span class="stream-dot"></span><span class="stream-dot" style="animation-delay:.2s"></span><span class="stream-dot" style="animation-delay:.4s"></span>
-              <span style="margin-left:6px" id="streaming-label">Generating…</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
+```
+  <!-- ── TAB: Activity ── -->
+  <div id="artab-panel-activity">
+    <div class="metrics-row" style="margin-bottom:12px">
+      <div class="metric-mini"><div class="metric-val" style="color:var(--danger)">3</div><div class="metric-label">Escalated</div></div>
+      <div class="metric-mini"><div class="metric-val" style="color:var(--accent)">12</div><div class="metric-label">Open</div></div>
+      <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
     </div>
+    <div class="section-title" style="margin-bottom:8px">Recent Activity</div>
+    <div id="admin-activity-log" style="overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
+  </div>
+
+  <!-- ── TAB: Insights ── -->
+  <div id="artab-panel-insights" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--muted)">AI analysis of today's issues</div>
+      <button onclick="refreshAdminInsights()" title="Refresh" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
+    </div>
+    <div id="admin-insights-body">
+      <div style="font-size:11px;color:var(--muted);padding:10px 0">Generating insights…</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Reports ── -->
+  <div id="artab-panel-reports" style="display:none">
+    <!-- Step 1: Report type picker -->
+    <div id="report-type-picker">
+      <div class="section-title" style="margin-bottom:10px">Select Report Type</div>
+      <div id="report-type-grid"></div>
+    </div>
+    <!-- Step 2: Report config -->
+    <div id="report-config" style="display:none">
+      <button onclick="backToTypePicker()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 0 10px 0;display:flex;align-items:center;gap:4px">← All Reports</button>
+      <div id="report-type-header" style="margin-bottom:14px">
+        <div id="rth-icon" style="font-size:22px;margin-bottom:4px"></div>
+        <div id="rth-name" style="font-family:var(--font-display);font-size:15px;font-weight:800;margin-bottom:2px"></div>
+        <div id="rth-desc" style="font-size:11px;color:var(--muted);line-height:1.4"></div>
+      </div>
+      <div class="section-title">Period</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="period-chips"></div>
+      <div class="section-title">Sections</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="section-checks"></div>
+      <button class="btn-gen-report" id="btn-generate" onclick="generateReport()">
+        <span id="gen-btn-text">📊 Generate Report</span>
+      </button>
+    </div>
+    <!-- Step 3: Report output -->
+    <div id="report-output" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--muted)" id="report-date-label"></div>
+        <button onclick="resetReport()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">← New Report</button>
+      </div>
+      <div id="report-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <div id="report-section-content"></div>
+      <button class="btn-copy-report" onclick="copyReportToClipboard()">📋 Copy Report to Clipboard</button>
+      <div id="report-streaming" style="display:none;padding:16px;text-align:center;color:var(--muted);font-size:12px">
+        <div style="display:inline-flex;gap:4px;align-items:center">
+          <span class="stream-dot"></span><span class="stream-dot" style="animation-delay:.2s"></span><span class="stream-dot" style="animation-delay:.4s"></span>
+          <span style="margin-left:6px" id="streaming-label">Generating…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+```
+
   </div>
 </div>
 
 <!-- ════════ VIEW 3 — DEPT ════════ -->
+
 <div id="view-dept" class="view">
   <div class="mob-section-tabs" id="dept-mob-tabs" style="display:none">
     <button class="mob-section-tab active" onclick="setDeptMobSection('queue')">Queue</button>
@@ -1187,6 +1201,7 @@ body {
   </div>
 
   <!-- LEFT: Queue -->
+
   <div class="admin-col col-left">
     <div class="col-header">
       <div>
@@ -1211,6 +1226,7 @@ body {
   </div>
 
   <!-- MID: Work Item Panel -->
+
   <div class="admin-col col-mid">
     <div class="col-header"><div class="col-title">Work Item</div></div>
     <div id="dept-empty" class="action-empty">
@@ -1221,6 +1237,7 @@ body {
   </div>
 
   <!-- RIGHT: Accountability -->
+
   <div class="admin-col col-right">
     <div class="col-header">
       <div class="col-title">Accountability</div>
@@ -1234,28 +1251,31 @@ body {
     <!-- Tab panels -->
     <div class="col-body" style="padding:14px">
 
-      <!-- ── TAB: Overview (score + metrics) ── -->
-      <div id="drtab-panel-overview" id="dept-accountability">
-        <!-- populated by renderDeptAccountability() -->
-      </div>
+```
+  <!-- ── TAB: Overview (score + metrics) ── -->
+  <div id="drtab-panel-overview" id="dept-accountability">
+    <!-- populated by renderDeptAccountability() -->
+  </div>
 
-      <!-- ── TAB: Priority (crew guidance) ── -->
-      <div id="drtab-panel-priority" style="display:none">
-        <!-- populated by renderDeptPriority() -->
-      </div>
+  <!-- ── TAB: Priority (crew guidance) ── -->
+  <div id="drtab-panel-priority" style="display:none">
+    <!-- populated by renderDeptPriority() -->
+  </div>
 
-      <!-- ── TAB: Insights ── -->
-      <div id="drtab-panel-insights" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:11px;color:var(--muted)">AI analysis for today's crew</div>
-          <button onclick="refreshDeptInsights()" title="Refresh" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
-        </div>
-        <div id="dept-insights-body">
-          <div style="font-size:11px;color:var(--muted)">Generating insights…</div>
-        </div>
-      </div>
-
+  <!-- ── TAB: Insights ── -->
+  <div id="drtab-panel-insights" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--muted)">AI analysis for today's crew</div>
+      <button onclick="refreshDeptInsights()" title="Refresh" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↻</button>
     </div>
+    <div id="dept-insights-body">
+      <div style="font-size:11px;color:var(--muted)">Generating insights…</div>
+    </div>
+  </div>
+
+</div>
+```
+
   </div>
 
 </div>
@@ -1931,7 +1951,36 @@ function makeIcon(pin) {
       r="${Math.round(r * 0.28)}" fill="white" fill-opacity="0.5"/>
   </svg>`;
 
+  // Short label — first segment of title before em dash, capped at 20 chars
+  const rawLabel = pin.title.indexOf('\u2014') > -1
+    ? pin.title.split('\u2014')[0].trim()
+    : pin.title;
+  const label = rawLabel.length > 22 ? rawLabel.slice(0, 20) + '…' : rawLabel;
+  const labelColor = pin.status === 'done' ? '#6b7280' : color;
+
+  const labelEl = pin.status !== 'done' ? `
+    <div style="
+      position:absolute;
+      bottom:${h + 3}px;
+      left:50%;
+      transform:translateX(-50%);
+      white-space:nowrap;
+      background:rgba(11,15,26,0.80);
+      border:1px solid ${labelColor}44;
+      border-radius:5px;
+      padding:2px 7px;
+      font-family:var(--font-ui,system-ui);
+      font-size:10px;
+      font-weight:600;
+      color:#e2e8f0;
+      pointer-events:none;
+      box-shadow:0 2px 6px rgba(0,0,0,0.4);
+      backdrop-filter:blur(4px);
+      letter-spacing:0.01em;
+    ">${label}</div>` : '';
+
   const wrapper = `<div style="position:relative;width:${w}px;height:${h}px">
+    ${labelEl}
     ${rings}
     ${svg}
   </div>`;
@@ -2171,11 +2220,13 @@ function openCard(pin, cp) {
   const lastActionEl   = document.getElementById('card-last-action');
   const lastActionText = document.getElementById('card-last-action-text');
   const lastActionTime = document.getElementById('card-last-action-time');
-  const actionTypes = ['complete','start','update','public','ack','review','assign','escalate'];
+  const showableTypes = ['complete','start','update','public','ack','review','assign','escalate'];
   const lastAction = pin.log
-    ? [...pin.log].reverse().find(e => actionTypes.includes(e.type))
+    ? [...pin.log].reverse().find(e => showableTypes.includes(e.type))
     : null;
-  if (lastAction && pin.status !== 'reported') {
+  // Show for any city action except raw 'assign' on a still-reported issue with no other actions
+  const hasRealAction = lastAction && !(lastAction.type === 'assign' && pin.status === 'reported' && pin.log.filter(e => showableTypes.includes(e.type)).length <= 1);
+  if (hasRealAction) {
     lastActionEl.style.display = 'block';
     // Human-readable action text
     const actionCopy = {
@@ -2648,552 +2699,561 @@ function selectAdminById(id, isAdvancing) {
       '</div>' +
       '<div class="section-title">Post Public Update</div>' +
       '<textarea class="update-input" id="update-text" rows="2" placeholder="Write a public update residents will see on the map..."></textarea>' +
-      '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'public\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Public Update</button>' +
-      '<div class="section-title">Assign Department</div>' +
-      '<div class="assign-row">' +
-        '<select class="dept-select" id="dept-assign-select">' +
-          '<option ' + (issue.dept === 'Street Department'      ? 'selected' : '') + '>Street Department</option>' +
-          '<option ' + (issue.dept === 'Hastings Utilities'     ? 'selected' : '') + '>Hastings Utilities</option>' +
-          '<option ' + (issue.dept === 'Hastings Police'        ? 'selected' : '') + '>Hastings Police</option>' +
-          '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
-        '</select>' +
-        '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
-      '</div>' +
-      '<div class="section-title">Escalation Deadline</div>' +
-      '<div class="tl-chips">' + tlChips + '</div>'
-    : '') +
-    '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
-    '<div class="activity-log" id="admin-log">' + renderLog(issue.log) + '</div>';
-  if (isMobile()) setAdminMobSection('action');
+
+```
+  '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'public\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Public Update</button>' +
+  '<div class="section-title">Assign Department</div>' +
+  '<div class="assign-row">' +
+    '<select class="dept-select" id="dept-assign-select">' +
+      '<option ' + (issue.dept === 'Street Department'      ? 'selected' : '') + '>Street Department</option>' +
+      '<option ' + (issue.dept === 'Hastings Utilities'     ? 'selected' : '') + '>Hastings Utilities</option>' +
+      '<option ' + (issue.dept === 'Hastings Police'        ? 'selected' : '') + '>Hastings Police</option>' +
+      '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
+    '</select>' +
+    '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
+  '</div>' +
+  '<div class="section-title">Escalation Deadline</div>' +
+  '<div class="tl-chips">' + tlChips + '</div>'
+: '') +
+'<div class="section-title" style="margin-top:18px">Activity Log</div>' +
+'<div class="activity-log" id="admin-log">' + renderLog(issue.log) + '</div>';
+```
+
+if (isMobile()) setAdminMobSection(‘action’);
 }
 
 function renderLog(log) {
-  var tmap = {
-    system:   { cls:'',             dot:'var(--muted)',   pre:'' },
-    review:   { cls:'',             dot:'var(--accent)',  pre:'🔍 ' },
-    assign:   { cls:'log-assign',   dot:'var(--accent2)', pre:'📌 ' },
-    ack:      { cls:'',             dot:'var(--accent)',  pre:'✓ ' },
-    start:    { cls:'',             dot:'var(--accent2)', pre:'▶ ' },
-    update:   { cls:'log-public',   dot:'var(--accent)',  pre:'📢 ' },
-    public:   { cls:'log-public',   dot:'var(--accent)',  pre:'📢 ' },
-    complete: { cls:'log-complete', dot:'var(--green)',   pre:'✅ ' },
-    escalate: { cls:'log-escalate', dot:'var(--danger)',  pre:'🔴 ' },
-  };
-  return log.slice().reverse().map(function(e) {
-    var t = tmap[e.type] || tmap.system;
-    return '<div class="log-entry ' + t.cls + '">' +
-      '<div class="log-dot" style="background:' + t.dot + '"></div>' +
-      '<div class="log-body">' + t.pre + e.body + '</div>' +
-      '<div class="log-time">' + e.time + '</div>' +
-    '</div>';
-  }).join('');
+var tmap = {
+system:   { cls:’’,             dot:‘var(–muted)’,   pre:’’ },
+review:   { cls:’’,             dot:‘var(–accent)’,  pre:‘🔍 ’ },
+assign:   { cls:‘log-assign’,   dot:‘var(–accent2)’, pre:‘📌 ’ },
+ack:      { cls:’’,             dot:‘var(–accent)’,  pre:‘✓ ’ },
+start:    { cls:’’,             dot:‘var(–accent2)’, pre:’▶ ’ },
+update:   { cls:‘log-public’,   dot:‘var(–accent)’,  pre:’📢 ’ },
+public:   { cls:‘log-public’,   dot:‘var(–accent)’,  pre:’📢 ’ },
+complete: { cls:‘log-complete’, dot:‘var(–green)’,   pre:‘✅ ’ },
+escalate: { cls:‘log-escalate’, dot:‘var(–danger)’,  pre:‘🔴 ’ },
+};
+return log.slice().reverse().map(function(e) {
+var t = tmap[e.type] || tmap.system;
+return ‘<div class="log-entry ' + t.cls + '">’ +
+‘<div class="log-dot" style="background:' + t.dot + '"></div>’ +
+‘<div class="log-body">’ + t.pre + e.body + ‘</div>’ +
+‘<div class="log-time">’ + e.time + ‘</div>’ +
+‘</div>’;
+}).join(’’);
 }
 
 function renderAdminLog() {
-  var el = document.getElementById('admin-activity-log');
-  if (!el) return;
-  // Gather all log entries across all ISSUES, newest first
-  var evts = [];
-  ISSUES.forEach(function(issue) {
-    issue.log.forEach(function(e) {
-      evts.push({ type:e.type, body:e.body, time:e.time, title:issue.title, id:issue.id });
-    });
-  });
-  evts.reverse();
-  var tmap = {
-    system:   { dot:'var(--muted)',   pre:'' },
-    review:   { dot:'var(--accent)',  pre:'🔍 ' },
-    assign:   { dot:'var(--accent2)', pre:'📌 ' },
-    ack:      { dot:'var(--accent)',  pre:'✓ ' },
-    start:    { dot:'var(--accent2)', pre:'▶ ' },
-    update:   { dot:'var(--accent)',  pre:'📢 ' },
-    public:   { dot:'var(--accent)',  pre:'📢 ' },
-    complete: { dot:'var(--green)',   pre:'✅ ' },
-    escalate: { dot:'var(--danger)',  pre:'🔴 ' },
-  };
-  el.innerHTML = evts.slice(0, 20).map(function(e) {
-    var t = tmap[e.type] || tmap.system;
-    var st = e.title.indexOf('\u2014') > -1 ? e.title.split('\u2014')[0].trim() : e.title;
-    return '<div class="log-entry">' +
-      '<div class="log-dot" style="background:' + t.dot + '"></div>' +
-      '<div class="log-body">' + t.pre + '<strong>' + st + '</strong> \u2014 ' + e.body + '</div>' +
-      '<div class="log-time">' + e.time + '</div>' +
-    '</div>';
-  }).join('');
+var el = document.getElementById(‘admin-activity-log’);
+if (!el) return;
+// Gather all log entries across all ISSUES, newest first
+var evts = [];
+ISSUES.forEach(function(issue) {
+issue.log.forEach(function(e) {
+evts.push({ type:e.type, body:e.body, time:e.time, title:issue.title, id:issue.id });
+});
+});
+evts.reverse();
+var tmap = {
+system:   { dot:‘var(–muted)’,   pre:’’ },
+review:   { dot:‘var(–accent)’,  pre:’🔍 ’ },
+assign:   { dot:‘var(–accent2)’, pre:’📌 ’ },
+ack:      { dot:‘var(–accent)’,  pre:’✓ ’ },
+start:    { dot:‘var(–accent2)’, pre:‘▶ ’ },
+update:   { dot:‘var(–accent)’,  pre:‘📢 ’ },
+public:   { dot:‘var(–accent)’,  pre:‘📢 ’ },
+complete: { dot:‘var(–green)’,   pre:‘✅ ’ },
+escalate: { dot:‘var(–danger)’,  pre:‘🔴 ’ },
+};
+el.innerHTML = evts.slice(0, 20).map(function(e) {
+var t = tmap[e.type] || tmap.system;
+var st = e.title.indexOf(’\u2014’) > -1 ? e.title.split(’\u2014’)[0].trim() : e.title;
+return ‘<div class="log-entry">’ +
+‘<div class="log-dot" style="background:' + t.dot + '"></div>’ +
+‘<div class="log-body">’ + t.pre + ‘<strong>’ + st + ‘</strong> \u2014 ’ + e.body + ‘</div>’ +
+‘<div class="log-time">’ + e.time + ‘</div>’ +
+‘</div>’;
+}).join(’’);
 }
 
 function renderGrantBadge(grants) {
-  if (!grants || !grants.length) return '';
-  var items = grants.map(function(g) {
-    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,229,176,0.1)">' +
-      '<div>' +
-        '<div style="font-size:12px;font-weight:700;color:var(--accent2)">' + g.name + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);line-height:1.3;margin-top:1px">' + g.note + '</div>' +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--accent2);white-space:nowrap;font-weight:600;flex-shrink:0">' + g.range + '</div>' +
-    '</div>';
-  }).join('');
-  return '<div style="background:rgba(0,229,176,0.06);border:1px solid rgba(0,229,176,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px">' +
-    '<div style="font-size:10px;font-weight:800;color:var(--accent2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">💵 Grant Eligible</div>' +
-    items +
-  '</div>';
+if (!grants || !grants.length) return ‘’;
+var items = grants.map(function(g) {
+return ‘<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,229,176,0.1)">’ +
+‘<div>’ +
+‘<div style="font-size:12px;font-weight:700;color:var(--accent2)">’ + g.name + ‘</div>’ +
+‘<div style="font-size:11px;color:var(--muted);line-height:1.3;margin-top:1px">’ + g.note + ‘</div>’ +
+‘</div>’ +
+‘<div style="font-size:11px;color:var(--accent2);white-space:nowrap;font-weight:600;flex-shrink:0">’ + g.range + ‘</div>’ +
+‘</div>’;
+}).join(’’);
+return ‘<div style="background:rgba(0,229,176,0.06);border:1px solid rgba(0,229,176,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px">’ +
+‘<div style="font-size:10px;font-weight:800;color:var(--accent2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">💵 Grant Eligible</div>’ +
+items +
+‘</div>’;
 }
 
-/* ══ AI INSIGHTS — Today's analysis for Admin and Dept views ══ */
+/* ══ AI INSIGHTS — Today’s analysis for Admin and Dept views ══ */
 let adminInsightsCache = null;
 let deptInsightsCache  = null;
 
 function buildInsightsContext() {
-  var active    = ISSUES.filter(function(i){ return i.status !== 'done'; });
-  var escalated = active.filter(function(i){ return i.escalate; });
-  var late      = ISSUES.filter(function(i){ return i.priority === 'late'; });
-  var fmt = function(i) {
-    return '[' + i.id + '] ' + i.title +
-      ' | Dept: ' + i.dept +
-      ' | Score: ' + calcScore(i) + '/100' +
-      ' | Notices: ' + (i.noticeCount||0) +
-      ' | Status: ' + i.status +
-      (i.escalate ? ' | ESCALATED' : '') +
-      (i.priority === 'late' ? ' | OVERDUE' : '');
-  };
-  return 'CITY: Hastings, NE — ' + new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) + '\n' +
-    'ACTIVE ISSUES (' + active.length + '):\n' + active.map(fmt).join('\n') + '\n' +
-    'ESCALATED: ' + escalated.length + '\n' +
-    'OVERDUE: ' + late.length + '\n' +
-    'DEPARTMENTS: Street Department, Hastings Utilities, Hastings Police\n' +
-    'STREET DEPT SCORE: ' + (function(){
-      var all = ISSUES.filter(function(i){ return i.dept === 'Street Department'; });
-      var done = all.filter(function(i){ return i.workStatus === 'completed'; });
-      return all.length ? Math.round((done.length/all.length)*100) : 0;
-    })() + '% on-time completion';
+var active    = ISSUES.filter(function(i){ return i.status !== ‘done’; });
+var escalated = active.filter(function(i){ return i.escalate; });
+var late      = ISSUES.filter(function(i){ return i.priority === ‘late’; });
+var fmt = function(i) {
+return ‘[’ + i.id + ‘] ’ + i.title +
+’ | Dept: ’ + i.dept +
+’ | Score: ’ + calcScore(i) + ‘/100’ +
+’ | Notices: ’ + (i.noticeCount||0) +
+’ | Status: ’ + i.status +
+(i.escalate ? ’ | ESCALATED’ : ‘’) +
+(i.priority === ‘late’ ? ’ | OVERDUE’ : ‘’);
+};
+return ‘CITY: Hastings, NE — ’ + new Date().toLocaleDateString(‘en-US’,{weekday:‘long’,month:‘long’,day:‘numeric’}) + ‘\n’ +
+‘ACTIVE ISSUES (’ + active.length + ‘):\n’ + active.map(fmt).join(’\n’) + ‘\n’ +
+’ESCALATED: ’ + escalated.length + ‘\n’ +
+’OVERDUE: ’ + late.length + ‘\n’ +
+‘DEPARTMENTS: Street Department, Hastings Utilities, Hastings Police\n’ +
+’STREET DEPT SCORE: ’ + (function(){
+var all = ISSUES.filter(function(i){ return i.dept === ‘Street Department’; });
+var done = all.filter(function(i){ return i.workStatus === ‘completed’; });
+return all.length ? Math.round((done.length/all.length)*100) : 0;
+})() + ‘% on-time completion’;
 }
 
 function renderInsightItems(items, targetId) {
-  var el = document.getElementById(targetId);
-  if (!el) return;
-  var tagClass = { pattern:'ait-pattern', suggest:'ait-suggest', alert:'ait-alert', good:'ait-good' };
-  var tagLabel = { pattern:'Pattern', suggest:'Suggestion', alert:'Alert', good:'Good News' };
-  el.innerHTML = items.map(function(item) {
-    var tc = tagClass[item.type] || 'ait-suggest';
-    var tl = tagLabel[item.type] || 'Insight';
-    return '<div class="ai-insight-item">' +
-      '<div class="ai-insight-tag ' + tc + '">' + tl + '</div>' +
-      '<div>' + item.text + '</div>' +
-    '</div>';
-  }).join('');
+var el = document.getElementById(targetId);
+if (!el) return;
+var tagClass = { pattern:‘ait-pattern’, suggest:‘ait-suggest’, alert:‘ait-alert’, good:‘ait-good’ };
+var tagLabel = { pattern:‘Pattern’, suggest:‘Suggestion’, alert:‘Alert’, good:‘Good News’ };
+el.innerHTML = items.map(function(item) {
+var tc = tagClass[item.type] || ‘ait-suggest’;
+var tl = tagLabel[item.type] || ‘Insight’;
+return ‘<div class="ai-insight-item">’ +
+‘<div class="ai-insight-tag ' + tc + '">’ + tl + ‘</div>’ +
+‘<div>’ + item.text + ‘</div>’ +
+‘</div>’;
+}).join(’’);
 }
 
 async function fetchInsights(systemPrompt, userPrompt) {
-  try {
-    var response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-    if (!response.ok) throw new Error('API ' + response.status);
-    var data = await response.json();
-    var text = (data.content || []).map(function(b){ return b.text || ''; }).join('');
-    var clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
-  } catch(e) {
-    return [{ type:'suggest', text:'Could not load insights. Check connection and refresh.' }];
-  }
+try {
+var response = await fetch(’/api/claude’, {
+method: ‘POST’,
+headers: { ‘Content-Type’: ‘application/json’ },
+body: JSON.stringify({
+model: ‘claude-sonnet-4-20250514’,
+max_tokens: 600,
+system: systemPrompt,
+messages: [{ role: ‘user’, content: userPrompt }]
+})
+});
+if (!response.ok) throw new Error(‘API ’ + response.status);
+var data = await response.json();
+var text = (data.content || []).map(function(b){ return b.text || ‘’; }).join(’’);
+var clean = text.replace(/`json|`/g, ‘’).trim();
+return JSON.parse(clean);
+} catch(e) {
+return [{ type:‘suggest’, text:‘Could not load insights. Check connection and refresh.’ }];
+}
 }
 
 async function refreshAdminInsights() {
-  var el = document.getElementById('admin-insights-body');
-  if (el) el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 0">Generating…</div>';
-  var context = buildInsightsContext();
-  var system = 'You are a civic operations analyst for Hastings, Nebraska. Analyze the current issue data and return 3-4 sharp, actionable insights for the City Administrator. Return ONLY valid JSON — an array of objects with keys "type" (one of: pattern, suggest, alert, good) and "text" (1-2 plain English sentences, specific to the data, no fluff). Example: [{"type":"alert","text":"Two escalated issues have had no activity in 12+ hours."}]';
-  var prompt = context + '\n\nReturn 3-4 insights as a JSON array. Be specific — reference actual issue IDs, street names, departments. No markdown, no explanation, just the JSON array.';
-  adminInsightsCache = await fetchInsights(system, prompt);
-  renderInsightItems(adminInsightsCache, 'admin-insights-body');
+var el = document.getElementById(‘admin-insights-body’);
+if (el) el.innerHTML = ‘<div style="font-size:11px;color:var(--muted);padding:8px 0">Generating…</div>’;
+var context = buildInsightsContext();
+var system = ‘You are a civic operations analyst for Hastings, Nebraska. Analyze the current issue data and return 3-4 sharp, actionable insights for the City Administrator. Return ONLY valid JSON — an array of objects with keys “type” (one of: pattern, suggest, alert, good) and “text” (1-2 plain English sentences, specific to the data, no fluff). Example: [{“type”:“alert”,“text”:“Two escalated issues have had no activity in 12+ hours.”}]’;
+var prompt = context + ‘\n\nReturn 3-4 insights as a JSON array. Be specific — reference actual issue IDs, street names, departments. No markdown, no explanation, just the JSON array.’;
+adminInsightsCache = await fetchInsights(system, prompt);
+renderInsightItems(adminInsightsCache, ‘admin-insights-body’);
 }
 
 async function refreshDeptInsights() {
-  var el = document.getElementById('dept-insights-body');
-  if (el) el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 0">Generating…</div>';
-  var context = buildInsightsContext();
-  var system = 'You are a field operations advisor for the Hastings, NE Street Department. Analyze the active workload and return 3-4 sharp, practical insights for the crew supervisor. Return ONLY valid JSON — an array of objects with keys "type" (one of: pattern, suggest, alert, good) and "text" (1-2 plain English sentences). Focus on: recurring problem locations, crew sequencing, material prep, safety flags, and workload balance. Be specific — reference actual street names and issue IDs.';
-  var prompt = context + '\n\nReturn 3-4 crew-level insights as a JSON array. No markdown, no explanation, just the JSON array.';
-  deptInsightsCache = await fetchInsights(system, prompt);
-  renderInsightItems(deptInsightsCache, 'dept-insights-body');
+var el = document.getElementById(‘dept-insights-body’);
+if (el) el.innerHTML = ‘<div style="font-size:11px;color:var(--muted);padding:8px 0">Generating…</div>’;
+var context = buildInsightsContext();
+var system = ‘You are a field operations advisor for the Hastings, NE Street Department. Analyze the active workload and return 3-4 sharp, practical insights for the crew supervisor. Return ONLY valid JSON — an array of objects with keys “type” (one of: pattern, suggest, alert, good) and “text” (1-2 plain English sentences). Focus on: recurring problem locations, crew sequencing, material prep, safety flags, and workload balance. Be specific — reference actual street names and issue IDs.’;
+var prompt = context + ‘\n\nReturn 3-4 crew-level insights as a JSON array. No markdown, no explanation, just the JSON array.’;
+deptInsightsCache = await fetchInsights(system, prompt);
+renderInsightItems(deptInsightsCache, ‘dept-insights-body’);
 }
 
 function syncMapPin(issue) {
-  var marker = markerMap[issue.id];
-  if (marker) {
-    marker.setIcon(makeIcon(issue));
-    // Refresh cluster so color/severity recalculates
-    if (clusterGroup) { clusterGroup.refreshClusters(marker); }
-  }
-  if (heatActive) buildHeatCanvas();
+var marker = markerMap[issue.id];
+if (marker) {
+marker.setIcon(makeIcon(issue));
+// Refresh cluster so color/severity recalculates
+if (clusterGroup) { clusterGroup.refreshClusters(marker); }
+}
+if (heatActive) buildHeatCanvas();
 }
 
 function advanceAdminQueue(completedId) {
-  // Find the next active issue to load — skip the one just acted on
-  var remaining = getSortedAdminQueue('active').filter(function(i) {
-    return i.id !== completedId;
-  });
-  if (remaining.length) {
-    // Wait for exit animation + queue re-render to complete, then load next item
-    setTimeout(function() {
-      selectAdminById(remaining[0].id, true);
-    }, 500);
-  } else {
-    // Queue is empty — show empty state
-    setTimeout(function() {
-      selectedAdminId = null;
-      document.getElementById('action-empty').style.display = 'flex';
-      document.getElementById('action-panel').style.display = 'none';
-    }, 500);
-  }
+// Find the next active issue to load — skip the one just acted on
+var remaining = getSortedAdminQueue(‘active’).filter(function(i) {
+return i.id !== completedId;
+});
+if (remaining.length) {
+// Wait for exit animation + queue re-render to complete, then load next item
+setTimeout(function() {
+selectAdminById(remaining[0].id, true);
+}, 500);
+} else {
+// Queue is empty — show empty state
+setTimeout(function() {
+selectedAdminId = null;
+document.getElementById(‘action-empty’).style.display = ‘flex’;
+document.getElementById(‘action-panel’).style.display = ‘none’;
+}, 500);
+}
 }
 
 function adminAction(id, actionType) {
-  var issue = getIssueById(id);
-  if (!issue) return;
-  var now = 'Just now';
-  if (actionType === 'review') {
-    issue.statusLabel = 'Under Review'; issue.tag = 'review';
-    issue.log.push({ type:'review', body:'Marked as Reviewed by City Admin', time:now });
-  } else if (actionType === 'escalate') {
-    issue.escalate = true;
-    issue.log.push({ type:'escalate', body:'Escalated to Department Director by City Admin', time:now });
-    setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 350);
-  } else if (actionType === 'assign') {
-    var sel = document.getElementById('dept-assign-select');
-    var dept = sel ? sel.value : issue.dept;
-    issue.dept = dept; issue.statusLabel = 'Assigned'; issue.tag = 'assigned';
-    issue.log.push({ type:'assign', body:'Assigned to ' + dept + ' by City Admin', time:now });
-  } else if (actionType === 'public') {
-    var el2 = document.getElementById('update-text');
-    var msg = (el2 ? el2.value.trim() : '') || 'Status update posted';
-    issue.log.push({ type:'public', body:'Public update posted: "' + msg + '"', time:now });
-    if (el2) el2.value = '';
-  } else if (actionType === 'complete') {
-    issue.statusLabel  = 'Completed'; issue.tag = 'done'; issue.queueStatus = 'completed';
-    issue.status       = 'done';      issue.workStatus = 'completed';
-    issue.actionStatus = 'completed'; issue.progress = 100; issue.priority = 'done';
-    issue.log.push({ type:'complete', body:'Marked as Completed by City Admin', time:now });
-    syncMapPin(issue);
-    // Clear panel immediately — next item will slide in via advanceAdminQueue
-    var panel = document.getElementById('action-panel');
-    if (panel) panel.style.opacity = '0';
-    var qel = document.getElementById('qi-' + id);
-    if (qel) {
-      qel.classList.add('exiting');
-      setTimeout(function() {
-        renderAdminQueue();
-        if (panel) panel.style.opacity = '';
-      }, 360);
-    } else {
-      renderAdminQueue();
-      if (panel) panel.style.opacity = '';
-    }
-    updateQueueBadge(); renderDeptAccountability();
-    renderAdminLog();
-    advanceAdminQueue(id);
-    return;
-  }
-  syncMapPin(issue);
-  var logEl = document.getElementById('admin-log');
-  if (logEl) logEl.innerHTML = renderLog(issue.log);
-  renderAdminQueue();
-  renderAdminLog();
-  // Re-render panel so button states (e.g. Reviewed → greyed) update immediately
-  selectAdminById(id);
+var issue = getIssueById(id);
+if (!issue) return;
+var now = ‘Just now’;
+if (actionType === ‘review’) {
+issue.status = ‘review’; issue.statusLabel = ‘Under Review’; issue.tag = ‘review’;
+issue.log.push({ type:‘review’, body:‘Marked as Reviewed by City Admin’, time:now });
+} else if (actionType === ‘escalate’) {
+issue.escalate = true;
+if (issue.status === ‘reported’) { issue.status = ‘review’; issue.statusLabel = ‘Under Review’; issue.tag = ‘review’; }
+issue.log.push({ type:‘escalate’, body:‘Escalated to Department Director by City Admin’, time:now });
+setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 350);
+} else if (actionType === ‘assign’) {
+var sel = document.getElementById(‘dept-assign-select’);
+var dept = sel ? sel.value : issue.dept;
+issue.dept = dept; issue.status = ‘review’; issue.statusLabel = ‘Assigned’; issue.tag = ‘assigned’;
+issue.log.push({ type:‘assign’, body:‘Assigned to ’ + dept + ’ by City Admin’, time:now });
+} else if (actionType === ‘public’) {
+var el2 = document.getElementById(‘update-text’);
+var msg = (el2 ? el2.value.trim() : ‘’) || ‘Status update posted’;
+issue.log.push({ type:‘public’, body:‘Public update posted: “’ + msg + ‘”’, time:now });
+// Advance status so update is visible on public card
+if (issue.status === ‘reported’) { issue.status = ‘review’; issue.statusLabel = ‘Under Review’; issue.tag = ‘review’; }
+if (el2) el2.value = ‘’;
+} else if (actionType === ‘complete’) {
+issue.statusLabel  = ‘Completed’; issue.tag = ‘done’; issue.queueStatus = ‘completed’;
+issue.status       = ‘done’;      issue.workStatus = ‘completed’;
+issue.actionStatus = ‘completed’; issue.progress = 100; issue.priority = ‘done’;
+issue.log.push({ type:‘complete’, body:‘Marked as Completed by City Admin’, time:now });
+syncMapPin(issue);
+// Clear panel immediately — next item will slide in via advanceAdminQueue
+var panel = document.getElementById(‘action-panel’);
+if (panel) panel.style.opacity = ‘0’;
+var qel = document.getElementById(‘qi-’ + id);
+if (qel) {
+qel.classList.add(‘exiting’);
+setTimeout(function() {
+renderAdminQueue();
+if (panel) panel.style.opacity = ‘’;
+}, 360);
+} else {
+renderAdminQueue();
+if (panel) panel.style.opacity = ‘’;
+}
+updateQueueBadge(); renderDeptAccountability();
+renderAdminLog();
+advanceAdminQueue(id);
+return;
+}
+syncMapPin(issue);
+var logEl = document.getElementById(‘admin-log’);
+if (logEl) logEl.innerHTML = renderLog(issue.log);
+renderAdminQueue();
+renderAdminLog();
+// Re-render panel so button states (e.g. Reviewed → greyed) update immediately
+selectAdminById(id);
 }
 
 function setTimeline(t) {
-  selectedTimeline = t;
-  document.querySelectorAll('.tl-chip').forEach(function(c) {
-    c.classList.toggle('active', c.textContent === t);
-  });
+selectedTimeline = t;
+document.querySelectorAll(’.tl-chip’).forEach(function(c) {
+c.classList.toggle(‘active’, c.textContent === t);
+});
 }
 
-/* -- Dept state -- */
+/* – Dept state – */
 let selectedDeptId = null;
-let currentDeptTab = 'active';
-let activeDept = 'Street Department';
+let currentDeptTab = ‘active’;
+let activeDept = ‘Street Department’;
 const ACTION_PROGRESS = { ack:10, start:30, update:15, complete:100 };
 
 function setActiveDept(dept) {
-  activeDept = dept;
-  var title = document.getElementById('dept-col-title');
-  if (title) title.textContent = dept;
-  selectedDeptId = null;
-  document.getElementById('dept-empty').style.display = 'flex';
-  document.getElementById('dept-panel').style.display = 'none';
-  renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
+activeDept = dept;
+var title = document.getElementById(‘dept-col-title’);
+if (title) title.textContent = dept;
+selectedDeptId = null;
+document.getElementById(‘dept-empty’).style.display = ‘flex’;
+document.getElementById(‘dept-panel’).style.display = ‘none’;
+renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
 }
 
 function getDeptIssues() {
-  return ISSUES.filter(function(i) {
-    return i.workStatus !== undefined && i.dept === activeDept;
-  });
+return ISSUES.filter(function(i) {
+return i.workStatus !== undefined && i.dept === activeDept;
+});
 }
 
 function getDeptSorted(tab) {
-  var order = { late:0, warn:1, ok:2, done:3 };
-  return getDeptIssues()
-    .filter(function(i) { return i.workStatus === tab; })
-    .sort(function(a, b) { return (order[a.priority] || 2) - (order[b.priority] || 2); });
+var order = { late:0, warn:1, ok:2, done:3 };
+return getDeptIssues()
+.filter(function(i) { return i.workStatus === tab; })
+.sort(function(a, b) { return (order[a.priority] || 2) - (order[b.priority] || 2); });
 }
 
 function setDeptTab(tab) {
-  currentDeptTab = tab;
-  document.getElementById('dqtab-active').classList.toggle('active',    tab === 'active');
-  document.getElementById('dqtab-completed').classList.toggle('active', tab === 'completed');
-  selectedDeptId = null;
-  document.getElementById('dept-empty').style.display = 'flex';
-  document.getElementById('dept-panel').style.display = 'none';
-  renderDeptQueue();
+currentDeptTab = tab;
+document.getElementById(‘dqtab-active’).classList.toggle(‘active’,    tab === ‘active’);
+document.getElementById(‘dqtab-completed’).classList.toggle(‘active’, tab === ‘completed’);
+selectedDeptId = null;
+document.getElementById(‘dept-empty’).style.display = ‘flex’;
+document.getElementById(‘dept-panel’).style.display = ‘none’;
+renderDeptQueue();
 }
 
 function updateDeptWorkload() {
-  var active = getDeptIssues().filter(function(i) { return i.workStatus === 'active'; });
-  var late   = active.filter(function(i) { return i.priority === 'late'; });
-  var el = document.getElementById('dept-workload');
-  if (el) el.textContent = active.length + ' active · ' + late.length + ' late';
+var active = getDeptIssues().filter(function(i) { return i.workStatus === ‘active’; });
+var late   = active.filter(function(i) { return i.priority === ‘late’; });
+var el = document.getElementById(‘dept-workload’);
+if (el) el.textContent = active.length + ’ active · ’ + late.length + ’ late’;
 }
 
 function renderDeptQueue() {
-  updateDeptWorkload();
-  var items = getDeptSorted(currentDeptTab);
-  var qel = document.getElementById('dept-queue');
-  if (!items.length) {
-    qel.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' +
-      (currentDeptTab === 'active' ? 'No active work items' : 'No completed items yet') + '</div>';
-    renderDeptAccountability(); renderDeptPriority(); return;
-  }
-  qel.innerHTML = items.map(function(issue) {
-    var bc = issue.priority === 'late' ? 'late' : issue.priority === 'warn' ? 'warn' : '';
-    var lc = issue.priority === 'late' ? 'var(--danger)' : issue.priority === 'warn' ? 'var(--warn)' : issue.priority === 'done' ? 'var(--muted)' : 'var(--accent2)';
-    var fc = issue.priority === 'late' ? 'fill-danger' : issue.priority === 'warn' ? 'fill-warn' : issue.priority === 'done' ? 'fill-green' : 'fill-blue';
-    var lblMap = { assigned:'Assigned', acknowledged:'Acknowledged', 'in-progress':'In Progress', completed:'Completed' };
-    return '<div class="dept-item ' + bc + ' ' + (selectedDeptId === issue.id ? 'selected' : '') +
-      '" id="dqi-' + issue.id + '" onclick="selectDeptById(\'' + issue.id + '\')">' +
-      '<div class="qi-top">' +
-        '<span style="font-size:11px;font-weight:700;color:' + lc + '">' + (lblMap[issue.actionStatus] || 'Assigned') + '</span>' +
-        '<span class="qi-time">' + (issue.deadline || '') + '</span>' +
-      '</div>' +
-      '<div class="qi-title">' + issue.title + '</div>' +
-      '<div class="progress-bar"><div class="progress-fill ' + fc + '" style="width:' + (issue.progress || 0) + '%;transition:width .6s ease"></div></div>' +
-    '</div>';
-  }).join('');
-  renderDeptAccountability();
-  renderDeptPriority();
+updateDeptWorkload();
+var items = getDeptSorted(currentDeptTab);
+var qel = document.getElementById(‘dept-queue’);
+if (!items.length) {
+qel.innerHTML = ‘<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">’ +
+(currentDeptTab === ‘active’ ? ‘No active work items’ : ‘No completed items yet’) + ‘</div>’;
+renderDeptAccountability(); renderDeptPriority(); return;
+}
+qel.innerHTML = items.map(function(issue) {
+var bc = issue.priority === ‘late’ ? ‘late’ : issue.priority === ‘warn’ ? ‘warn’ : ‘’;
+var lc = issue.priority === ‘late’ ? ‘var(–danger)’ : issue.priority === ‘warn’ ? ‘var(–warn)’ : issue.priority === ‘done’ ? ‘var(–muted)’ : ‘var(–accent2)’;
+var fc = issue.priority === ‘late’ ? ‘fill-danger’ : issue.priority === ‘warn’ ? ‘fill-warn’ : issue.priority === ‘done’ ? ‘fill-green’ : ‘fill-blue’;
+var lblMap = { assigned:‘Assigned’, acknowledged:‘Acknowledged’, ‘in-progress’:‘In Progress’, completed:‘Completed’ };
+return ‘<div class="dept-item ' + bc + ' ' + (selectedDeptId === issue.id ? 'selected' : '') +
+'" id="dqi-' + issue.id + '" onclick="selectDeptById(\'' + issue.id + '\')">’ +
+‘<div class="qi-top">’ +
+‘<span style="font-size:11px;font-weight:700;color:' + lc + '">’ + (lblMap[issue.actionStatus] || ‘Assigned’) + ‘</span>’ +
+‘<span class="qi-time">’ + (issue.deadline || ‘’) + ‘</span>’ +
+‘</div>’ +
+‘<div class="qi-title">’ + issue.title + ‘</div>’ +
+‘<div class="progress-bar"><div class="progress-fill ' + fc + '" style="width:' + (issue.progress || 0) + '%;transition:width .6s ease"></div></div>’ +
+‘</div>’;
+}).join(’’);
+renderDeptAccountability();
+renderDeptPriority();
 }
 
 function selectDeptById(id) {
-  selectedDeptId = id;
-  renderDeptQueue();
-  var issue = getIssueById(id);
-  if (!issue) return;
-  document.getElementById('dept-empty').style.display = 'none';
-  var panel = document.getElementById('dept-panel');
-  panel.style.display = 'block'; panel.className = 'action-panel fade-in';
-  renderDeptPanel(id);
-  if (isMobile()) setDeptMobSection('work');
+selectedDeptId = id;
+renderDeptQueue();
+var issue = getIssueById(id);
+if (!issue) return;
+document.getElementById(‘dept-empty’).style.display = ‘none’;
+var panel = document.getElementById(‘dept-panel’);
+panel.style.display = ‘block’; panel.className = ‘action-panel fade-in’;
+renderDeptPanel(id);
+if (isMobile()) setDeptMobSection(‘work’);
 }
 
 function renderDeptPanel(id) {
-  var issue = getIssueById(id);
-  if (!issue) return;
-  var isDone = issue.workStatus === 'completed';
-  var fc = issue.priority === 'late' ? 'fill-danger' : issue.priority === 'done' ? 'fill-green' : issue.priority === 'warn' ? 'fill-warn' : 'fill-blue';
-  var slMap = { assigned:{text:'Assigned',cls:'asb-assigned'}, acknowledged:{text:'Acknowledged',cls:'asb-review'}, 'in-progress':{text:'In Progress',cls:'asb-progress'}, completed:{text:'Completed',cls:'asb-done'} };
-  var sl = slMap[issue.actionStatus] || slMap.assigned;
-  document.getElementById('dept-panel').innerHTML =
-    '<div class="action-id">' + issue.id + '</div>' +
-    '<div class="action-title">' + issue.title + '</div>' +
-    '<div style="margin-bottom:10px"><span class="action-status-badge ' + sl.cls + '" id="dept-status-badge">' + sl.text + '</span></div>' +
-    '<div class="action-desc">' + issue.desc + '</div>' +
-    '<div class="action-chips" style="margin-bottom:4px">' +
-      '<div class="chip"><strong>Dept:</strong> ' + issue.dept + '</div>' +
-      '<div class="chip"><strong>Deadline:</strong> ' + (issue.deadline || '') + '</div>' +
-    '</div>' +
-    renderGrantBadge(issue.grants) +
-    (!isDone ?
-      '<div class="section-title">Work Actions</div>' +
-      '<div class="action-btns" style="margin-bottom:16px">' +
-        (issue.actionStatus === 'assigned'     ? '<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'ack\')">Acknowledge Assignment</button>' : '') +
-        (issue.actionStatus === 'acknowledged' ? '<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'start\')">Start Work</button>' : '') +
-        (issue.actionStatus === 'in-progress'  ? '<button class="action-btn primary" style="background:var(--green);border-color:var(--green)" onclick="deptAction(\'' + id + '\',\'complete\')">Mark as Completed</button>' : '') +
-        '<button class="action-btn danger" onclick="deptAction(\'' + id + '\',\'escalate\')" style="margin-left:auto">Escalate</button>' +
-      '</div>' +
-      '<div class="section-title">Post Public Update</div>' +
-      '<textarea class="update-input" id="dept-update-text" rows="2" placeholder="Describe crew status, materials, schedule..."></textarea>' +
-      '<button class="action-btn" onclick="deptAction(\'' + id + '\',\'update\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Update</button>'
-    : '') +
-    '<div class="section-title">Progress</div>' +
-    '<div class="progress-bar" style="height:9px;border-radius:5px;margin-bottom:6px"><div class="progress-fill ' + fc + '" id="dept-prog-bar" style="width:' + (issue.progress || 0) + '%;transition:width .7s cubic-bezier(.4,0,.2,1)"></div></div>' +
-    '<div id="dept-prog-label" style="font-size:11px;color:var(--muted)">' + (issue.progress || 0) + '% complete</div>' +
-    '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
-    '<div class="activity-log" id="dept-log">' + renderLog(issue.log) + '</div>';
+var issue = getIssueById(id);
+if (!issue) return;
+var isDone = issue.workStatus === ‘completed’;
+var fc = issue.priority === ‘late’ ? ‘fill-danger’ : issue.priority === ‘done’ ? ‘fill-green’ : issue.priority === ‘warn’ ? ‘fill-warn’ : ‘fill-blue’;
+var slMap = { assigned:{text:‘Assigned’,cls:‘asb-assigned’}, acknowledged:{text:‘Acknowledged’,cls:‘asb-review’}, ‘in-progress’:{text:‘In Progress’,cls:‘asb-progress’}, completed:{text:‘Completed’,cls:‘asb-done’} };
+var sl = slMap[issue.actionStatus] || slMap.assigned;
+document.getElementById(‘dept-panel’).innerHTML =
+‘<div class="action-id">’ + issue.id + ‘</div>’ +
+‘<div class="action-title">’ + issue.title + ‘</div>’ +
+‘<div style="margin-bottom:10px"><span class="action-status-badge ' + sl.cls + '" id="dept-status-badge">’ + sl.text + ‘</span></div>’ +
+‘<div class="action-desc">’ + issue.desc + ‘</div>’ +
+‘<div class="action-chips" style="margin-bottom:4px">’ +
+’<div class="chip"><strong>Dept:</strong> ’ + issue.dept + ‘</div>’ +
+’<div class="chip"><strong>Deadline:</strong> ’ + (issue.deadline || ‘’) + ‘</div>’ +
+‘</div>’ +
+renderGrantBadge(issue.grants) +
+(!isDone ?
+‘<div class="section-title">Work Actions</div>’ +
+‘<div class="action-btns" style="margin-bottom:16px">’ +
+(issue.actionStatus === ‘assigned’     ? ‘<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'ack\')">Acknowledge Assignment</button>’ : ‘’) +
+(issue.actionStatus === ‘acknowledged’ ? ‘<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'start\')">Start Work</button>’ : ‘’) +
+(issue.actionStatus === ‘in-progress’  ? ‘<button class="action-btn primary" style="background:var(--green);border-color:var(--green)" onclick="deptAction(\'' + id + '\',\'complete\')">Mark as Completed</button>’ : ‘’) +
+‘<button class="action-btn danger" onclick="deptAction(\'' + id + '\',\'escalate\')" style="margin-left:auto">Escalate</button>’ +
+‘</div>’ +
+‘<div class="section-title">Post Public Update</div>’ +
+‘<textarea class="update-input" id="dept-update-text" rows="2" placeholder="Describe crew status, materials, schedule..."></textarea>’ +
+‘<button class="action-btn" onclick="deptAction(\'' + id + '\',\'update\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Update</button>’
+: ‘’) +
+‘<div class="section-title">Progress</div>’ +
+‘<div class="progress-bar" style="height:9px;border-radius:5px;margin-bottom:6px"><div class="progress-fill ' + fc + '" id="dept-prog-bar" style="width:' + (issue.progress || 0) + '%;transition:width .7s cubic-bezier(.4,0,.2,1)"></div></div>’ +
+‘<div id="dept-prog-label" style="font-size:11px;color:var(--muted)">’ + (issue.progress || 0) + ‘% complete</div>’ +
+‘<div class="section-title" style="margin-top:18px">Activity Log</div>’ +
+‘<div class="activity-log" id="dept-log">’ + renderLog(issue.log) + ‘</div>’;
 }
 
 function deptAction(id, actionType) {
-  var issue = getIssueById(id);
-  if (!issue) return;
-  var now = 'Just now';
-  if (actionType === 'ack') {
-    issue.actionStatus = 'acknowledged';
-    issue.progress = Math.max(issue.progress || 0, ACTION_PROGRESS.ack);
-    issue.log.push({ type:'ack', body:'Assignment acknowledged — crew being scheduled', time:now });
-  } else if (actionType === 'start') {
-    issue.actionStatus = 'in-progress'; issue.status = 'progress';
-    issue.progress = Math.max(issue.progress || 0, ACTION_PROGRESS.start);
-    issue.log.push({ type:'start', body:'Work started — ' + issue.dept + ' crew on site', time:now });
-    syncMapPin(issue);
-  } else if (actionType === 'update') {
-    var ta = document.getElementById('dept-update-text');
-    var msg = (ta ? ta.value.trim() : '') || 'Status update posted';
-    issue.progress = Math.min(85, (issue.progress || 0) + ACTION_PROGRESS.update);
-    issue.log.push({ type:'update', body:'Public update posted: "' + msg + '"', time:now });
-    if (ta) ta.value = '';
-  } else if (actionType === 'escalate') {
-    issue.priority = 'late'; issue.escalate = true;
-    issue.log.push({ type:'escalate', body:'Escalated — deadline at risk, supervisor notified', time:now });
-  } else if (actionType === 'complete') {
-    issue.actionStatus = 'completed'; issue.workStatus = 'completed'; issue.queueStatus = 'completed';
-    issue.status = 'done'; issue.priority = 'done'; issue.progress = 100;
-    issue.statusLabel = 'Completed'; issue.tag = 'done';
-    issue.log.push({ type:'complete', body:'Marked as Completed — work inspected and signed off', time:now });
-    syncMapPin(issue);
-    var el3 = document.getElementById('dqi-' + id);
-    if (el3) {
-      el3.classList.add('exiting');
-      setTimeout(function() {
-        renderDeptQueue();
-        document.getElementById('dept-empty').style.display = 'flex';
-        document.getElementById('dept-panel').style.display = 'none';
-        selectedDeptId = null;
-      }, 360);
-    } else {
-      renderDeptQueue();
-      document.getElementById('dept-empty').style.display = 'flex';
-      document.getElementById('dept-panel').style.display = 'none';
-      selectedDeptId = null;
-    }
-    renderDeptAccountability();
-    renderDeptPriority();
-    renderAdminQueue();
-    renderAdminLog();
-    return;
-  }
-  var logEl = document.getElementById('dept-log');
-  if (logEl) logEl.innerHTML = renderLog(issue.log);
-  var bar = document.getElementById('dept-prog-bar');
-  var lbl = document.getElementById('dept-prog-label');
-  if (bar) bar.style.width = (issue.progress || 0) + '%';
-  if (lbl) lbl.textContent = (issue.progress || 0) + '% complete';
-  var badge = document.getElementById('dept-status-badge');
-  if (badge) {
-    var lm = { assigned:'Assigned', acknowledged:'Acknowledged', 'in-progress':'In Progress', completed:'Completed' };
-    var cm = { assigned:'asb-assigned', acknowledged:'asb-review', 'in-progress':'asb-progress', completed:'asb-done' };
-    badge.textContent = lm[issue.actionStatus] || '';
-    badge.className = 'action-status-badge ' + (cm[issue.actionStatus] || '');
-    badge.style.transform = 'scale(1.1)';
-    setTimeout(function() { badge.style.transform = ''; }, 250);
-  }
-  renderDeptPanel(id); renderDeptQueue();
+var issue = getIssueById(id);
+if (!issue) return;
+var now = ‘Just now’;
+if (actionType === ‘ack’) {
+issue.actionStatus = ‘acknowledged’;
+if (issue.status === ‘reported’) { issue.status = ‘review’; }
+issue.progress = Math.max(issue.progress || 0, ACTION_PROGRESS.ack);
+issue.log.push({ type:‘ack’, body:‘Assignment acknowledged — crew being scheduled’, time:now });
+syncMapPin(issue);
+} else if (actionType === ‘start’) {
+issue.actionStatus = ‘in-progress’; issue.status = ‘progress’;
+issue.progress = Math.max(issue.progress || 0, ACTION_PROGRESS.start);
+issue.log.push({ type:‘start’, body:‘Work started — ’ + issue.dept + ’ crew on site’, time:now });
+syncMapPin(issue);
+} else if (actionType === ‘update’) {
+var ta = document.getElementById(‘dept-update-text’);
+var msg = (ta ? ta.value.trim() : ‘’) || ‘Status update posted’;
+issue.progress = Math.min(85, (issue.progress || 0) + ACTION_PROGRESS.update);
+issue.log.push({ type:‘update’, body:‘Public update posted: “’ + msg + ‘”’, time:now });
+if (ta) ta.value = ‘’;
+} else if (actionType === ‘escalate’) {
+issue.priority = ‘late’; issue.escalate = true;
+issue.log.push({ type:‘escalate’, body:‘Escalated — deadline at risk, supervisor notified’, time:now });
+} else if (actionType === ‘complete’) {
+issue.actionStatus = ‘completed’; issue.workStatus = ‘completed’; issue.queueStatus = ‘completed’;
+issue.status = ‘done’; issue.priority = ‘done’; issue.progress = 100;
+issue.statusLabel = ‘Completed’; issue.tag = ‘done’;
+issue.log.push({ type:‘complete’, body:‘Marked as Completed — work inspected and signed off’, time:now });
+syncMapPin(issue);
+var el3 = document.getElementById(‘dqi-’ + id);
+if (el3) {
+el3.classList.add(‘exiting’);
+setTimeout(function() {
+renderDeptQueue();
+document.getElementById(‘dept-empty’).style.display = ‘flex’;
+document.getElementById(‘dept-panel’).style.display = ‘none’;
+selectedDeptId = null;
+}, 360);
+} else {
+renderDeptQueue();
+document.getElementById(‘dept-empty’).style.display = ‘flex’;
+document.getElementById(‘dept-panel’).style.display = ‘none’;
+selectedDeptId = null;
+}
+renderDeptAccountability();
+renderDeptPriority();
+renderAdminQueue();
+renderAdminLog();
+return;
+}
+var logEl = document.getElementById(‘dept-log’);
+if (logEl) logEl.innerHTML = renderLog(issue.log);
+var bar = document.getElementById(‘dept-prog-bar’);
+var lbl = document.getElementById(‘dept-prog-label’);
+if (bar) bar.style.width = (issue.progress || 0) + ‘%’;
+if (lbl) lbl.textContent = (issue.progress || 0) + ‘% complete’;
+var badge = document.getElementById(‘dept-status-badge’);
+if (badge) {
+var lm = { assigned:‘Assigned’, acknowledged:‘Acknowledged’, ‘in-progress’:‘In Progress’, completed:‘Completed’ };
+var cm = { assigned:‘asb-assigned’, acknowledged:‘asb-review’, ‘in-progress’:‘asb-progress’, completed:‘asb-done’ };
+badge.textContent = lm[issue.actionStatus] || ‘’;
+badge.className = ’action-status-badge ’ + (cm[issue.actionStatus] || ‘’);
+badge.style.transform = ‘scale(1.1)’;
+setTimeout(function() { badge.style.transform = ‘’; }, 250);
+}
+renderDeptPanel(id); renderDeptQueue();
 }
 
 function renderDeptAccountability() {
-  var el = document.getElementById('drtab-panel-overview');
-  if (!el) return;
-  var all       = getDeptIssues();
-  var active    = all.filter(function(i) { return i.workStatus === 'active'; });
-  var completed = all.filter(function(i) { return i.workStatus === 'completed'; });
-  var late      = active.filter(function(i) { return i.priority === 'late'; });
-  var pct       = all.length ? Math.round((completed.length / all.length) * 100) : 0;
-  var sc        = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
+var el = document.getElementById(‘drtab-panel-overview’);
+if (!el) return;
+var all       = getDeptIssues();
+var active    = all.filter(function(i) { return i.workStatus === ‘active’; });
+var completed = all.filter(function(i) { return i.workStatus === ‘completed’; });
+var late      = active.filter(function(i) { return i.priority === ‘late’; });
+var pct       = all.length ? Math.round((completed.length / all.length) * 100) : 0;
+var sc        = pct >= 80 ? ‘var(–green)’ : pct >= 50 ? ‘var(–warn)’ : ‘var(–danger)’;
 
-  el.innerHTML =
-    '<div class="insight-card" style="margin-bottom:10px">' +
-      '<div class="insight-label">Street Dept. Score</div>' +
-      '<div class="insight-val" style="color:' + sc + '">' + pct + '%</div>' +
-      '<div class="insight-sub">On-time completion this month</div>' +
-    '</div>' +
-    '<div class="metrics-row">' +
-      '<div class="metric-mini"><div class="metric-val" style="color:var(--danger)">' + late.length + '</div><div class="metric-label">Late</div></div>' +
-      '<div class="metric-mini"><div class="metric-val" style="color:var(--accent)">'  + active.length + '</div><div class="metric-label">Active</div></div>' +
-      '<div class="metric-mini"><div class="metric-val" style="color:var(--green)">'   + completed.length + '</div><div class="metric-label">Done</div></div>' +
-    '</div>';
+el.innerHTML =
+‘<div class="insight-card" style="margin-bottom:10px">’ +
+‘<div class="insight-label">Street Dept. Score</div>’ +
+‘<div class="insight-val" style="color:' + sc + '">’ + pct + ‘%</div>’ +
+‘<div class="insight-sub">On-time completion this month</div>’ +
+‘</div>’ +
+‘<div class="metrics-row">’ +
+‘<div class="metric-mini"><div class="metric-val" style="color:var(--danger)">’ + late.length + ‘</div><div class="metric-label">Late</div></div>’ +
+‘<div class="metric-mini"><div class="metric-val" style="color:var(--accent)">’  + active.length + ‘</div><div class="metric-label">Active</div></div>’ +
+‘<div class="metric-mini"><div class="metric-val" style="color:var(--green)">’   + completed.length + ‘</div><div class="metric-label">Done</div></div>’ +
+‘</div>’;
 }
 
 /* ══ RIGHT COLUMN TAB SWITCHERS ══ */
 function setAdminRightTab(name) {
-  ['activity','insights','reports'].forEach(function(t) {
-    var tab = document.getElementById('artab-' + t);
-    var panel = document.getElementById('artab-panel-' + t);
-    if (tab)   tab.classList.toggle('active', t === name);
-    if (panel) panel.style.display = t === name ? '' : 'none';
-  });
-  // Lazy-load insights on first visit to that tab
-  if (name === 'insights' && !adminInsightsCache) refreshAdminInsights();
+[‘activity’,‘insights’,‘reports’].forEach(function(t) {
+var tab = document.getElementById(‘artab-’ + t);
+var panel = document.getElementById(‘artab-panel-’ + t);
+if (tab)   tab.classList.toggle(‘active’, t === name);
+if (panel) panel.style.display = t === name ? ‘’ : ‘none’;
+});
+// Lazy-load insights on first visit to that tab
+if (name === ‘insights’ && !adminInsightsCache) refreshAdminInsights();
 }
 
 function setDeptRightTab(name) {
-  ['overview','priority','insights'].forEach(function(t) {
-    var tab = document.getElementById('drtab-' + t);
-    var panel = document.getElementById('drtab-panel-' + t);
-    if (tab)   tab.classList.toggle('active', t === name);
-    if (panel) panel.style.display = t === name ? '' : 'none';
-  });
-  if (name === 'insights' && !deptInsightsCache) refreshDeptInsights();
+[‘overview’,‘priority’,‘insights’].forEach(function(t) {
+var tab = document.getElementById(‘drtab-’ + t);
+var panel = document.getElementById(‘drtab-panel-’ + t);
+if (tab)   tab.classList.toggle(‘active’, t === name);
+if (panel) panel.style.display = t === name ? ‘’ : ‘none’;
+});
+if (name === ‘insights’ && !deptInsightsCache) refreshDeptInsights();
 }
 
 function renderDeptPriority() {
-  var el = document.getElementById('drtab-panel-priority');
-  if (!el) return;
-  var active = getDeptIssues().filter(function(i) { return i.workStatus === 'active'; });
-  var priorityOrder = { late:0, warn:1, ok:2, done:3 };
-  var sorted = active.slice().sort(function(a,b) {
-    return (priorityOrder[a.priority]||2) - (priorityOrder[b.priority]||2);
-  });
-  function crewInsight(issue) {
-    if (issue.priority === 'late')
-      return 'Overdue — assign crew immediately. All other work secondary.';
-    if (issue.priority === 'warn' && issue.actionStatus === 'assigned')
-      return 'Deadline approaching. Acknowledge and stage crew now.';
-    if (issue.priority === 'warn' && issue.actionStatus === 'acknowledged')
-      return 'Crew should be en route. Confirm materials on hand.';
-    if (issue.priority === 'warn' && issue.actionStatus === 'in-progress')
-      return 'In progress — monitor for completion before deadline.';
-    if (issue.actionStatus === 'assigned')
-      return 'Not yet acknowledged. Confirm crew availability.';
-    if (issue.actionStatus === 'acknowledged')
-      return 'Acknowledged. Schedule into next available crew slot.';
-    if (issue.actionStatus === 'in-progress')
-      return 'Active. No action needed — track to completion.';
-    return 'Monitor status.';
-  }
-  if (!sorted.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px 0">No active work items.</div>';
-    return;
-  }
-  el.innerHTML = sorted.map(function(issue, idx) {
-    var dot = issue.priority === 'late' ? 'var(--danger)'
-            : issue.priority === 'warn' ? 'var(--warn)'
-            : 'var(--accent2)';
-    var shortTitle = issue.title.indexOf('\u2014') > -1
-      ? issue.title.split('\u2014')[0].trim() : issue.title;
-    return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start">' +
-      '<div style="width:20px;height:20px;border-radius:50%;background:' + dot + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#0b0f1a;flex-shrink:0;margin-top:1px">' + (idx+1) + '</div>' +
-      '<div>' +
-        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">' + shortTitle + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);line-height:1.4">' + crewInsight(issue) + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+var el = document.getElementById(‘drtab-panel-priority’);
+if (!el) return;
+var active = getDeptIssues().filter(function(i) { return i.workStatus === ‘active’; });
+var priorityOrder = { late:0, warn:1, ok:2, done:3 };
+var sorted = active.slice().sort(function(a,b) {
+return (priorityOrder[a.priority]||2) - (priorityOrder[b.priority]||2);
+});
+function crewInsight(issue) {
+if (issue.priority === ‘late’)
+return ‘Overdue — assign crew immediately. All other work secondary.’;
+if (issue.priority === ‘warn’ && issue.actionStatus === ‘assigned’)
+return ‘Deadline approaching. Acknowledge and stage crew now.’;
+if (issue.priority === ‘warn’ && issue.actionStatus === ‘acknowledged’)
+return ‘Crew should be en route. Confirm materials on hand.’;
+if (issue.priority === ‘warn’ && issue.actionStatus === ‘in-progress’)
+return ‘In progress — monitor for completion before deadline.’;
+if (issue.actionStatus === ‘assigned’)
+return ‘Not yet acknowledged. Confirm crew availability.’;
+if (issue.actionStatus === ‘acknowledged’)
+return ‘Acknowledged. Schedule into next available crew slot.’;
+if (issue.actionStatus === ‘in-progress’)
+return ‘Active. No action needed — track to completion.’;
+return ‘Monitor status.’;
+}
+if (!sorted.length) {
+el.innerHTML = ‘<div style="font-size:12px;color:var(--muted);padding:16px 0">No active work items.</div>’;
+return;
+}
+el.innerHTML = sorted.map(function(issue, idx) {
+var dot = issue.priority === ‘late’ ? ‘var(–danger)’
+: issue.priority === ‘warn’ ? ‘var(–warn)’
+: ‘var(–accent2)’;
+var shortTitle = issue.title.indexOf(’\u2014’) > -1
+? issue.title.split(’\u2014’)[0].trim() : issue.title;
+return ‘<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start">’ +
+‘<div style="width:20px;height:20px;border-radius:50%;background:' + dot + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#0b0f1a;flex-shrink:0;margin-top:1px">’ + (idx+1) + ‘</div>’ +
+‘<div>’ +
+‘<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">’ + shortTitle + ‘</div>’ +
+‘<div style="font-size:11px;color:var(--muted);line-height:1.4">’ + crewInsight(issue) + ‘</div>’ +
+‘</div>’ +
+‘</div>’;
+}).join(’’);
 }
 
 /* ══ VIEW SWITCHING ══ */
@@ -3201,485 +3261,479 @@ function renderDeptPriority() {
 function isMobile() { return window.innerWidth <= 768; }
 
 function setAdminMobSection(section) {
-  ['queue','action','intel'].forEach(function(s, i) {
-    var btns = document.querySelectorAll('#admin-mob-tabs .mob-section-tab');
-    if (btns[i]) btns[i].classList.toggle('active', s === section);
-    var cols = document.querySelectorAll('#view-admin > .admin-col');
-    if (cols[i]) cols[i].style.display = s === section ? 'flex' : 'none';
-  });
+[‘queue’,‘action’,‘intel’].forEach(function(s, i) {
+var btns = document.querySelectorAll(’#admin-mob-tabs .mob-section-tab’);
+if (btns[i]) btns[i].classList.toggle(‘active’, s === section);
+var cols = document.querySelectorAll(’#view-admin > .admin-col’);
+if (cols[i]) cols[i].style.display = s === section ? ‘flex’ : ‘none’;
+});
 }
 
 function setDeptMobSection(section) {
-  ['queue','work','account'].forEach(function(s, i) {
-    var btns = document.querySelectorAll('#dept-mob-tabs .mob-section-tab');
-    if (btns[i]) btns[i].classList.toggle('active', s === section);
-    var cols = document.querySelectorAll('#view-dept > .admin-col');
-    if (cols[i]) cols[i].style.display = s === section ? 'flex' : 'none';
-  });
+[‘queue’,‘work’,‘account’].forEach(function(s, i) {
+var btns = document.querySelectorAll(’#dept-mob-tabs .mob-section-tab’);
+if (btns[i]) btns[i].classList.toggle(‘active’, s === section);
+var cols = document.querySelectorAll(’#view-dept > .admin-col’);
+if (cols[i]) cols[i].style.display = s === section ? ‘flex’ : ‘none’;
+});
 }
 
 function applyMobileLayout() {
-  var mobile = isMobile();
-  var adminTabs = document.getElementById('admin-mob-tabs');
-  var deptTabs  = document.getElementById('dept-mob-tabs');
-  if (adminTabs) adminTabs.style.display = mobile ? 'flex' : 'none';
-  if (deptTabs)  deptTabs.style.display  = mobile ? 'flex' : 'none';
-  if (mobile) {
-    setAdminMobSection('queue');
-    setDeptMobSection('queue');
-  } else {
-    // Restore all columns on desktop
-    document.querySelectorAll('#view-admin > .admin-col, #view-dept > .admin-col').forEach(function(col) {
-      col.style.display = '';
-    });
-  }
+var mobile = isMobile();
+var adminTabs = document.getElementById(‘admin-mob-tabs’);
+var deptTabs  = document.getElementById(‘dept-mob-tabs’);
+if (adminTabs) adminTabs.style.display = mobile ? ‘flex’ : ‘none’;
+if (deptTabs)  deptTabs.style.display  = mobile ? ‘flex’ : ‘none’;
+if (mobile) {
+setAdminMobSection(‘queue’);
+setDeptMobSection(‘queue’);
+} else {
+// Restore all columns on desktop
+document.querySelectorAll(’#view-admin > .admin-col, #view-dept > .admin-col’).forEach(function(col) {
+col.style.display = ‘’;
+});
+}
 }
 
-window.addEventListener('resize', applyMobileLayout);
+window.addEventListener(‘resize’, applyMobileLayout);
 
 function switchView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
-  const tab = document.querySelector(`.nav-tab[data-view="${name}"]`);
-  if (tab) tab.classList.add('active');
-  document.getElementById('btn-heatmap').style.display = name === 'public' ? '' : 'none';
-  if (name === 'public') setTimeout(() => map.invalidateSize(), 50);
-  if (name === 'admin') {
-    renderAdminQueue(); renderAdminLog();
-    if (!adminInsightsCache) refreshAdminInsights();
-    else renderInsightItems(adminInsightsCache, 'admin-insights-body');
-  }
-  if (name === 'dept') {
-    renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
-    if (!deptInsightsCache) refreshDeptInsights();
-    else renderInsightItems(deptInsightsCache, 'dept-insights-body');
-  }
-  applyMobileLayout();
+document.querySelectorAll(’.view’).forEach(v => v.classList.remove(‘active’));
+document.querySelectorAll(’.nav-tab’).forEach(t => t.classList.remove(‘active’));
+document.getElementById(‘view-’ + name).classList.add(‘active’);
+const tab = document.querySelector(`.nav-tab[data-view="${name}"]`);
+if (tab) tab.classList.add(‘active’);
+document.getElementById(‘btn-heatmap’).style.display = name === ‘public’ ? ‘’ : ‘none’;
+if (name === ‘public’) setTimeout(() => map.invalidateSize(), 50);
+if (name === ‘admin’) {
+renderAdminQueue(); renderAdminLog();
+if (!adminInsightsCache) refreshAdminInsights();
+else renderInsightItems(adminInsightsCache, ‘admin-insights-body’);
+}
+if (name === ‘dept’) {
+renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
+if (!deptInsightsCache) refreshDeptInsights();
+else renderInsightItems(deptInsightsCache, ‘dept-insights-body’);
+}
+applyMobileLayout();
 }
 
 /* Init */
-try { buildTypePicker(); }         catch(e) { console.warn('Report picker init failed:', e); }
-try { renderAdminQueue(); }        catch(e) { console.warn('Admin queue init failed:', e); }
-try { renderAdminLog(); }          catch(e) { console.warn('Admin log init failed:', e); }
-try { renderDeptQueue(); }         catch(e) { console.warn('Dept queue init failed:', e); }
-try { renderDeptAccountability(); } catch(e) { console.warn('Accountability init failed:', e); }
-try { renderDeptPriority(); }      catch(e) { console.warn('Priority init failed:', e); }
+try { buildTypePicker(); }         catch(e) { console.warn(‘Report picker init failed:’, e); }
+try { renderAdminQueue(); }        catch(e) { console.warn(‘Admin queue init failed:’, e); }
+try { renderAdminLog(); }          catch(e) { console.warn(‘Admin log init failed:’, e); }
+try { renderDeptQueue(); }         catch(e) { console.warn(‘Dept queue init failed:’, e); }
+try { renderDeptAccountability(); } catch(e) { console.warn(‘Accountability init failed:’, e); }
+try { renderDeptPriority(); }      catch(e) { console.warn(‘Priority init failed:’, e); }
 // Apply mobile layout on load
 applyMobileLayout();
 // Show heatmap button on initial public map view
-document.getElementById('btn-heatmap').style.display = '';
+document.getElementById(‘btn-heatmap’).style.display = ‘’;
 
 /* ══════════════════════════════════════
-   MIC — Web Speech API voice-to-text
+MIC — Web Speech API voice-to-text
 ══════════════════════════════════════ */
 let recognition = null;
 let micActive = false;
 
 // Single source of truth for mic status UI
 function setMicStatus(visible, msg, isError) {
-  const el  = document.getElementById('mic-status');
-  const dot = document.getElementById('mic-dot');
-  const lbl = document.getElementById('mic-label');
-  if (!el) return;
-  el.style.display = visible ? 'flex' : 'none';
-  if (msg) lbl.textContent = msg;
-  if (isError) {
-    el.style.background    = 'rgba(255,77,109,0.08)';
-    el.style.borderColor   = 'rgba(255,77,109,0.3)';
-    el.style.color         = 'var(--danger)';
-    dot.style.animation    = 'none';
-    dot.style.background   = 'var(--danger)';
-  } else {
-    el.style.background    = 'rgba(255,77,109,0.08)';
-    el.style.borderColor   = 'rgba(255,77,109,0.2)';
-    el.style.color         = 'var(--danger)';
-    dot.style.animation    = 'pulse-dot 1s ease-in-out infinite';
-    dot.style.background   = 'var(--danger)';
-  }
+const el  = document.getElementById(‘mic-status’);
+const dot = document.getElementById(‘mic-dot’);
+const lbl = document.getElementById(‘mic-label’);
+if (!el) return;
+el.style.display = visible ? ‘flex’ : ‘none’;
+if (msg) lbl.textContent = msg;
+if (isError) {
+el.style.background    = ‘rgba(255,77,109,0.08)’;
+el.style.borderColor   = ‘rgba(255,77,109,0.3)’;
+el.style.color         = ‘var(–danger)’;
+dot.style.animation    = ‘none’;
+dot.style.background   = ‘var(–danger)’;
+} else {
+el.style.background    = ‘rgba(255,77,109,0.08)’;
+el.style.borderColor   = ‘rgba(255,77,109,0.2)’;
+el.style.color         = ‘var(–danger)’;
+dot.style.animation    = ‘pulse-dot 1s ease-in-out infinite’;
+dot.style.background   = ‘var(–danger)’;
+}
 }
 
 function toggleMic() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showMicError('Voice input is not supported in this browser. Try Chrome.');
-    return;
-  }
-  if (micActive) { stopMic(); return; }
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+showMicError(‘Voice input is not supported in this browser. Try Chrome.’);
+return;
+}
+if (micActive) { stopMic(); return; }
 
-  recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = true;
+recognition = new SpeechRecognition();
+recognition.lang = ‘en-US’;
+recognition.continuous = false;
+recognition.interimResults = true;
 
-  const textarea = document.getElementById('report-desc');
-  const baseText = textarea.value;
+const textarea = document.getElementById(‘report-desc’);
+const baseText = textarea.value;
 
-  recognition.onstart = () => {
-    micActive = true;
-    const btn = document.getElementById('btn-mic');
-    btn.textContent = '⏹';
-    btn.style.borderColor = 'var(--danger)';
-    btn.style.color = 'var(--danger)';
-    setMicStatus(true, 'Listening… speak now', false);
-  };
+recognition.onstart = () => {
+micActive = true;
+const btn = document.getElementById(‘btn-mic’);
+btn.textContent = ‘⏹’;
+btn.style.borderColor = ‘var(–danger)’;
+btn.style.color = ‘var(–danger)’;
+setMicStatus(true, ‘Listening… speak now’, false);
+};
 
-  recognition.onresult = (e) => {
-    let interim = '', final = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) final += t; else interim += t;
-    }
-    const sep = baseText.trim() ? ' ' : '';
-    if (final) {
-      textarea.value = baseText + sep + final.trim();
-      setMicStatus(true, '✓ Captured — click 🎤 to add more', false);
-    } else {
-      textarea.value = baseText + sep + interim;
-      setMicStatus(true, `Hearing: "${interim}"`, false);
-    }
-  };
+recognition.onresult = (e) => {
+let interim = ‘’, final = ‘’;
+for (let i = e.resultIndex; i < e.results.length; i++) {
+const t = e.results[i][0].transcript;
+if (e.results[i].isFinal) final += t; else interim += t;
+}
+const sep = baseText.trim() ? ’ ’ : ‘’;
+if (final) {
+textarea.value = baseText + sep + final.trim();
+setMicStatus(true, ‘✓ Captured — click 🎤 to add more’, false);
+} else {
+textarea.value = baseText + sep + interim;
+setMicStatus(true, `Hearing: "${interim}"`, false);
+}
+};
 
-  recognition.onerror = (e) => {
-    let msg = 'Mic error.';
-    if (e.error === 'not-allowed') msg = 'Microphone access denied. Check browser settings.';
-    if (e.error === 'no-speech')   msg = 'No speech detected. Try again.';
-    if (e.error === 'network')     msg = 'Network error during voice recognition.';
-    showMicError(msg);
-    stopMic();
-  };
+recognition.onerror = (e) => {
+let msg = ‘Mic error.’;
+if (e.error === ‘not-allowed’) msg = ‘Microphone access denied. Check browser settings.’;
+if (e.error === ‘no-speech’)   msg = ‘No speech detected. Try again.’;
+if (e.error === ‘network’)     msg = ‘Network error during voice recognition.’;
+showMicError(msg);
+stopMic();
+};
 
-  recognition.onend = () => { stopMic(); };
-  recognition.start();
+recognition.onend = () => { stopMic(); };
+recognition.start();
 }
 
 function stopMic() {
-  micActive = false;
-  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
-  const btn = document.getElementById('btn-mic');
-  if (btn) { btn.textContent = '🎤'; btn.style.borderColor = ''; btn.style.color = ''; }
-  setTimeout(() => setMicStatus(false), 3000);
+micActive = false;
+if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+const btn = document.getElementById(‘btn-mic’);
+if (btn) { btn.textContent = ‘🎤’; btn.style.borderColor = ‘’; btn.style.color = ‘’; }
+setTimeout(() => setMicStatus(false), 3000);
 }
 
 function showMicError(msg) {
-  setMicStatus(true, msg, true);
-  setTimeout(() => setMicStatus(false), 5000);
+setMicStatus(true, msg, true);
+setTimeout(() => setMicStatus(false), 5000);
 }
 
 /* ══════════════════════════════════════
-   PHOTO — file input + preview
+PHOTO — file input + preview
 ══════════════════════════════════════ */
 let photoFile = null;
 
 function handlePhoto(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+const file = e.target.files[0];
+if (!file) return;
 
-  // Validate it's an image and under 10 MB
-  if (!file.type.startsWith('image/')) {
-    alert('Please select an image file.');
-    return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    alert('Photo must be under 10 MB.');
-    return;
-  }
+// Validate it’s an image and under 10 MB
+if (!file.type.startsWith(‘image/’)) {
+alert(‘Please select an image file.’);
+return;
+}
+if (file.size > 10 * 1024 * 1024) {
+alert(‘Photo must be under 10 MB.’);
+return;
+}
 
-  photoFile = file;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    document.getElementById('photo-preview').src = ev.target.result;
-    document.getElementById('photo-preview-wrap').style.display = 'block';
-    // Update photo button to show filename
-    const btn = document.getElementById('btn-photo');
-    btn.textContent = '✅ ' + (file.name.length > 22 ? file.name.slice(0, 20) + '…' : file.name);
-    btn.style.borderColor = 'var(--green)';
-    btn.style.color = 'var(--green)';
-  };
-  reader.readAsDataURL(file);
+photoFile = file;
+const reader = new FileReader();
+reader.onload = (ev) => {
+document.getElementById(‘photo-preview’).src = ev.target.result;
+document.getElementById(‘photo-preview-wrap’).style.display = ‘block’;
+// Update photo button to show filename
+const btn = document.getElementById(‘btn-photo’);
+btn.textContent = ’✅ ’ + (file.name.length > 22 ? file.name.slice(0, 20) + ‘…’ : file.name);
+btn.style.borderColor = ‘var(–green)’;
+btn.style.color = ‘var(–green)’;
+};
+reader.readAsDataURL(file);
 }
 
 function removePhoto() {
-  photoFile = null;
-  document.getElementById('photo-input').value = '';
-  document.getElementById('photo-preview-wrap').style.display = 'none';
-  const btn = document.getElementById('btn-photo');
-  btn.textContent = '📷 Add photo (optional)';
-  btn.style.borderColor = '';
-  btn.style.color = '';
+photoFile = null;
+document.getElementById(‘photo-input’).value = ‘’;
+document.getElementById(‘photo-preview-wrap’).style.display = ‘none’;
+const btn = document.getElementById(‘btn-photo’);
+btn.textContent = ‘📷 Add photo (optional)’;
+btn.style.borderColor = ‘’;
+btn.style.color = ‘’;
 }
 
 /* ══════════════════════════════════════════════════════════
-   REPORT SYSTEM — multi-type AI council report generator
+REPORT SYSTEM — multi-type AI council report generator
 ══════════════════════════════════════════════════════════ */
 
 /* ── Report type definitions ── */
 const REPORT_TYPES = [
-  {
-    id: 'council',
-    icon: '🏛️',
-    name: 'Council Report',
-    desc: 'Bi-weekly briefing for elected officials',
-    periods: ['Since Last Meeting','Last 30 Days','This Quarter'],
-    defaultPeriod: 0,
-    audience: 'City Council members — elected officials, non-technical',
-    sections: [
-      { id:'changes',   label:'What Changed',         checked:true  },
-      { id:'ongoing',   label:'Active Issues',         checked:true  },
-      { id:'attention', label:'Needs Attention',       checked:true  },
-      { id:'plan',      label:'Path Forward',          checked:true  },
-      { id:'budget',    label:'Budget Considerations', checked:true  },
-      { id:'compplan',  label:'Comp Plan Alignment',   checked:true  },
-    ]
-  },
-  {
-    id: 'annual',
-    icon: '📅',
-    name: 'Annual Report',
-    desc: 'Year-in-review for public & leadership',
-    periods: ['FY 2024–2025','FY 2023–2024','Calendar Year 2025'],
-    defaultPeriod: 0,
-    audience: 'City leadership, residents, and the public',
-    sections: [
-      { id:'yearoverview', label:'Year Overview',           checked:true  },
-      { id:'bydepart',     label:'Department Performance',  checked:true  },
-      { id:'topissues',    label:'Top Issues & Resolutions',checked:true  },
-      { id:'metrics',      label:'Key Metrics & Trends',    checked:true  },
-      { id:'budget',       label:'Financial Summary',       checked:true  },
-      { id:'compplan',     label:'Strategic Plan Progress', checked:true  },
-      { id:'yearahead',    label:'Looking Ahead',           checked:true  },
-    ]
-  },
-  {
-    id: 'grant',
-    icon: '💵',
-    name: 'Grant Application',
-    desc: 'Federal/state funding narrative & data',
-    periods: ['Current Infrastructure Needs','5-Year Capital Plan','Emergency Needs'],
-    defaultPeriod: 0,
-    audience: 'Federal and state grant reviewers (CDBG, FEMA, USDA, DOT, EPA)',
-    sections: [
-      { id:'statement',   label:'Statement of Need',        checked:true  },
-      { id:'population',  label:'Community Profile',        checked:true  },
-      { id:'projectscope',label:'Project Scope',            checked:true  },
-      { id:'impact',      label:'Community Impact',         checked:true  },
-      { id:'budget',      label:'Budget Narrative',         checked:true  },
-      { id:'timeline',    label:'Project Timeline',         checked:true  },
-      { id:'capacity',    label:'Organizational Capacity',  checked:true  },
-    ]
-  },
-  {
-    id: 'internal',
-    icon: '⚙️',
-    name: 'Internal Admin',
-    desc: 'Operational summary for city leadership',
-    periods: ['This Week','Last 30 Days','This Quarter'],
-    defaultPeriod: 0,
-    audience: 'City Administrator and department heads',
-    sections: [
-      { id:'snapshot',   label:'Operational Snapshot',      checked:true  },
-      { id:'escalated',  label:'Escalated Items',           checked:true  },
-      { id:'staffing',   label:'Resource & Staffing Notes', checked:false },
-      { id:'risk',       label:'Risk & Liability Flags',    checked:true  },
-      { id:'budget',     label:'Budget Burn Rate',          checked:true  },
-      { id:'decisions',  label:'Decisions Needed',          checked:true  },
-    ]
-  },
-  {
-    id: 'dept-street',
-    icon: '🚧',
-    name: 'Street Dept.',
-    desc: 'Operations & maintenance report',
-    periods: ['This Week','Last 30 Days','This Quarter'],
-    defaultPeriod: 0,
-    audience: 'Street Department leadership and City Administrator',
-    sections: [
-      { id:'worklog',    label:'Work Completed',            checked:true  },
-      { id:'inprogress', label:'In Progress',               checked:true  },
-      { id:'backlog',    label:'Backlog & Upcoming',        checked:true  },
-      { id:'equipment',  label:'Equipment & Materials',     checked:false },
-      { id:'budget',     label:'Budget Status',             checked:true  },
-      { id:'metrics',    label:'Performance Metrics',       checked:true  },
-    ]
-  },
-  {
-    id: 'dept-utilities',
-    icon: '⚡',
-    name: 'Utilities Dept.',
-    desc: 'Electric, water, gas & sewer status',
-    periods: ['This Week','Last 30 Days','This Quarter'],
-    defaultPeriod: 0,
-    audience: 'Hastings Utilities management and City Administrator',
-    sections: [
-      { id:'outages',    label:'Outages & Incidents',       checked:true  },
-      { id:'maintenance',label:'Planned Maintenance',       checked:true  },
-      { id:'capital',    label:'Capital Projects',          checked:true  },
-      { id:'budget',     label:'Budget & Rate Impact',      checked:true  },
-      { id:'compliance', label:'Regulatory Compliance',     checked:false },
-      { id:'forecast',   label:'Demand Forecast',           checked:false },
-    ]
-  },
-  {
-    id: 'dept-police',
-    icon: '🚔',
-    name: 'Police Dept.',
-    desc: 'Community issues & non-emergency calls',
-    periods: ['This Week','Last 30 Days','This Quarter'],
-    defaultPeriod: 0,
-    audience: 'Police leadership and City Administrator',
-    sections: [
-      { id:'callsummary',label:'Non-Emergency Summary',     checked:true  },
-      { id:'patterns',   label:'Issue Patterns & Hotspots', checked:true  },
-      { id:'community',  label:'Community Engagement',      checked:true  },
-      { id:'openitems',  label:'Open Items',                checked:true  },
-      { id:'recommend',  label:'Recommendations',           checked:true  },
-    ]
-  },
-  {
-    id: 'citizen',
-    icon: '🏘️',
-    name: 'Public Summary',
-    desc: 'Plain-language transparency report',
-    periods: ['Last 30 Days','This Quarter','This Year'],
-    defaultPeriod: 0,
-    audience: 'Hastings residents — general public, plain language required',
-    sections: [
-      { id:'happening',  label:'What\'s Happening',         checked:true  },
-      { id:'fixed',      label:'What We Fixed',             checked:true  },
-      { id:'working',    label:'What We\'re Working On',    checked:true  },
-      { id:'coming',     label:'What\'s Coming',            checked:true  },
-      { id:'budget',     label:'Where Money Is Going',      checked:false },
-    ]
-  },
+{
+id: ‘council’,
+icon: ‘🏛️’,
+name: ‘Council Report’,
+desc: ‘Bi-weekly briefing for elected officials’,
+periods: [‘Since Last Meeting’,‘Last 30 Days’,‘This Quarter’],
+defaultPeriod: 0,
+audience: ‘City Council members — elected officials, non-technical’,
+sections: [
+{ id:‘changes’,   label:‘What Changed’,         checked:true  },
+{ id:‘ongoing’,   label:‘Active Issues’,         checked:true  },
+{ id:‘attention’, label:‘Needs Attention’,       checked:true  },
+{ id:‘plan’,      label:‘Path Forward’,          checked:true  },
+{ id:‘budget’,    label:‘Budget Considerations’, checked:true  },
+{ id:‘compplan’,  label:‘Comp Plan Alignment’,   checked:true  },
+]
+},
+{
+id: ‘annual’,
+icon: ‘📅’,
+name: ‘Annual Report’,
+desc: ‘Year-in-review for public & leadership’,
+periods: [‘FY 2024–2025’,‘FY 2023–2024’,‘Calendar Year 2025’],
+defaultPeriod: 0,
+audience: ‘City leadership, residents, and the public’,
+sections: [
+{ id:‘yearoverview’, label:‘Year Overview’,           checked:true  },
+{ id:‘bydepart’,     label:‘Department Performance’,  checked:true  },
+{ id:‘topissues’,    label:‘Top Issues & Resolutions’,checked:true  },
+{ id:‘metrics’,      label:‘Key Metrics & Trends’,    checked:true  },
+{ id:‘budget’,       label:‘Financial Summary’,       checked:true  },
+{ id:‘compplan’,     label:‘Strategic Plan Progress’, checked:true  },
+{ id:‘yearahead’,    label:‘Looking Ahead’,           checked:true  },
+]
+},
+{
+id: ‘grant’,
+icon: ‘💵’,
+name: ‘Grant Application’,
+desc: ‘Federal/state funding narrative & data’,
+periods: [‘Current Infrastructure Needs’,‘5-Year Capital Plan’,‘Emergency Needs’],
+defaultPeriod: 0,
+audience: ‘Federal and state grant reviewers (CDBG, FEMA, USDA, DOT, EPA)’,
+sections: [
+{ id:‘statement’,   label:‘Statement of Need’,        checked:true  },
+{ id:‘population’,  label:‘Community Profile’,        checked:true  },
+{ id:‘projectscope’,label:‘Project Scope’,            checked:true  },
+{ id:‘impact’,      label:‘Community Impact’,         checked:true  },
+{ id:‘budget’,      label:‘Budget Narrative’,         checked:true  },
+{ id:‘timeline’,    label:‘Project Timeline’,         checked:true  },
+{ id:‘capacity’,    label:‘Organizational Capacity’,  checked:true  },
+]
+},
+{
+id: ‘internal’,
+icon: ‘⚙️’,
+name: ‘Internal Admin’,
+desc: ‘Operational summary for city leadership’,
+periods: [‘This Week’,‘Last 30 Days’,‘This Quarter’],
+defaultPeriod: 0,
+audience: ‘City Administrator and department heads’,
+sections: [
+{ id:‘snapshot’,   label:‘Operational Snapshot’,      checked:true  },
+{ id:‘escalated’,  label:‘Escalated Items’,           checked:true  },
+{ id:‘staffing’,   label:‘Resource & Staffing Notes’, checked:false },
+{ id:‘risk’,       label:‘Risk & Liability Flags’,    checked:true  },
+{ id:‘budget’,     label:‘Budget Burn Rate’,          checked:true  },
+{ id:‘decisions’,  label:‘Decisions Needed’,          checked:true  },
+]
+},
+{
+id: ‘dept-street’,
+icon: ‘🚧’,
+name: ‘Street Dept.’,
+desc: ‘Operations & maintenance report’,
+periods: [‘This Week’,‘Last 30 Days’,‘This Quarter’],
+defaultPeriod: 0,
+audience: ‘Street Department leadership and City Administrator’,
+sections: [
+{ id:‘worklog’,    label:‘Work Completed’,            checked:true  },
+{ id:‘inprogress’, label:‘In Progress’,               checked:true  },
+{ id:‘backlog’,    label:‘Backlog & Upcoming’,        checked:true  },
+{ id:‘equipment’,  label:‘Equipment & Materials’,     checked:false },
+{ id:‘budget’,     label:‘Budget Status’,             checked:true  },
+{ id:‘metrics’,    label:‘Performance Metrics’,       checked:true  },
+]
+},
+{
+id: ‘dept-utilities’,
+icon: ‘⚡’,
+name: ‘Utilities Dept.’,
+desc: ‘Electric, water, gas & sewer status’,
+periods: [‘This Week’,‘Last 30 Days’,‘This Quarter’],
+defaultPeriod: 0,
+audience: ‘Hastings Utilities management and City Administrator’,
+sections: [
+{ id:‘outages’,    label:‘Outages & Incidents’,       checked:true  },
+{ id:‘maintenance’,label:‘Planned Maintenance’,       checked:true  },
+{ id:‘capital’,    label:‘Capital Projects’,          checked:true  },
+{ id:‘budget’,     label:‘Budget & Rate Impact’,      checked:true  },
+{ id:‘compliance’, label:‘Regulatory Compliance’,     checked:false },
+{ id:‘forecast’,   label:‘Demand Forecast’,           checked:false },
+]
+},
+{
+id: ‘dept-police’,
+icon: ‘🚔’,
+name: ‘Police Dept.’,
+desc: ‘Community issues & non-emergency calls’,
+periods: [‘This Week’,‘Last 30 Days’,‘This Quarter’],
+defaultPeriod: 0,
+audience: ‘Police leadership and City Administrator’,
+sections: [
+{ id:‘callsummary’,label:‘Non-Emergency Summary’,     checked:true  },
+{ id:‘patterns’,   label:‘Issue Patterns & Hotspots’, checked:true  },
+{ id:‘community’,  label:‘Community Engagement’,      checked:true  },
+{ id:‘openitems’,  label:‘Open Items’,                checked:true  },
+{ id:‘recommend’,  label:‘Recommendations’,           checked:true  },
+]
+},
+{
+id: ‘citizen’,
+icon: ‘🏘️’,
+name: ‘Public Summary’,
+desc: ‘Plain-language transparency report’,
+periods: [‘Last 30 Days’,‘This Quarter’,‘This Year’],
+defaultPeriod: 0,
+audience: ‘Hastings residents — general public, plain language required’,
+sections: [
+{ id:‘happening’,  label:‘What's Happening’,         checked:true  },
+{ id:‘fixed’,      label:‘What We Fixed’,             checked:true  },
+{ id:‘working’,    label:‘What We're Working On’,    checked:true  },
+{ id:‘coming’,     label:‘What's Coming’,            checked:true  },
+{ id:‘budget’,     label:‘Where Money Is Going’,      checked:false },
+]
+},
 ];
 
 /* ── Section prompt library (keyed by section id) ── */
 const SECTION_PROMPTS = {
-  // Shared
-  budget:       'Analyze budget implications. Reference FY2025-2026 allocations, burn rates, and any items needing council appropriation or reallocation. Flag cost overruns.',
-  compplan:     'Assess alignment with the Hastings Comprehensive Plan. Reference specific goals (e.g., Goal 3.1 street PCI, Goal 5.1 ADA compliance). Flag deviations.',
-  metrics:      'Present key performance metrics. Include resolution time, issue volume trends, department response rates, and citizen engagement stats.',
-  recommend:    'Provide clear, actionable recommendations. Be specific about who should do what and by when.',
-  // Council
-  changes:      'What changed since the last report period? Highlight resolved issues, new issues that emerged, and significant status changes. Use bullets.',
-  ongoing:      'Summarize all currently active issues grouped by severity. Include department, resident engagement count, and current status for each.',
-  attention:    'What requires council attention or a decision? Flag anything escalated, overdue, or posing public safety or liability risk. Be direct.',
-  plan:         'Provide a concrete two-week action plan. Specify which department handles each item, what quick wins exist, and what requires longer planning.',
-  // Annual
-  yearoverview: 'Write an executive overview of the year. Summarize total issues reported vs. resolved, highlight major accomplishments, and describe the overall state of city services.',
-  bydepart:     'Summarize each department\'s performance over the year: Street Department, Hastings Utilities, Hastings Police, Hastings Fire & Rescue. Include volume handled and notable outcomes.',
-  topissues:    'Describe the top 5 recurring issue categories from this year. Explain what drove them, how they were addressed, and what patterns emerged.',
-  yearahead:    'Looking into the next fiscal year, what are the top infrastructure priorities, budget asks, and strategic initiatives the city should plan for?',
-  // Grant
-  statement:    'Write a compelling statement of need for federal/state grant funding. Reference specific infrastructure deficiencies, public safety impacts, and underserved population data for Hastings.',
-  population:   'Describe the community profile of Hastings, NE: population, demographics, income levels, geographic context, and why the community qualifies for this funding.',
-  projectscope: 'Define a specific project scope for the grant narrative based on the highest-severity infrastructure issues. Include location, scale, and technical description.',
-  impact:       'Describe the community impact of the proposed project. How many residents benefit? What safety or quality-of-life improvements result? Include quantifiable outcomes.',
-  timeline:     'Propose a realistic project timeline from award through completion. Include planning, procurement, construction, and closeout phases.',
-  capacity:     'Demonstrate organizational capacity to manage the grant. Describe city staff, contractor relationships, financial controls, and past project experience.',
-  // Internal
-  snapshot:     'Provide a quick operational snapshot: total open issues, critical items, department workload, and anything that deviates from normal operations.',
-  escalated:    'List and analyze all escalated or overdue items. Who owns them? Why are they delayed? What is the risk if not addressed this week?',
-  staffing:     'Note any staffing or resource constraints affecting service delivery. Flag overtime, equipment issues, or contractor delays.',
-  risk:         'Identify legal, liability, or reputational risks from current open issues. Flag any items that could result in claims, accidents, or public complaints.',
-  decisions:    'List decisions the City Administrator or department heads must make this week. Provide context and recommended options for each.',
-  // Street dept
-  worklog:      'List all work completed this period by the Street Department. Include location, issue type, crew size, and time to resolve.',
-  inprogress:   'Detail all work currently in progress. What is the status, expected completion, and any blockers?',
-  backlog:      'Describe the current backlog of unassigned or queued items. Prioritize by severity and suggest scheduling order.',
-  equipment:    'Report on equipment status, material inventory, and any procurement needs for the next 30 days.',
-  // Utilities
-  outages:      'Summarize all utility outages and incidents this period (electric, water, gas, sewer). Include cause, duration, customers affected, and resolution.',
-  maintenance:  'Describe planned maintenance activities — what is scheduled, what was completed, and what was deferred.',
-  capital:      'Update on capital improvement projects: storm sewer upgrades, water main work, and any major infrastructure investments. Budget status for each.',
-  compliance:   'Report on any regulatory compliance items, inspection results, permit status, or DEQ/EPA requirements.',
-  forecast:     'Provide a demand forecast for the next quarter: anticipated peak loads, maintenance triggers, and seasonal factors.',
-  // Police
-  callsummary:  'Summarize non-emergency calls and community issues handled this period. Categorize by type and compare to prior period.',
-  patterns:     'Identify geographic or temporal patterns in community issues. Are there hotspots, recurring problem types, or emerging trends?',
-  community:    'Describe community engagement activities and outcomes. How is the department building trust and responding to resident concerns?',
-  openitems:    'List all open non-emergency items and their current status. Flag any that are aging or require outside coordination.',
-  // Citizen
-  happening:    'In plain, friendly language explain what is currently going on in Hastings — active issues, city projects, and what residents can expect.',
-  fixed:        'List what the city has fixed or resolved recently. Be specific about locations so residents recognize the work. Keep it conversational.',
-  working:      'Explain what city crews are currently working on. Give residents a sense of progress and expected timelines without technical jargon.',
-  coming:       'Tell residents what is coming up — planned projects, improvements, or seasonal work. Build anticipation and demonstrate forward planning.',
+// Shared
+budget:       ‘Analyze budget implications. Reference FY2025-2026 allocations, burn rates, and any items needing council appropriation or reallocation. Flag cost overruns.’,
+compplan:     ‘Assess alignment with the Hastings Comprehensive Plan. Reference specific goals (e.g., Goal 3.1 street PCI, Goal 5.1 ADA compliance). Flag deviations.’,
+metrics:      ‘Present key performance metrics. Include resolution time, issue volume trends, department response rates, and citizen engagement stats.’,
+recommend:    ‘Provide clear, actionable recommendations. Be specific about who should do what and by when.’,
+// Council
+changes:      ‘What changed since the last report period? Highlight resolved issues, new issues that emerged, and significant status changes. Use bullets.’,
+ongoing:      ‘Summarize all currently active issues grouped by severity. Include department, resident engagement count, and current status for each.’,
+attention:    ‘What requires council attention or a decision? Flag anything escalated, overdue, or posing public safety or liability risk. Be direct.’,
+plan:         ‘Provide a concrete two-week action plan. Specify which department handles each item, what quick wins exist, and what requires longer planning.’,
+// Annual
+yearoverview: ‘Write an executive overview of the year. Summarize total issues reported vs. resolved, highlight major accomplishments, and describe the overall state of city services.’,
+bydepart:     ‘Summarize each department's performance over the year: Street Department, Hastings Utilities, Hastings Police, Hastings Fire & Rescue. Include volume handled and notable outcomes.’,
+topissues:    ‘Describe the top 5 recurring issue categories from this year. Explain what drove them, how they were addressed, and what patterns emerged.’,
+yearahead:    ‘Looking into the next fiscal year, what are the top infrastructure priorities, budget asks, and strategic initiatives the city should plan for?’,
+// Grant
+statement:    ‘Write a compelling statement of need for federal/state grant funding. Reference specific infrastructure deficiencies, public safety impacts, and underserved population data for Hastings.’,
+population:   ‘Describe the community profile of Hastings, NE: population, demographics, income levels, geographic context, and why the community qualifies for this funding.’,
+projectscope: ‘Define a specific project scope for the grant narrative based on the highest-severity infrastructure issues. Include location, scale, and technical description.’,
+impact:       ‘Describe the community impact of the proposed project. How many residents benefit? What safety or quality-of-life improvements result? Include quantifiable outcomes.’,
+timeline:     ‘Propose a realistic project timeline from award through completion. Include planning, procurement, construction, and closeout phases.’,
+capacity:     ‘Demonstrate organizational capacity to manage the grant. Describe city staff, contractor relationships, financial controls, and past project experience.’,
+// Internal
+snapshot:     ‘Provide a quick operational snapshot: total open issues, critical items, department workload, and anything that deviates from normal operations.’,
+escalated:    ‘List and analyze all escalated or overdue items. Who owns them? Why are they delayed? What is the risk if not addressed this week?’,
+staffing:     ‘Note any staffing or resource constraints affecting service delivery. Flag overtime, equipment issues, or contractor delays.’,
+risk:         ‘Identify legal, liability, or reputational risks from current open issues. Flag any items that could result in claims, accidents, or public complaints.’,
+decisions:    ‘List decisions the City Administrator or department heads must make this week. Provide context and recommended options for each.’,
+// Street dept
+worklog:      ‘List all work completed this period by the Street Department. Include location, issue type, crew size, and time to resolve.’,
+inprogress:   ‘Detail all work currently in progress. What is the status, expected completion, and any blockers?’,
+backlog:      ‘Describe the current backlog of unassigned or queued items. Prioritize by severity and suggest scheduling order.’,
+equipment:    ‘Report on equipment status, material inventory, and any procurement needs for the next 30 days.’,
+// Utilities
+outages:      ‘Summarize all utility outages and incidents this period (electric, water, gas, sewer). Include cause, duration, customers affected, and resolution.’,
+maintenance:  ‘Describe planned maintenance activities — what is scheduled, what was completed, and what was deferred.’,
+capital:      ‘Update on capital improvement projects: storm sewer upgrades, water main work, and any major infrastructure investments. Budget status for each.’,
+compliance:   ‘Report on any regulatory compliance items, inspection results, permit status, or DEQ/EPA requirements.’,
+forecast:     ‘Provide a demand forecast for the next quarter: anticipated peak loads, maintenance triggers, and seasonal factors.’,
+// Police
+callsummary:  ‘Summarize non-emergency calls and community issues handled this period. Categorize by type and compare to prior period.’,
+patterns:     ‘Identify geographic or temporal patterns in community issues. Are there hotspots, recurring problem types, or emerging trends?’,
+community:    ‘Describe community engagement activities and outcomes. How is the department building trust and responding to resident concerns?’,
+openitems:    ‘List all open non-emergency items and their current status. Flag any that are aging or require outside coordination.’,
+// Citizen
+happening:    ‘In plain, friendly language explain what is currently going on in Hastings — active issues, city projects, and what residents can expect.’,
+fixed:        ‘List what the city has fixed or resolved recently. Be specific about locations so residents recognize the work. Keep it conversational.’,
+working:      ‘Explain what city crews are currently working on. Give residents a sense of progress and expected timelines without technical jargon.’,
+coming:       ‘Tell residents what is coming up — planned projects, improvements, or seasonal work. Build anticipation and demonstrate forward planning.’,
 };
 
 /* ── State ── */
 let selectedReportType  = null;
-let selectedPeriod      = 'Since Last Meeting';
+let selectedPeriod      = ‘Since Last Meeting’;
 const reportSections    = {};
 
 /* ── Build type picker grid ── */
 function buildTypePicker() {
-  const grid = document.getElementById('report-type-grid');
-  grid.innerHTML = REPORT_TYPES.map(rt => `
-    <div class="rtype-card" onclick="selectReportType('${rt.id}')">
-      <div class="rtype-icon">${rt.icon}</div>
-      <div class="rtype-name">${rt.name}</div>
-      <div class="rtype-sub">${rt.desc}</div>
-    </div>
-  `).join('');
+const grid = document.getElementById(‘report-type-grid’);
+grid.innerHTML = REPORT_TYPES.map(rt => `<div class="rtype-card" onclick="selectReportType('${rt.id}')"> <div class="rtype-icon">${rt.icon}</div> <div class="rtype-name">${rt.name}</div> <div class="rtype-sub">${rt.desc}</div> </div>`).join(’’);
 }
 
 function selectReportType(typeId) {
-  selectedReportType = REPORT_TYPES.find(r => r.id === typeId);
-  if (!selectedReportType) return;
+selectedReportType = REPORT_TYPES.find(r => r.id === typeId);
+if (!selectedReportType) return;
 
-  // Update header
-  document.getElementById('rth-icon').textContent = selectedReportType.icon;
-  document.getElementById('rth-name').textContent = selectedReportType.name;
-  document.getElementById('rth-desc').textContent = selectedReportType.desc;
+// Update header
+document.getElementById(‘rth-icon’).textContent = selectedReportType.icon;
+document.getElementById(‘rth-name’).textContent = selectedReportType.name;
+document.getElementById(‘rth-desc’).textContent = selectedReportType.desc;
 
-  // Build period chips
-  document.getElementById('period-chips').innerHTML = selectedReportType.periods.map((p, i) =>
-    `<button class="tl-chip ${i===0?'active':''}" onclick="selectPeriodChip(this,'${p}')">${p}</button>`
-  ).join('');
-  selectedPeriod = selectedReportType.periods[0];
+// Build period chips
+document.getElementById(‘period-chips’).innerHTML = selectedReportType.periods.map((p, i) =>
+`<button class="tl-chip ${i===0?'active':''}" onclick="selectPeriodChip(this,'${p}')">${p}</button>`
+).join(’’);
+selectedPeriod = selectedReportType.periods[0];
 
-  // Build section checkboxes
-  document.getElementById('section-checks').innerHTML = selectedReportType.sections.map(s =>
-    `<label class="report-check"><input type="checkbox" ${s.checked?'checked':''} data-section="${s.id}"> ${s.label}</label>`
-  ).join('');
+// Build section checkboxes
+document.getElementById(‘section-checks’).innerHTML = selectedReportType.sections.map(s =>
+`<label class="report-check"><input type="checkbox" ${s.checked?'checked':''} data-section="${s.id}"> ${s.label}</label>`
+).join(’’);
 
-  document.getElementById('report-type-picker').style.display = 'none';
-  document.getElementById('report-config').style.display = 'block';
-  document.getElementById('report-col-title').textContent = selectedReportType.name;
+document.getElementById(‘report-type-picker’).style.display = ‘none’;
+document.getElementById(‘report-config’).style.display = ‘block’;
+document.getElementById(‘report-col-title’).textContent = selectedReportType.name;
 }
 
 function backToTypePicker() {
-  document.getElementById('report-type-picker').style.display = 'block';
-  document.getElementById('report-config').style.display = 'none';
-  document.getElementById('report-col-title').textContent = 'Reports';
+document.getElementById(‘report-type-picker’).style.display = ‘block’;
+document.getElementById(‘report-config’).style.display = ‘none’;
+document.getElementById(‘report-col-title’).textContent = ‘Reports’;
 }
 
 function selectPeriodChip(btn, period) {
-  document.querySelectorAll('#period-chips .tl-chip').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  selectedPeriod = period;
+document.querySelectorAll(’#period-chips .tl-chip’).forEach(b => b.classList.remove(‘active’));
+btn.classList.add(‘active’);
+selectedPeriod = period;
 }
 
 function selectPeriod(btn) { selectPeriodChip(btn, btn.textContent); }
 
 function getCheckedSections() {
-  return Array.from(document.querySelectorAll('[data-section]'))
-    .filter(cb => cb.checked)
-    .map(cb => cb.dataset.section);
+return Array.from(document.querySelectorAll(’[data-section]’))
+.filter(cb => cb.checked)
+.map(cb => cb.dataset.section);
 }
 
 /* ── Rich data context for AI ── */
 function buildIssueContext() {
-  const active    = PINS.filter(p => p.status !== 'done');
-  const resolved  = PINS.filter(p => p.status === 'done');
-  const escalated = active.filter(p => p.escalate);
-  const critical  = active.filter(p => calcScore(p) >= 61);
-  const moderate  = active.filter(p => calcScore(p) >= 31 && calcScore(p) < 61);
-  const low       = active.filter(p => calcScore(p) < 31);
-  const fmt = p =>
-    `  • [${p.id}] ${p.title} | Dept: ${p.dept} | Status: ${p.status} | Severity: ${calcScore(p)}/100 | ${p.noticeCount||0} residents flagged | Reported: ${p.time}${p.escalate?' | ⚠ ESCALATED':''}`;
+const active    = PINS.filter(p => p.status !== ‘done’);
+const resolved  = PINS.filter(p => p.status === ‘done’);
+const escalated = active.filter(p => p.escalate);
+const critical  = active.filter(p => calcScore(p) >= 61);
+const moderate  = active.filter(p => calcScore(p) >= 31 && calcScore(p) < 61);
+const low       = active.filter(p => calcScore(p) < 31);
+const fmt = p =>
+`  • [${p.id}] ${p.title} | Dept: ${p.dept} | Status: ${p.status} | Severity: ${calcScore(p)}/100 | ${p.noticeCount||0} residents flagged | Reported: ${p.time}${p.escalate?' | ⚠ ESCALATED':''}`;
 
-  return `
+return `
 ════════════════════════════════════
 CITY PROFILE — HASTINGS, NEBRASKA
 ════════════════════════════════════
@@ -3687,158 +3741,159 @@ Population: ~25,152 (2020 Census) | County seat of Adams County
 Incorporated: 1872 | Form of government: Administrator/Mayor/Council
 Location: South-central Nebraska, ~14 mi south of I-80 via US-281
 
-REPORT TYPE: ${selectedReportType?.name || 'Council Report'}
-AUDIENCE: ${selectedReportType?.audience || 'City Council'}
+REPORT TYPE: ${selectedReportType?.name || ‘Council Report’}
+AUDIENCE: ${selectedReportType?.audience || ‘City Council’}
 PERIOD: ${selectedPeriod}
-DATE: ${new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+DATE: ${new Date().toLocaleDateString(‘en-US’, { weekday:‘long’, year:‘numeric’, month:‘long’, day:‘numeric’ })}
 
 ════════════════════════════════════
 CURRENT ISSUE DATA — LIVE
 ════════════════════════════════════
 CRITICAL (escalated — requires immediate attention):
-${escalated.map(fmt).join('\n') || '  None'}
+${escalated.map(fmt).join(’\n’) || ’  None’}
 
 URGENT SEVERITY (score 61-100, not escalated):
-${critical.filter(p => !p.escalate).map(fmt).join('\n') || '  None'}
+${critical.filter(p => !p.escalate).map(fmt).join(’\n’) || ’  None’}
 
 MODERATE SEVERITY (${moderate.length} issues):
-${moderate.map(fmt).join('\n') || '  None'}
+${moderate.map(fmt).join(’\n’) || ’  None’}
 
 LOW SEVERITY (${low.length} issues):
-${low.map(fmt).join('\n') || '  None'}
+${low.map(fmt).join(’\n’) || ’  None’}
 
 ESCALATED / OVERDUE:
-${escalated.map(fmt).join('\n') || '  None'}
+${escalated.map(fmt).join(’\n’) || ’  None’}
 
 RECENTLY RESOLVED (${resolved.length}):
-${resolved.map(fmt).join('\n') || '  None'}
+${resolved.map(fmt).join(’\n’) || ’  None’}
 
 OPERATIONAL METRICS:
-  • Total active issues: ${active.length}
-  • Avg. resolution time: 2.6 days (↓14% vs prior period)
-  • Issues closed this period: 41
-  • Resident engagement (notices): ${PINS.reduce((a,p)=>a+(p.noticeCount||0),0)} total across all pins
-  • Top category: Street & Pavement (42% of open issues)
-  • Departments: Street Department, Hastings Utilities, Hastings Police, Hastings Fire & Rescue
+• Total active issues: ${active.length}
+• Avg. resolution time: 2.6 days (↓14% vs prior period)
+• Issues closed this period: 41
+• Resident engagement (notices): ${PINS.reduce((a,p)=>a+(p.noticeCount||0),0)} total across all pins
+• Top category: Street & Pavement (42% of open issues)
+• Departments: Street Department, Hastings Utilities, Hastings Police, Hastings Fire & Rescue
 
 ════════════════════════════════════
 BUDGET — FY 2025-2026
 ════════════════════════════════════
 STREET DEPARTMENT:
-  • Annual maintenance budget: $2,100,000
-  • YTD allocated: ~65% ($1,365,000) | Remaining: ~$735,000
-  • Major expenditures: pothole repair crews, asphalt materials, equipment fuel
-  • Capital items pending: Burlington Ave corridor resurfacing ($380,000 est.)
+• Annual maintenance budget: $2,100,000
+• YTD allocated: ~65% ($1,365,000) | Remaining: ~$735,000
+• Major expenditures: pothole repair crews, asphalt materials, equipment fuel
+• Capital items pending: Burlington Ave corridor resurfacing ($380,000 est.)
 
 HASTINGS UTILITIES:
-  • Capital improvement budget: $3,800,000
-  • Active projects: storm sewer system upgrade ($1.2M), N Burlington water main ($450,000)
-  • Electric operations: fully allocated, solar initiative grant in process
-  • Water/sewer maintenance reserve: $620,000
+• Capital improvement budget: $3,800,000
+• Active projects: storm sewer system upgrade ($1.2M), N Burlington water main ($450,000)
+• Electric operations: fully allocated, solar initiative grant in process
+• Water/sewer maintenance reserve: $620,000
 
 PUBLIC SAFETY (Police + Fire):
-  • Combined budget: $5,200,000 | Fully allocated
-  • Police staffing: 51 FT employees (35 officers) | No vacancies
-  • Fire & Rescue: 2 stations | All-hazards certified
+• Combined budget: $5,200,000 | Fully allocated
+• Police staffing: 51 FT employees (35 officers) | No vacancies
+• Fire & Rescue: 2 stations | All-hazards certified
 
 PARKS & RECREATION:
-  • Budget: $890,000 | 58% allocated YTD
-  • Levee Park renovation: $145,000 in FY26 capital plan
+• Budget: $890,000 | 58% allocated YTD
+• Levee Park renovation: $145,000 in FY26 capital plan
 
 TOTAL GENERAL FUND (FY2025-2026): ~$18.4M
-  • Property tax revenue: $7.2M
-  • State aid/highway allocation: $1.8M
-  • Utility transfers: $2.1M
+• Property tax revenue: $7.2M
+• State aid/highway allocation: $1.8M
+• Utility transfers: $2.1M
 
 ════════════════════════════════════
 HASTINGS COMPREHENSIVE PLAN 2040
 ════════════════════════════════════
 KEY INFRASTRUCTURE GOALS:
-  • Goal 3.1: Maintain citywide street PCI rating ≥70 (current avg: 64 — BELOW TARGET)
-  • Goal 3.2: Resurface 8–10 lane-miles of priority streets annually
-  • Goal 3.3: Address all ADA ramp deficiencies on school pedestrian routes by 2026
-  • Goal 4.1: Reduce water main breaks by 20% by 2027 via proactive replacement
-  • Goal 4.2: Zero main breaks on N Burlington Ave corridor by 2027
-  • Goal 4.3: Complete storm sewer capacity study and Phase 1 upgrades by 2026
+• Goal 3.1: Maintain citywide street PCI rating ≥70 (current avg: 64 — BELOW TARGET)
+• Goal 3.2: Resurface 8–10 lane-miles of priority streets annually
+• Goal 3.3: Address all ADA ramp deficiencies on school pedestrian routes by 2026
+• Goal 4.1: Reduce water main breaks by 20% by 2027 via proactive replacement
+• Goal 4.2: Zero main breaks on N Burlington Ave corridor by 2027
+• Goal 4.3: Complete storm sewer capacity study and Phase 1 upgrades by 2026
 
 SAFETY & COMMUNITY:
-  • Goal 5.1: ADA sidewalk compliance on all school routes by Dec 2026
-  • Goal 5.2: Street lighting coverage in all residential areas by 2028
-  • Goal 6.1: Reduce average emergency response time to <5 min citywide
-  • Goal 6.3: Unified dispatch coordination between Police, Fire & Utilities
+• Goal 5.1: ADA sidewalk compliance on all school routes by Dec 2026
+• Goal 5.2: Street lighting coverage in all residential areas by 2028
+• Goal 6.1: Reduce average emergency response time to <5 min citywide
+• Goal 6.3: Unified dispatch coordination between Police, Fire & Utilities
 
 ECONOMIC DEVELOPMENT:
-  • Goal 7.1: Downtown Burlington Ave corridor beautification (active)
-  • Goal 7.2: Industrial park expansion near Hwy 281 interchange
-  • Goal 8.1: Kool-Aid Days festival infrastructure improvements (annual)
+• Goal 7.1: Downtown Burlington Ave corridor beautification (active)
+• Goal 7.2: Industrial park expansion near Hwy 281 interchange
+• Goal 8.1: Kool-Aid Days festival infrastructure improvements (annual)
 
 GRANT OPPORTUNITIES IDENTIFIED:
-  • FEMA BRIC: Stormwater resilience — N Kansas Ave sewer ($500K–$2M eligible)
-  • USDA Community Facilities: Rural infrastructure, water/sewer ($250K–$5M)
-  • CDBG (NE DED): Low-income area infrastructure — sidewalk/ADA ($200K–$750K)
-  • DOT RAISE: Multimodal — Burlington Ave corridor ($1M–$25M eligible)
-  • EPA Clean Water SRF: Storm sewer / water quality ($500K–$3M)
-  • EDA Public Works: Economic distress infrastructure ($300K–$3M)
+• FEMA BRIC: Stormwater resilience — N Kansas Ave sewer ($500K–$2M eligible)
+• USDA Community Facilities: Rural infrastructure, water/sewer ($250K–$5M)
+• CDBG (NE DED): Low-income area infrastructure — sidewalk/ADA ($200K–$750K)
+• DOT RAISE: Multimodal — Burlington Ave corridor ($1M–$25M eligible)
+• EPA Clean Water SRF: Storm sewer / water quality ($500K–$3M)
+• EDA Public Works: Economic distress infrastructure ($300K–$3M)
 
 HISTORICAL CONTEXT:
-  • Hastings hosted largest Naval Ammunition Depot in WWII — American WWII Heritage City (2023)
-  • Edwin Perkins invented Kool-Aid here (1927) — signature annual festival draws 40,000+ visitors
-  • Infrastructure aging: most water mains 40–60 years old; street network 165+ lane-miles
-  • Recent major projects: Levee Park trail extension (2023), N Denver Ave reconstruction (2024)`;
+• Hastings hosted largest Naval Ammunition Depot in WWII — American WWII Heritage City (2023)
+• Edwin Perkins invented Kool-Aid here (1927) — signature annual festival draws 40,000+ visitors
+• Infrastructure aging: most water mains 40–60 years old; street network 165+ lane-miles
+• Recent major projects: Levee Park trail extension (2023), N Denver Ave reconstruction (2024)`;
 }
 
 /* ── Generate report ── */
 async function generateReport() {
-  const sections = getCheckedSections();
-  if (!sections.length) { alert('Select at least one section.'); return; }
+const sections = getCheckedSections();
+if (!sections.length) { alert(‘Select at least one section.’); return; }
 
-  document.getElementById('btn-generate').disabled = true;
-  document.getElementById('report-config').style.display = 'none';
-  document.getElementById('report-output').style.display = 'block';
-  document.getElementById('report-date-label').textContent =
-    `${selectedReportType.icon} ${selectedReportType.name} · ` +
-    new Date().toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+document.getElementById(‘btn-generate’).disabled = true;
+document.getElementById(‘report-config’).style.display = ‘none’;
+document.getElementById(‘report-output’).style.display = ‘block’;
+document.getElementById(‘report-date-label’).textContent =
+`${selectedReportType.icon} ${selectedReportType.name} · ` +
+new Date().toLocaleString(‘en-US’, { month:‘short’, day:‘numeric’, year:‘numeric’, hour:‘numeric’, minute:‘2-digit’ });
 
-  // Build tabs
-  const tabsEl = document.getElementById('report-tabs');
-  const sectionDefs = selectedReportType.sections.filter(s => sections.includes(s.id));
-  tabsEl.innerHTML = sectionDefs.map((s, i) =>
-    `<button class="report-tab${i===0?' active':''}" data-tab="${s.id}" onclick="showTab('${s.id}',this)">${s.label}</button>`
-  ).join('');
+// Build tabs
+const tabsEl = document.getElementById(‘report-tabs’);
+const sectionDefs = selectedReportType.sections.filter(s => sections.includes(s.id));
+tabsEl.innerHTML = sectionDefs.map((s, i) =>
+`<button class="report-tab${i===0?' active':''}" data-tab="${s.id}" onclick="showTab('${s.id}',this)">${s.label}</button>`
+).join(’’);
 
-  for (const s of sectionDefs) {
-    await generateSection(s);
-  }
+for (const s of sectionDefs) {
+await generateSection(s);
+}
 
-  showTab(sectionDefs[0].id, tabsEl.querySelector('.report-tab'));
-  document.getElementById('btn-generate').disabled = false;
+showTab(sectionDefs[0].id, tabsEl.querySelector(’.report-tab’));
+document.getElementById(‘btn-generate’).disabled = false;
 }
 
 async function generateSection(sectionDef) {
-  const sectionId = sectionDef.id;
-  const label     = sectionDef.label;
-  const prompt    = SECTION_PROMPTS[sectionId] || `Write the "${label}" section for this report.`;
-  const context   = buildIssueContext();
-  const streaming = document.getElementById('report-streaming');
-  document.getElementById('streaming-label').textContent = `Writing ${label}…`;
-  streaming.style.display = 'block';
+const sectionId = sectionDef.id;
+const label     = sectionDef.label;
+const prompt    = SECTION_PROMPTS[sectionId] || `Write the "${label}" section for this report.`;
+const context   = buildIssueContext();
+const streaming = document.getElementById(‘report-streaming’);
+document.getElementById(‘streaming-label’).textContent = `Writing ${label}…`;
+streaming.style.display = ‘block’;
 
-  reportSections[sectionId] = `<div class="report-section" style="opacity:.4">Writing ${label}…</div>`;
-  const activeTab = document.querySelector(`.report-tab[data-tab="${sectionId}"]`);
-  if (activeTab?.classList.contains('active')) renderSection(sectionId);
+reportSections[sectionId] = `<div class="report-section" style="opacity:.4">Writing ${label}…</div>`;
+const activeTab = document.querySelector(`.report-tab[data-tab="${sectionId}"]`);
+if (activeTab?.classList.contains(‘active’)) renderSection(sectionId);
 
-  try {
-    const resp = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 900,
-        system: `You are an expert municipal analyst and grant writer for the City of Hastings, Nebraska.
+try {
+const resp = await fetch(’/api/claude’, {
+method: ‘POST’,
+headers: { ‘Content-Type’: ‘application/json’ },
+body: JSON.stringify({
+model: ‘claude-sonnet-4-20250514’,
+max_tokens: 900,
+system: `You are an expert municipal analyst and grant writer for the City of Hastings, Nebraska.
 Report type: ${selectedReportType.name}
 Audience: ${selectedReportType.audience}
 Tone: Professional, clear, and specific. Use plain language appropriate to the audience.
 Format rules (STRICT):
+
 - Use HTML only: <p>, <ul>, <li>, <strong>, <em>
 - For callout labels use: <span class="highlight hl-danger">CRITICAL</span>, <span class="highlight hl-warn">MODERATE</span>, <span class="highlight hl-green">RESOLVED</span>, <span class="highlight hl-blue">IN PROGRESS</span>
 - Lead with a short orienting paragraph (2–3 sentences) then use bullet lists for specifics
@@ -3847,115 +3902,109 @@ Format rules (STRICT):
 - For public-facing reports: use friendly, plain language — no jargon
 - For internal/department reports: be direct and operational — what, who, by when
 - Do NOT use markdown. Do NOT use <h1> <h2> <h3> headers. Do NOT use code blocks.
-- Target length: 250–350 words per section`,
-        messages: [{
-          role: 'user',
-          content: `${context}\n\n---\nSECTION: ${label}\nINSTRUCTION: ${prompt}\n\nWrite this section now. Begin directly with the content — no preamble or "Here is the section:" intro.`
-        }]
-      })
-    });
-
-    if (!resp.ok) throw new Error(`API ${resp.status}`);
-    const data = await resp.json();
-    const text = data.content?.map(b => b.text || '').join('') || '';
-
-    reportSections[sectionId] = `
-      <div class="report-section">
-        <h3>${label}</h3>
-        ${text}
-      </div>`;
+- Target length: 250–350 words per section`, messages: [{ role: 'user', content: `${context}\n\n—\nSECTION: ${label}\nINSTRUCTION: ${prompt}\n\nWrite this section now. Begin directly with the content — no preamble or “Here is the section:” intro.`
+  }]
+  })
+  });
+  
+  if (!resp.ok) throw new Error(`API ${resp.status}`);
+  const data = await resp.json();
+  const text = data.content?.map(b => b.text || ‘’).join(’’) || ‘’;
+  
+  reportSections[sectionId] = ` <div class="report-section"> <h3>${label}</h3> ${text} </div>`;
   } catch (err) {
-    // CORS errors from direct browser API calls surface as generic "Script error."
-    // Catch silently and show a clean message — never let this crash the page
-    const isCors = err.message === 'Script error.' || err.message === 'Failed to fetch' || err.message === 'Load failed';
-    reportSections[sectionId] =
-      '<div class="report-section">' +
-        '<h3>' + label + '</h3>' +
-        '<p style="color:var(--warn)"><strong>Report generation requires a server connection.</strong></p>' +
-        '<p style="font-size:12px;color:var(--muted);margin-top:6px">' +
-        (isCors
-          ? 'The AI report generator cannot be called directly from the browser. To enable reports, connect PublicPulse to a backend API proxy that holds the Anthropic key.'
-          : 'Error: ' + err.message) +
-        '</p>' +
-      '</div>';
-    console.warn('Report section failed:', sectionId, err.message);
+  // CORS errors from direct browser API calls surface as generic “Script error.”
+  // Catch silently and show a clean message — never let this crash the page
+  const isCors = err.message === ‘Script error.’ || err.message === ‘Failed to fetch’ || err.message === ‘Load failed’;
+  reportSections[sectionId] =
+  ‘<div class="report-section">’ +
+  ‘<h3>’ + label + ‘</h3>’ +
+  ‘<p style="color:var(--warn)"><strong>Report generation requires a server connection.</strong></p>’ +
+  ‘<p style="font-size:12px;color:var(--muted);margin-top:6px">’ +
+  (isCors
+  ? ‘The AI report generator cannot be called directly from the browser. To enable reports, connect PublicPulse to a backend API proxy that holds the Anthropic key.’
+  : ’Error: ’ + err.message) +
+  ‘</p>’ +
+  ‘</div>’;
+  console.warn(‘Report section failed:’, sectionId, err.message);
+  }
+  
+  if (activeTab?.classList.contains(‘active’)) renderSection(sectionId);
+  streaming.style.display = ‘none’;
   }
 
-  if (activeTab?.classList.contains('active')) renderSection(sectionId);
-  streaming.style.display = 'none';
-}
-
 function showTab(sectionId, btn) {
-  document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderSection(sectionId);
+document.querySelectorAll(’.report-tab’).forEach(t => t.classList.remove(‘active’));
+if (btn) btn.classList.add(‘active’);
+renderSection(sectionId);
 }
 
 function renderSection(sectionId) {
-  document.getElementById('report-section-content').innerHTML =
-    reportSections[sectionId] || '<div class="report-section"><p style="color:var(--muted)">Generating…</p></div>';
+document.getElementById(‘report-section-content’).innerHTML =
+reportSections[sectionId] || ‘<div class="report-section"><p style="color:var(--muted)">Generating…</p></div>’;
 }
 
 function resetReport() {
-  Object.keys(reportSections).forEach(k => delete reportSections[k]);
-  document.getElementById('report-output').style.display = 'none';
-  document.getElementById('report-config').style.display = 'block';
-  document.getElementById('btn-generate').disabled = false;
-  document.getElementById('report-tabs').innerHTML = '';
-  document.getElementById('report-section-content').innerHTML = '';
-  document.getElementById('report-streaming').style.display = 'none';
+Object.keys(reportSections).forEach(k => delete reportSections[k]);
+document.getElementById(‘report-output’).style.display = ‘none’;
+document.getElementById(‘report-config’).style.display = ‘block’;
+document.getElementById(‘btn-generate’).disabled = false;
+document.getElementById(‘report-tabs’).innerHTML = ‘’;
+document.getElementById(‘report-section-content’).innerHTML = ‘’;
+document.getElementById(‘report-streaming’).style.display = ‘none’;
 }
 
 /* ── Copy report to clipboard ── */
 function copyReportToClipboard() {
-  var sections = Object.values(reportSections);
-  if (!sections.length) return;
-  // Strip HTML tags for plain text
-  var tmp = document.createElement('div');
-  var text = sections.map(function(html) {
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-  }).join('\n\n---\n\n');
-  navigator.clipboard.writeText(text).then(function() {
-    var btn = document.querySelector('.btn-copy-report');
-    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(function(){ btn.textContent = '📋 Copy Report to Clipboard'; }, 2000); }
-  }).catch(function() {
-    var btn = document.querySelector('.btn-copy-report');
-    if (btn) btn.textContent = '⚠ Copy failed — try selecting text manually';
-  });
+var sections = Object.values(reportSections);
+if (!sections.length) return;
+// Strip HTML tags for plain text
+var tmp = document.createElement(‘div’);
+var text = sections.map(function(html) {
+tmp.innerHTML = html;
+return tmp.textContent || tmp.innerText || ‘’;
+}).join(’\n\n—\n\n’);
+navigator.clipboard.writeText(text).then(function() {
+var btn = document.querySelector(’.btn-copy-report’);
+if (btn) { btn.textContent = ‘✓ Copied!’; setTimeout(function(){ btn.textContent = ‘📋 Copy Report to Clipboard’; }, 2000); }
+}).catch(function() {
+var btn = document.querySelector(’.btn-copy-report’);
+if (btn) btn.textContent = ‘⚠ Copy failed — try selecting text manually’;
+});
 }
 
 /* ── Public card issue timeline ── */
 function buildCardTimeline(pin) {
-  var steps = [];
-  var logTypes = { review:'review', assign:'assign', ack:'ack', start:'start', public:'update', complete:'complete', escalate:'escalate' };
-  // Always starts with reported
-  steps.push({ dot:'var(--muted)', label:'Reported', done: true });
-  if (pin.log && pin.log.length) {
-    var seen = new Set();
-    pin.log.forEach(function(e) {
-      if (e.type === 'review'   && !seen.has('review'))   { steps.push({ dot:'var(--accent)',  label:'Under Review', done:true }); seen.add('review'); }
-      if (e.type === 'assign'   && !seen.has('assign'))   { steps.push({ dot:'var(--accent)',  label:'Assigned to ' + pin.dept, done:true }); seen.add('assign'); }
-      if (e.type === 'ack'      && !seen.has('ack'))      { steps.push({ dot:'var(--accent2)', label:'Crew Scheduled', done:true }); seen.add('ack'); }
-      if (e.type === 'start'    && !seen.has('start'))    { steps.push({ dot:'var(--accent2)', label:'Work Started', done:true }); seen.add('start'); }
-      if (e.type === 'public'   && !seen.has('public'))   { steps.push({ dot:'var(--accent)',  label:'City Posted Update', done:true }); seen.add('public'); }
-      if (e.type === 'complete' && !seen.has('complete')) { steps.push({ dot:'var(--green)',   label:'Completed', done:true }); seen.add('complete'); }
-      if (e.type === 'escalate' && !seen.has('escalate')) { steps.push({ dot:'#ff0a3c',       label:'Escalated — Priority Response', done:true }); seen.add('escalate'); }
-    });
-  }
-  if (!steps.length || steps.length === 1) return ''; // Only "Reported" — don't show
-  return '<div class="card-timeline">' +
-    steps.map(function(s) {
-      return '<div class="card-timeline-row">' +
-        '<div class="card-timeline-dot" style="background:' + s.dot + '"></div>' +
-        '<div class="card-timeline-text"><strong>' + s.label + '</strong></div>' +
-      '</div>';
-    }).join('') +
-  '</div>';
+var steps = [];
+var logTypes = { review:‘review’, assign:‘assign’, ack:‘ack’, start:‘start’, public:‘update’, complete:‘complete’, escalate:‘escalate’ };
+// Always starts with reported
+steps.push({ dot:‘var(–muted)’, label:‘Reported’, done: true });
+if (pin.log && pin.log.length) {
+var seen = new Set();
+pin.log.forEach(function(e) {
+if (e.type === ‘review’   && !seen.has(‘review’))   { steps.push({ dot:‘var(–accent)’,  label:‘Under Review’, done:true }); seen.add(‘review’); }
+if (e.type === ‘assign’   && !seen.has(‘assign’))   { steps.push({ dot:‘var(–accent)’,  label:‘Assigned to ’ + pin.dept, done:true }); seen.add(‘assign’); }
+if (e.type === ‘ack’      && !seen.has(‘ack’))      { steps.push({ dot:‘var(–accent2)’, label:‘Crew Scheduled’, done:true }); seen.add(‘ack’); }
+if (e.type === ‘start’    && !seen.has(‘start’))    { steps.push({ dot:‘var(–accent2)’, label:‘Work Started’, done:true }); seen.add(‘start’); }
+if (e.type === ‘public’   && !seen.has(‘public’))   { steps.push({ dot:‘var(–accent)’,  label:‘City Posted Update’, done:true }); seen.add(‘public’); }
+if (e.type === ‘complete’ && !seen.has(‘complete’)) { steps.push({ dot:‘var(–green)’,   label:‘Completed’, done:true }); seen.add(‘complete’); }
+if (e.type === ‘escalate’ && !seen.has(‘escalate’)) { steps.push({ dot:’#ff0a3c’,       label:‘Escalated — Priority Response’, done:true }); seen.add(‘escalate’); }
+});
+}
+if (!steps.length || steps.length === 1) return ‘’; // Only “Reported” — don’t show
+return ‘<div class="card-timeline">’ +
+steps.map(function(s) {
+return ‘<div class="card-timeline-row">’ +
+‘<div class="card-timeline-dot" style="background:' + s.dot + '"></div>’ +
+‘<div class="card-timeline-text"><strong>’ + s.label + ‘</strong></div>’ +
+‘</div>’;
+}).join(’’) +
+‘</div>’;
 }
 
 // Initialize on load
 buildTypePicker();
 </script>
+
 </body>
 </html>
