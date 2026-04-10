@@ -351,20 +351,25 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   #btn-report { bottom: 76px; right: 14px; font-size: 13px; padding: 11px 16px; }
   /* Legend — above filter chips */
   #legend { bottom: 130px; left: 10px; padding: 8px 10px; min-width: 140px; }
-  /* Filter chips — centered bottom bar, full width, clear of Report Issue button */
+  /* Filter chips — full-width scrollable bottom bar */
   #map-filter {
     bottom: 14px !important;
     left: 0 !important;
     right: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
-    justify-content: center !important;
-    padding: 0 8px !important;
-    gap: 4px !important;
+    padding: 0 10px !important;
+    gap: 6px !important;
     box-sizing: border-box !important;
     flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
   }
-  .map-filter-chip { font-size: 10px !important; padding: 4px 8px !important; }
+  #map-filter::-webkit-scrollbar { display: none; }
+  .map-filter-chip { font-size: 10px !important; padding: 5px 10px !important; flex-shrink: 0 !important; }
   /* Pin card — full width */
   #map-card { width: calc(100vw - 20px); max-width: 380px; }
   /* Action panel */
