@@ -735,7 +735,8 @@ function makeIcon(pin) {
   var rawLabel = pin.title.indexOf('\u2014') > -1 ? pin.title.split('\u2014')[0].trim() : pin.title;
   var label = rawLabel.length > 22 ? rawLabel.slice(0,20) + '\u2026' : rawLabel;
   var labelColor = pin.status === 'done' ? '#6b7280' : color;
-  var labelEl = pin.status !== 'done' ? '<div style="position:absolute;top:' + (h+2) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(11,15,26,0.85);border:1px solid ' + labelColor + '44;border-radius:5px;padding:2px 7px;font-family:system-ui,sans-serif;font-size:10px;font-weight:600;color:#e2e8f0;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.4);backdrop-filter:blur(4px)">' + label + '</div>' : '';
+  var showLabel = pin.status !== 'done' && (typeof map !== 'undefined' ? map.getZoom() >= 15 : true);
+  var labelEl = showLabel ? '<div style="position:absolute;top:' + (h+2) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(11,15,26,0.85);border:1px solid ' + labelColor + '44;border-radius:5px;padding:2px 7px;font-family:system-ui,sans-serif;font-size:10px;font-weight:600;color:#e2e8f0;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.4);backdrop-filter:blur(4px)">' + label + '</div>' : '';
   var wrapper = '<div style="position:relative;width:' + w + 'px;height:' + h + 'px">' + labelEl + rings + svg + '</div>';
   return L.divIcon({ html:wrapper, className:'', iconSize:[w,h], iconAnchor:[cx, cy+r+tail], popupAnchor:[0,-cy] });
 }
@@ -849,7 +850,14 @@ function toggleHeatmap() {
   if (heatActive) { buildHeatCanvas(); btn.classList.add('active'); btn.textContent = '\u{1F321} Heat Map: ON'; }
   else { if (heatCanvas) { heatCanvas.remove(); heatCanvas = null; } btn.classList.remove('active'); btn.textContent = '\u{1F321} Heat Map'; }
 }
-map.on('moveend zoomend', function() { if (heatActive) buildHeatCanvas(); });
+map.on('moveend zoomend', function() {
+  if (heatActive) buildHeatCanvas();
+  // Refresh labels — show at zoom 15+, hide below
+  PINS.forEach(function(pin) {
+    var marker = markerMap[pin.id];
+    if (marker) marker.setIcon(makeIcon(pin));
+  });
+});
 
 var activePin = null;
 function openCard(pin, cp) {
