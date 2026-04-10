@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>PublicPulse — Hastings, NE v2</title>
+<title>PublicPulse — Hastings, NE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css"/>
@@ -419,7 +416,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     <button id="btn-report" onclick="startReport()">
       <span style="font-size:18px;line-height:1">+</span> Report Issue
     </button>
-    <div id="map-filter" style="position:absolute;bottom:28px;left:190px;z-index:500;display:flex;gap:5px;flex-wrap:wrap;max-width:340px">
+    <div id="map-filter" style="position:absolute;bottom:28px;left:200px;z-index:500;display:flex;gap:5px;flex-wrap:wrap;max-width:380px">
       <button class="map-filter-chip active" id="mf-all">All</button>
       <button class="map-filter-chip" id="mf-street">&#x1F6A7; Street</button>
       <button class="map-filter-chip" id="mf-utilities">&#x26A1; Utilities</button>
@@ -528,9 +525,9 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     <div class="col-body" id="report-col-body">
       <div id="artab-panel-activity">
         <div class="metrics-row" style="margin-bottom:12px">
-          <div class="metric-mini"><div class="metric-val" style="color:var(--danger)">3</div><div class="metric-label">Escalated</div></div>
-          <div class="metric-mini"><div class="metric-val" style="color:var(--accent)">12</div><div class="metric-label">Open</div></div>
-          <div class="metric-mini"><div class="metric-val" style="color:var(--green)">41</div><div class="metric-label">Closed 30d</div></div>
+          <div class="metric-mini"><div class="metric-val" style="color:var(--danger)" id="metric-escalated">3</div><div class="metric-label">Escalated</div></div>
+          <div class="metric-mini"><div class="metric-val" style="color:var(--accent)" id="metric-open">12</div><div class="metric-label">Open</div></div>
+          <div class="metric-mini"><div class="metric-val" style="color:var(--green)" id="metric-closed">41</div><div class="metric-label">Closed 30d</div></div>
         </div>
         <div class="section-title" style="margin-bottom:8px">Recent Activity</div>
         <div id="admin-activity-log" style="overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
@@ -1210,6 +1207,14 @@ function renderLog(log) {
 }
 
 function renderAdminLog() {
+  // Update live metrics
+  var escalated = ISSUES.filter(function(i){ return i.escalate && i.queueStatus === 'active'; }).length;
+  var open      = ISSUES.filter(function(i){ return i.queueStatus === 'active'; }).length;
+  var closed    = ISSUES.filter(function(i){ return i.queueStatus === 'completed'; }).length;
+  var me = document.getElementById('metric-escalated'); if (me) me.textContent = escalated;
+  var mo = document.getElementById('metric-open');      if (mo) mo.textContent = open;
+  var mc = document.getElementById('metric-closed');    if (mc) mc.textContent = closed;
+
   var el = document.getElementById('admin-activity-log');
   if (!el) return;
   var evts = [];
