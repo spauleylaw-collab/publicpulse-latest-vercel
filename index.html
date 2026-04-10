@@ -1754,44 +1754,62 @@ var REPORT_TYPES = [
 ];
 
 var SECTION_PROMPTS = {
-  budget:'Analyze budget implications. Reference FY2025-2026 allocations and flag cost overruns.',
-  compplan:'Assess alignment with the Hastings Comprehensive Plan 2040. Reference specific goals.',
-  metrics:'Present key performance metrics including resolution time, volume trends, and engagement.',
-  recommend:'Provide clear, actionable recommendations with who, what, and when.',
-  changes:'What changed since the last report period? Highlight resolved issues and new ones.',
-  ongoing:'Summarize all currently active issues grouped by severity.',
-  attention:'What requires council attention? Flag anything escalated, overdue, or a safety risk.',
-  plan:'Provide a concrete two-week action plan with department assignments.',
-  yearoverview:'Write an executive overview of the year — total issues, major accomplishments.',
-  bydepart:'Summarize each department performance over the year.',
-  topissues:'Describe the top 5 recurring issue categories from this year.',
-  yearahead:'Looking into the next fiscal year, what are the top infrastructure priorities?',
-  statement:'Write a compelling statement of need for federal/state grant funding.',
-  population:'Describe the community profile of Hastings, NE — population, demographics, income, geography.',
-  projectscope:'Define a specific project scope based on highest-severity infrastructure issues.',
-  impact:'Describe community impact — how many residents benefit, what safety improvements result.',
-  timeline:'Propose a realistic project timeline from award through completion.',
-  capacity:'Demonstrate organizational capacity to manage the grant.',
-  snapshot:'Quick operational snapshot: total open issues, critical items, department workload.',
-  escalated:'List and analyze all escalated or overdue items — who owns them, why delayed, risk.',
-  risk:'Identify legal, liability, or reputational risks from current open issues.',
-  decisions:'List decisions the City Administrator must make this week with recommended options.',
-  worklog:'List all work completed this period by the department.',
-  inprogress:'Detail all work currently in progress, expected completion, and blockers.',
-  backlog:'Describe the current backlog and suggest scheduling order by severity.',
-  outages:'Summarize all utility outages and incidents — cause, duration, customers affected.',
-  maintenance:'Describe planned maintenance activities — scheduled, completed, and deferred.',
-  capital:'Update on capital improvement projects with budget status.',
-  callsummary:'Summarize non-emergency calls handled this period by category.',
-  patterns:'Identify geographic or temporal patterns in community issues.',
-  openitems:'List all open non-emergency items and their current status.',
-  happening:'In plain, friendly language explain what is currently going on in Hastings.',
-  fixed:'List what the city has fixed recently — be specific about locations.',
-  working:'Explain what city crews are currently working on with expected timelines.',
-  coming:'Tell residents what is coming up — planned projects and improvements.',
+  // COUNCIL REPORT — sharp, political, specific
+  changes:'Since the last council meeting, summarize what was resolved (name locations and departments), what new issues emerged, and highlight any that residents are watching closely based on notice counts. Lead with the most significant change. Be specific: Burlington Ave, N Kansas Ave, Levee Park — use the streets council members know.',
+  ongoing:'Give council a clear picture of active issues right now, grouped by urgency: Escalated (requires immediate council awareness), In Progress (crews working), and Under Review (queued). For escalated items, explain why and what is being done. For high-notice issues, note how many residents are watching.',
+  attention:'Flag everything council needs to act on, approve, or be aware of for political or liability reasons: escalated safety issues, overdue SLA items, high-resident-notice complaints not yet resolved. Be direct — if something is a risk, say so. Reference specific issue IDs and locations.',
+  plan:'Lay out the next two weeks: what gets resolved first and why, which departments are accountable, and what council might hear about from constituents. Assign clear ownership and sequence by urgency score.',
+  
+  // GRANT APPLICATION — evidence-driven, federal tone
+  statement:'Write a compelling Statement of Need that would open a federal grant application for Hastings, Nebraska. Establish community need using the infrastructure failures documented in the issue data: escalated issues, resident notice counts, safety categories. Reference population size (25,152), the city\'s role as Adams County seat, and infrastructure age. Frame the need in terms of public safety risk, economic impact, and equity. Be specific with street names and failure types. End with a clear ask tied to the grant program.',
+  population:'Write a Community Profile section for a federal grant application. Cover: population (25,152), geography (south-central Nebraska, Arkansas River valley), economic context (county seat, regional service hub, mix of agricultural and manufacturing employment), existing infrastructure challenges documented in the issue data, and demographics relevant to equity criteria (ADA compliance gaps, school zone safety, residential density). Tie community characteristics to why federal investment is justified.',
+  projectscope:'Define a specific, fundable Project Scope for the highest-priority infrastructure needs shown in the issue data. Choose a coherent geographic corridor or infrastructure system (e.g., stormwater network along N Kansas Ave, ADA sidewalk improvements near school zones, utility main replacements on Burlington Ave corridor). Name specific streets, failure types, proposed interventions, and estimated scale. Frame it as a distinct, deliverable project with clear boundaries.',
+  impact:'Quantify community impact: how many residents are affected (use notice counts as a proxy for community awareness), what safety risks are mitigated, how the project advances ADA compliance and equity, economic benefit (reduced vehicle damage, business continuity, property value protection). Reference Hastings Comprehensive Plan 2040 goals directly. Make it concrete — not general claims but specific outcomes tied to specific streets.',
+  budget:'Write a Budget Narrative that frames the city\'s financial position and need for federal partnership. Reference the FY2025-2026 general fund (~$18.4M total), specific department allocations (Street Dept $2.1M, Hastings Utilities $3.8M capital), what percentage of the project could be locally matched, and why federal funding is necessary to close the gap. Be honest about constraints — this strengthens the case.',
+  timeline:'Propose a realistic 18-24 month project timeline from grant award through project closeout: design/engineering (months 1-3), permitting and procurement (months 3-6), construction phase (months 6-15), inspection and closeout (months 15-18). Identify any site-specific constraints like school year scheduling for school zone work or weather windows for pavement work in Nebraska.',
+  capacity:'Demonstrate Hastings\'s organizational capacity to manage a federal grant: city administrator structure, department heads, existing relationships with NDOT and NE DED, prior grant experience, financial management systems. Note that the PublicPulse civic issue tracking system provides real-time documentation of infrastructure needs and department response — a differentiator that shows data-driven management.',
+
+  // ALL OTHER SECTIONS
+  budget:'Analyze budget implications using FY2025-2026 allocations: Street Dept $2.1M (~65% allocated), Hastings Utilities $3.8M capital, Police + Fire $5.2M combined, General Fund ~$18.4M total. Flag any cost overruns or items approaching budget ceiling.',
+  compplan:'Assess alignment with the Hastings Comprehensive Plan 2040. Reference specific goals: Goal 3.1 (Street PCI ≥70, currently avg 64 — below target), Goal 3.3 (ADA ramp compliance on school routes by 2026), Goal 4.2 (zero main breaks on N Burlington Ave by 2027), Goal 4.3 (Storm sewer Phase 1 by 2026), Goal 5.1 (street lighting all residential areas by 2028).',
+  metrics:'Present key performance metrics: total active vs resolved, escalated count, average resident notices per issue, SLA compliance rate by department, and trend direction.',
+  recommend:'Provide 3-5 specific, actionable recommendations with who is responsible, what the action is, and by when.',
+  yearoverview:'Write an executive overview of the year covering total issues reported, resolution rate, department performance highlights, and major accomplishments.',
+  bydepart:'Summarize each department\'s performance over the year: issues handled, resolved, escalated, and key projects completed.',
+  topissues:'Identify the top 5 recurring issue categories this year with frequency, locations, and resolution trends.',
+  yearahead:'Outline the top 3-5 infrastructure priorities for the next fiscal year based on current issue patterns and Comp Plan 2040 goals.',
+  snapshot:'Quick operational snapshot: total open issues by status (reported/review/in-progress), escalated count, department workload breakdown, and SLA compliance.',
+  escalated:'List all escalated and overdue items with: issue ID, title, department, how long overdue, current status, and recommended immediate action.',
+  risk:'Identify top 3-5 legal, liability, or reputational risks from current open issues. Rate each as High/Medium/Low. Include specific issue IDs.',
+  decisions:'List 3-5 decisions the City Administrator needs to make this week, with context, options, and recommended action for each.',
+  worklog:'List all work completed this period with issue ID, location, crew, and outcome.',
+  inprogress:'Detail all work currently in progress: issue ID, location, current status, % complete, expected completion, and any blockers.',
+  backlog:'Describe the backlog prioritized by severity score. Recommend the order in which items should be scheduled based on urgency, safety risk, and resident impact.',
+  outages:'Summarize all utility outages and incidents: cause, duration, estimated customers affected, and restoration status.',
+  maintenance:'Describe planned maintenance: what was scheduled, what was completed, what was deferred and why.',
+  capital:'Update on capital improvement projects with current phase, budget status, and projected completion.',
+  callsummary:'Summarize non-emergency calls by category with volume, locations, and disposition.',
+  patterns:'Identify geographic and temporal patterns: which areas generate the most issues, what times/conditions trigger surges.',
+  openitems:'List all open non-emergency items with current status and estimated resolution.',
+  happening:'In plain, friendly language — no jargon — explain the top 3-4 things happening in Hastings right now that residents should know about.',
+  fixed:'Tell residents specifically what was fixed: where, what was done, and why it matters. Use street names they recognize.',
+  working:'Explain what city crews are actively working on, where, and when residents can expect completion.',
+  coming:'Tell residents what\'s coming: planned projects, improvements, and what to expect in their neighborhoods.',
 };
 
-var selectedReportType = null, selectedPeriod = '';
+var REPORT_SYSTEM_PROMPTS = {
+  council: 'You are the City Administrator\'s chief of staff briefing the Hastings, Nebraska City Council. Your audience is elected officials — mayor, council members — who are non-technical but politically accountable. Write in plain, confident prose. Be direct about problems and credit crews for wins. Avoid jargon. Refer to specific streets and neighborhoods residents recognize: Burlington Ave, N Kansas Ave, Levee Park, Kingswood Plaza, W 12th St. Quantify with resident notice counts and SLA status. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown, no h1-h3 headers. 250-350 words.',
+
+  grant: 'You are a professional grant writer preparing a federal or state infrastructure grant application on behalf of the City of Hastings, Nebraska (population 25,152, Adams County seat). Your audience is federal/state program officers who evaluate hundreds of applications — CDBG, FEMA BRIC, DOT RAISE, EPA Clean Water SRF, USDA Community Facilities. Write with urgency and precision. Use data-driven language: resident impact numbers, failure risk, infrastructure age, cost-benefit framing. Reference specific Hastings locations. Ground every claim in the issue data provided. Cite applicable grant programs by name where relevant. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown. 280-380 words.',
+
+  internal: 'You are a senior analyst briefing the Hastings City Administrator. Be concise, direct, and risk-focused. Flag anything that could become a liability, political problem, or missed deadline. Use specific issue IDs and department names. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown. 200-280 words.',
+
+  annual: 'You are the City of Hastings communications director writing the annual report for residents and city leadership. Balance civic pride with transparency. Use plain language but include specific accomplishments with real street names and numbers. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown. 280-350 words.',
+
+  citizen: 'You are the City of Hastings public information officer writing for residents of Hastings, NE. Use friendly, accessible language. Be specific about streets and neighborhoods. Make residents feel their city is responsive and accountable. Avoid bureaucratic language entirely. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown. 200-280 words.',
+
+  default: 'You are an expert municipal analyst for the City of Hastings, Nebraska. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown, no headers. 250-350 words. Reference real street names, issue IDs, and budget figures.'
+};
 var reportSections = {};
 
 function buildTypePicker() {
@@ -1882,7 +1900,7 @@ async function generateSection(sectionDef) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:900,
-        system:'You are an expert municipal analyst for the City of Hastings, Nebraska. Report type: ' + selectedReportType.name + '. Audience: ' + selectedReportType.audience + '. Use HTML only: <p>, <ul>, <li>, <strong>. No markdown, no headers (h1-h3), no code blocks. 250-350 words per section. Reference real street names, issue IDs, and budget figures.',
+        system: (REPORT_SYSTEM_PROMPTS[selectedReportType.id] || REPORT_SYSTEM_PROMPTS.default) + ' Period: ' + selectedPeriod + '. Date: ' + new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '.',
         messages:[{ role:'user', content:context + '\n\n\u2014\nSECTION: ' + label + '\nINSTRUCTION: ' + prompt + '\n\nWrite this section now. Begin directly with content.' }]
       })
     });
