@@ -52,7 +52,10 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 #map-container { flex: 1; position: relative; overflow: hidden; }
 #map { width: 100%; height: 100%; }
 .leaflet-tile { filter: brightness(0.72) saturate(0.55) hue-rotate(195deg); }
-.leaflet-container { background: #0d1520; }
+.leaflet-map-pane { overflow: visible; }
+.leaflet-marker-pane, .leaflet-shadow-pane { overflow: visible; }
+#map { overflow: hidden; }
+.leaflet-container { background: #0d1520; overflow: hidden; }
 .leaflet-popup { display: none !important; }
 .leaflet-popup-pane { display: none !important; }
 
@@ -334,7 +337,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 @media (max-width: 768px) {
   :root { --nav-h: 50px; }
   .nav-logo { font-size: 14px; }
-  .nav-tab { padding: 5px 9px; font-size: 11px; }
+  .nav-tab { padding: 5px 8px; font-size: 11px; }
   .nav-city { display: none; }
   #view-admin, #view-dept { flex-direction: column; overflow-y: auto; }
   .admin-col { width: 100% !important; flex-shrink: 0; border-right: none !important; border-left: none !important; border-bottom: 1px solid var(--border); min-height: 0; }
@@ -343,9 +346,10 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   .mob-section-tabs { display: flex; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; position: sticky; top: 0; z-index: 20; }
   .mob-section-tab { flex: 1; padding: 11px 4px; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--font-body); text-align: center; transition: all 0.15s; }
   .mob-section-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  #banner { min-width: 0; max-width: calc(100vw - 32px); }
+  #banner { min-width: 0; max-width: calc(100vw - 32px); font-size: 12px; }
   #btn-report { bottom: 20px; right: 14px; font-size: 14px; padding: 12px 18px; }
-  #legend { bottom: 20px; left: 10px; padding: 9px 11px; }
+  #legend { bottom: 80px; left: 10px; padding: 9px 11px; }
+  #map-filter { bottom: 20px; left: 10px; max-width: calc(100vw - 180px); }
   #map-card { width: calc(100vw - 28px); max-width: 340px; }
   .action-panel { padding: 14px; }
   .action-btn { font-size: 12px; padding: 8px 10px; }
@@ -353,6 +357,9 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   .metrics-row { gap: 6px; }
   .metric-val { font-size: 20px; }
 }
+.map-filter-chip { padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(11,15,26,0.88); color: var(--muted); font-family: var(--font-body); transition: all 0.15s; backdrop-filter: blur(8px); white-space: nowrap; }
+.map-filter-chip:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
+.map-filter-chip.active { background: rgba(61,142,248,0.18); border-color: rgba(61,142,248,0.45); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -412,6 +419,13 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     <button id="btn-report" onclick="startReport()">
       <span style="font-size:18px;line-height:1">+</span> Report Issue
     </button>
+    <div id="map-filter" style="position:absolute;bottom:28px;left:190px;z-index:500;display:flex;gap:5px;flex-wrap:wrap;max-width:340px">
+      <button class="map-filter-chip active" id="mf-all">All</button>
+      <button class="map-filter-chip" id="mf-street">&#x1F6A7; Street</button>
+      <button class="map-filter-chip" id="mf-utilities">&#x26A1; Utilities</button>
+      <button class="map-filter-chip" id="mf-police">&#x1F46E; Police</button>
+      <button class="map-filter-chip" id="mf-fire">&#x1F692; Fire</button>
+    </div>
     <div id="legend">
       <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Issue Priority</div>
       <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
@@ -647,7 +661,9 @@ var ISSUES = [
   { id:'PP-0215', lat:40.5912, lng:-98.3870, title:'Noise Complaint \u2014 Recurring Commercial District', desc:'Late night noise from commercial area on Baltimore Ave. Multiple complaints past 11pm on weekends.', dept:'Hastings Police', time:'4 days ago', category:'police', severity:18, noticeCount:9, grants:[], status:'review', escalate:false, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'acknowledged', progress:5, deadline:'Due in 1 week', priority:'ok', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'4 days ago'},{type:'review',body:'Marked as Reviewed by City Admin',time:'3 days ago'}] },
   { id:'PP-0214', lat:40.5812, lng:-98.3935, title:'Broken Playground Equipment \u2014 Caldwell Park', desc:'Swing set chain broken at Caldwell Park. Safety hazard for children.', dept:'Street Department', time:'2 weeks ago', category:'park', severity:35, noticeCount:11, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 1 week ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'2 weeks ago'},{type:'complete',body:'Marked as Completed \u2014 chain replaced and inspected',time:'1 week ago'}] },
   { id:'PP-0213', lat:40.5952, lng:-98.3910, title:'Dead Tree Hazard \u2014 W 16th St', desc:'Large dead tree leaning toward power line on W 16th St. Wind risk.', dept:'Street Department', time:'3 weeks ago', category:'road', severity:62, noticeCount:7, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 2 weeks ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'3 weeks ago'},{type:'complete',body:'Tree removed and area cleared',time:'2 weeks ago'}] },
-  { id:'PP-0212', lat:40.5832, lng:-98.3995, title:'Broken Water Meter \u2014 Highland Subdivision', desc:'Water meter showing erratic readings in Highland subdivision. Several homes affected.', dept:'Hastings Utilities', time:'1 month ago', category:'utility', severity:45, noticeCount:6, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 3 weeks ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 month ago'},{type:'complete',body:'Marked as Completed \u2014 all meters verified',time:'3 weeks ago'}] }
+  { id:'PP-0212', lat:40.5832, lng:-98.3995, title:'Broken Water Meter \u2014 Highland Subdivision', desc:'Water meter showing erratic readings in Highland subdivision. Several homes affected.', dept:'Hastings Utilities', time:'1 month ago', category:'utility', severity:45, noticeCount:6, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 3 weeks ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 month ago'},{type:'complete',body:'Marked as Completed \u2014 all meters verified',time:'3 weeks ago'}] },
+  { id:'PP-0211', lat:40.5905, lng:-98.3855, title:'Gas Leak Suspected \u2014 W 11th St & N Kansas Ave', desc:'Resident reported strong gas odor near W 11th St and N Kansas Ave intersection. Fire & Rescue dispatched for gas investigation and safety sweep.', dept:'Hastings Fire & Rescue', time:'1 hr ago', category:'safety', severity:88, noticeCount:6, grants:[], status:'review', escalate:true, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Immediate', priority:'late', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 hr ago'},{type:'escalate',body:'Auto-escalated \u2014 potential gas emergency',time:'58 min ago'},{type:'ack',body:'Assignment acknowledged \u2014 Engine 1 dispatched',time:'55 min ago'}] },
+  { id:'PP-0210', lat:40.5865, lng:-98.3920, title:'Carbon Monoxide Alarm \u2014 W 5th St Residence', desc:'Resident called in CO alarm activation at a W 5th St address. Fire & Rescue crew cleared the building and identified faulty furnace. Resident safely relocated.', dept:'Hastings Fire & Rescue', time:'2 days ago', category:'safety', severity:20, noticeCount:0, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 2 days ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'2 days ago'},{type:'ack',body:'Assignment acknowledged \u2014 crew dispatched',time:'2 days ago'},{type:'start',body:'Work started \u2014 Fire & Rescue on scene',time:'2 days ago'},{type:'complete',body:'Building cleared \u2014 faulty furnace identified and tagged',time:'2 days ago'}] }
 ];
 
 var PINS = ISSUES;
@@ -722,7 +738,7 @@ function makeIcon(pin) {
   var rawLabel = pin.title.indexOf('\u2014') > -1 ? pin.title.split('\u2014')[0].trim() : pin.title;
   var label = rawLabel.length > 22 ? rawLabel.slice(0,20) + '\u2026' : rawLabel;
   var labelColor = pin.status === 'done' ? '#6b7280' : color;
-  var labelEl = pin.status !== 'done' ? '<div style="position:absolute;bottom:' + (h+3) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(11,15,26,0.80);border:1px solid ' + labelColor + '44;border-radius:5px;padding:2px 7px;font-family:system-ui,sans-serif;font-size:10px;font-weight:600;color:#e2e8f0;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.4);backdrop-filter:blur(4px)">' + label + '</div>' : '';
+  var labelEl = pin.status !== 'done' ? '<div style="position:absolute;top:' + (h+2) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(11,15,26,0.85);border:1px solid ' + labelColor + '44;border-radius:5px;padding:2px 7px;font-family:system-ui,sans-serif;font-size:10px;font-weight:600;color:#e2e8f0;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.4);backdrop-filter:blur(4px)">' + label + '</div>' : '';
   var wrapper = '<div style="position:relative;width:' + w + 'px;height:' + h + 'px">' + labelEl + rings + svg + '</div>';
   return L.divIcon({ html:wrapper, className:'', iconSize:[w,h], iconAnchor:[cx, cy+r+tail], popupAnchor:[0,-cy] });
 }
@@ -924,6 +940,24 @@ function handleCardPhoto(e) {
   reader.readAsDataURL(file);
 }
 function closeCard() { document.getElementById('map-card').className = ''; document.getElementById('map-card').style.display = 'none'; activePin = null; }
+
+/* MAP FILTER */
+var activeMapFilter = 'all';
+var DEPT_MAP = { street:'Street Department', utilities:'Hastings Utilities', police:'Hastings Police', fire:'Hastings Fire & Rescue' };
+function setMapFilter(name) {
+  activeMapFilter = name;
+  ['all','street','utilities','police','fire'].forEach(function(n) {
+    var btn = document.getElementById('mf-' + n);
+    if (btn) btn.classList.toggle('active', n === name);
+  });
+  PINS.forEach(function(pin) {
+    var marker = markerMap[pin.id];
+    if (!marker) return;
+    var show = name === 'all' || pin.dept === DEPT_MAP[name];
+    marker.getElement ? (marker.getElement() ? marker.getElement().style.opacity = show ? '' : '0.12' : null) : null;
+    try { marker._icon && (marker._icon.style.opacity = show ? '' : '0.12'); } catch(e) {}
+  });
+}
 
 var pinMode = false, droppedLatLng = null, previewMarker = null, newPinCounter = 242;
 function makePreviewIcon() {
@@ -1622,7 +1656,7 @@ function switchView(name) {
   document.getElementById('view-' + name).classList.add('active');
   var hb = document.getElementById('btn-heatmap');
   if (hb) hb.style.display = name === 'public' ? '' : 'none';
-  if (name === 'public') setTimeout(function() { map.invalidateSize(); }, 50);
+  if (name === 'public') { setTimeout(function() { map.invalidateSize(); }, 50); setMapFilter('all'); }
   if (name === 'admin') { var qs = document.getElementById('queue-search'); if (qs) qs.value = ''; activeQueueFilters.clear(); document.querySelectorAll('.queue-filter-chip').forEach(function(c){c.classList.remove('active');}); renderAdminQueue(); renderAdminLog(); try { if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, 'admin-insights-body'); } catch(e) { console.warn('insights:', e); } }
   if (name === 'dept')  { renderDeptQueue(); renderDeptAccountability(); renderDeptPriority(); try { if (!deptInsightsCache) refreshDeptInsights(); else renderInsightItems(deptInsightsCache, 'dept-insights-body'); } catch(e) { console.warn('dept insights:', e); } }
   applyMobileLayout();
@@ -1921,6 +1955,12 @@ applyMobileLayout();
 });
 var heatBtn = document.getElementById('btn-heatmap');
 if (heatBtn) { heatBtn.style.display = ''; heatBtn.addEventListener('click', toggleHeatmap); }
+
+// Wire map filter chips
+['all','street','utilities','police','fire'].forEach(function(name) {
+  var btn = document.getElementById('mf-' + name);
+  if (btn) btn.addEventListener('click', function() { setMapFilter(name); });
+});
 </script>
 </body>
 </html>
