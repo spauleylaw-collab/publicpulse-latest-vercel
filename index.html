@@ -351,19 +351,20 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   #btn-report { bottom: 76px; right: 14px; font-size: 13px; padding: 11px 16px; }
   /* Legend — above filter chips */
   #legend { bottom: 130px; left: 10px; padding: 8px 10px; min-width: 140px; }
-  /* Filter chips — bottom bar full width, above safe area */
+  /* Filter chips — centered bottom bar, full width, clear of Report Issue button */
   #map-filter {
-    bottom: 14px;
-    left: 0;
-    right: 0;
-    max-width: none;
-    width: 100%;
-    justify-content: center;
-    padding: 0 10px;
-    gap: 6px;
-    box-sizing: border-box;
+    bottom: 14px !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0 8px !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
+    flex-wrap: nowrap !important;
   }
-  .map-filter-chip { font-size: 10px; padding: 5px 10px; }
+  .map-filter-chip { font-size: 10px !important; padding: 4px 8px !important; }
   /* Pin card — full width */
   #map-card { width: calc(100vw - 20px); max-width: 380px; }
   /* Action panel */
@@ -382,6 +383,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .map-filter-chip { padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(11,15,26,0.88); color: var(--muted); font-family: var(--font-body); transition: all 0.15s; backdrop-filter: blur(8px); white-space: nowrap; }
 .map-filter-chip:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
 .map-filter-chip.active { background: rgba(61,142,248,0.18); border-color: rgba(61,142,248,0.45); color: var(--accent); }
+#map-filter { position: absolute; bottom: 28px; left: 200px; z-index: 500; display: flex; gap: 5px; flex-wrap: wrap; max-width: 380px; }
 </style>
 </head>
 <body>
@@ -441,7 +443,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     <button id="btn-report" onclick="startReport()">
       <span style="font-size:18px;line-height:1">+</span> Report Issue
     </button>
-    <div id="map-filter" style="position:absolute;bottom:28px;left:200px;z-index:500;display:flex;gap:5px;flex-wrap:wrap;max-width:380px">
+    <div id="map-filter">
       <button class="map-filter-chip active" id="mf-all">All</button>
       <button class="map-filter-chip" id="mf-street">&#x1F6A7; Street</button>
       <button class="map-filter-chip" id="mf-utilities">&#x26A1; Utilities</button>
