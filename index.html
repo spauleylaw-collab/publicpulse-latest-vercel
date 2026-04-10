@@ -772,17 +772,23 @@ function clusterSeverityClass(cluster) {
   return 'low';
 }
 
-var clusterGroup = L.markerClusterGroup({
-  disableClusteringAtZoom:16, maxClusterRadius:60, spiderfyOnMaxZoom:true,
-  showCoverageOnHover:false, zoomToBoundsOnClick:true,
-  iconCreateFunction: function(cluster) {
-    var count = cluster.getChildCount();
-    var sev = clusterSeverityClass(cluster);
-    var size = count < 5 ? 36 : count < 10 ? 42 : 50;
-    var fontSize = count < 10 ? 13 : count < 100 ? 11 : 10;
-    return L.divIcon({ html:'<div class="pp-cluster pp-cluster-' + sev + '" style="width:' + size + 'px;height:' + size + 'px;font-size:' + fontSize + 'px">' + count + '</div>', className:'', iconSize:[size,size], iconAnchor:[size/2,size/2] });
-  }
-});
+var clusterGroup;
+try {
+  clusterGroup = L.markerClusterGroup({
+    disableClusteringAtZoom:16, maxClusterRadius:60, spiderfyOnMaxZoom:true,
+    showCoverageOnHover:false, zoomToBoundsOnClick:true,
+    iconCreateFunction: function(cluster) {
+      var count = cluster.getChildCount();
+      var sev = clusterSeverityClass(cluster);
+      var size = count < 5 ? 36 : count < 10 ? 42 : 50;
+      var fontSize = count < 10 ? 13 : count < 100 ? 11 : 10;
+      return L.divIcon({ html:'<div class="pp-cluster pp-cluster-' + sev + '" style="width:' + size + 'px;height:' + size + 'px;font-size:' + fontSize + 'px">' + count + '</div>', className:'', iconSize:[size,size], iconAnchor:[size/2,size/2] });
+    }
+  });
+} catch(e) {
+  console.warn('MarkerCluster failed to load, using plain layer group:', e);
+  clusterGroup = L.layerGroup();
+}
 
 PINS.forEach(function(pin) {
   var m = L.marker([pin.lat, pin.lng], { icon:makeIcon(pin), _pin:pin });
@@ -1296,6 +1302,7 @@ issue.log.push({ type:‘public’, body:‘Public update posted: “’ + msg +
 if (issue.status === ‘reported’) { issue.status = ‘review’; issue.statusLabel = ‘Under Review’; issue.tag = ‘review’; }
 if (el2) el2.value = ‘’;
 } else if (actionType === ‘complete’) {
+issue.statusLabel = ‘Completed’; issue.tag = ‘done’; issue.queueStatus = ‘completed’;
 issue.status = ‘done’; issue.workStatus = ‘completed’; issue.actionStatus = ‘completed’; issue.progress = 100; issue.priority = ‘done’;
 issue.log.push({ type:‘complete’, body:‘Marked as Completed by City Admin’, time:now });
 syncMapPin(issue);
@@ -1615,8 +1622,8 @@ var tab = document.querySelector(’.nav-tab[data-view=”’ + name + ‘”]�
 if (tab) tab.classList.add(‘active’);
 document.getElementById(‘btn-heatmap’).style.display = name === ‘public’ ? ‘’ : ‘none’;
 if (name === ‘public’) setTimeout(function() { map.invalidateSize(); }, 50);
-if (name === ‘admin’) { var qs = document.getElementById(‘queue-search’); if (qs) qs.value = ‘’; activeQueueFilters.clear(); document.querySelectorAll(’.queue-filter-chip’).forEach(function(c){c.classList.remove(‘active’);}); renderAdminQueue(); renderAdminLog(); if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, ‘admin-insights-body’); }
-if (name === ‘dept’)  { renderDeptQueue(); renderDeptAccountability(); renderDeptPriority(); if (!deptInsightsCache) refreshDeptInsights(); else renderInsightItems(deptInsightsCache, ‘dept-insights-body’); }
+if (name === ‘admin’) { var qs = document.getElementById(‘queue-search’); if (qs) qs.value = ‘’; activeQueueFilters.clear(); document.querySelectorAll(’.queue-filter-chip’).forEach(function(c){c.classList.remove(‘active’);}); renderAdminQueue(); renderAdminLog(); try { if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, ‘admin-insights-body’); } catch(e) { console.warn(‘insights:’, e); } }
+if (name === ‘dept’)  { renderDeptQueue(); renderDeptAccountability(); renderDeptPriority(); try { if (!deptInsightsCache) refreshDeptInsights(); else renderInsightItems(deptInsightsCache, ‘dept-insights-body’); } catch(e) { console.warn(‘dept insights:’, e); } }
 applyMobileLayout();
 }
 
