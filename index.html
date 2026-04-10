@@ -4,6 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>PublicPulse — Hastings, NE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -1615,6 +1618,7 @@ else { document.querySelectorAll(’#view-admin > .admin-col, #view-dept > .admi
 window.addEventListener(‘resize’, applyMobileLayout);
 
 function switchView(name) {
+try {
 document.querySelectorAll(’.view’).forEach(function(v) { v.classList.remove(‘active’); });
 document.querySelectorAll(’.nav-tab’).forEach(function(t) { t.classList.remove(‘active’); });
 document.getElementById(‘view-’ + name).classList.add(‘active’);
@@ -1625,6 +1629,7 @@ if (name === ‘public’) setTimeout(function() { map.invalidateSize(); }, 50);
 if (name === ‘admin’) { var qs = document.getElementById(‘queue-search’); if (qs) qs.value = ‘’; activeQueueFilters.clear(); document.querySelectorAll(’.queue-filter-chip’).forEach(function(c){c.classList.remove(‘active’);}); renderAdminQueue(); renderAdminLog(); try { if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, ‘admin-insights-body’); } catch(e) { console.warn(‘insights:’, e); } }
 if (name === ‘dept’)  { renderDeptQueue(); renderDeptAccountability(); renderDeptPriority(); try { if (!deptInsightsCache) refreshDeptInsights(); else renderInsightItems(deptInsightsCache, ‘dept-insights-body’); } catch(e) { console.warn(‘dept insights:’, e); } }
 applyMobileLayout();
+} catch(e) { console.error(‘switchView error:’, e); alert(’Nav error: ’ + e.message); }
 }
 
 var recognition = null, micActive = false;
