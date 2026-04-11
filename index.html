@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PublicPulse — Hastings, NE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -68,7 +68,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 #drop-cancel:hover { color: var(--text); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.1); }
 @keyframes hint-blink { 0%,100%{opacity:.85} 50%{opacity:1} }
 
-#btn-report { position: absolute; bottom: 28px; right: 28px; z-index: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; padding: 14px 24px; border-radius: 100px; font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; animation: report-glow 3s ease-in-out infinite; transition: transform 0.15s; }
+#btn-report { position: fixed; bottom: 28px; right: 28px; z-index: 1001; background: var(--accent); color: #fff; border: none; cursor: pointer; padding: 14px 24px; border-radius: 100px; font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; animation: report-glow 3s ease-in-out infinite; transition: transform 0.15s; }
 #btn-report:hover { transform: scale(1.04); }
 @keyframes report-glow { 0%,100%{box-shadow:0 4px 20px rgba(61,142,248,.4)} 50%{box-shadow:0 4px 44px rgba(61,142,248,.7)} }
 
@@ -171,14 +171,14 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .col-body::-webkit-scrollbar { width: 3px; }
 .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-.queue-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; position: relative; }
+.queue-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; position: relative; overflow: visible; }
 .queue-item:hover    { border-color: rgba(255,255,255,.12); background: var(--surface2); }
 .queue-item.selected { border-color: var(--accent); background: rgba(61,142,248,.06); }
 .queue-item.escalated { border-left: 3px solid var(--danger); }
 .queue-item.warning   { border-left: 3px solid var(--warn); }
 .qi-top   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .qi-time  { font-size: 11px; color: var(--muted); }
-.qi-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+.qi-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.5; overflow: visible; }
 .qi-dept  { font-size: 11px; color: var(--muted); }
 .qi-badge { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 100px; }
 .qi-badge.reported { background: rgba(245,166,35,.15); color: var(--warn); }
@@ -348,9 +348,12 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   /* Banner — compact */
   #banner { min-width: 0; max-width: calc(100vw - 32px); font-size: 11px; padding: 8px 14px; }
   /* Report Issue button — bottom right, above safe area */
-  #btn-report { bottom: 76px; right: 14px; font-size: 13px; padding: 11px 16px; }
-  /* Legend — above filter chips */
-  #legend { bottom: 130px; left: 10px; padding: 8px 10px; min-width: 140px; }
+  #btn-report { bottom: 76px; right: 14px; font-size: 13px; padding: 11px 16px; z-index: 1001; }
+  /* Legend — collapsible on mobile */
+  #legend { bottom: 130px; left: 10px; padding: 8px 10px; min-width: 120px; max-width: 160px; }
+  #legend-toggle { display: block !important; }
+  #legend-body { font-size: 11px; }
+  .legend-row { font-size: 11px; margin-bottom: 4px; }
   /* Filter chips — full-width scrollable bottom bar */
   #map-filter {
     bottom: 14px !important;
@@ -456,13 +459,18 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
       <button class="map-filter-chip" id="mf-fire">&#x1F692; Fire</button>
     </div>
     <div id="legend">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Issue Priority</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Urgent</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
-      <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
-      <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Larger, brighter pins reflect<br>urgency and resident activity</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Issue Priority</div>
+        <button id="legend-toggle" onclick="toggleLegend()" style="display:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0;line-height:1">&#8722;</button>
+      </div>
+      <div id="legend-body">
+        <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Urgent</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
+        <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Larger, brighter pins reflect<br>urgency and resident activity</div>
+      </div>
     </div>
     <div id="report-overlay" onclick="handleOverlayClick(event)">
       <div id="report-form">
@@ -773,9 +781,35 @@ function makeIcon(pin) {
   return L.divIcon({ html:wrapper, className:'', iconSize:[w,h], iconAnchor:[cx, cy+r+tail], popupAnchor:[0,-cy] });
 }
 
-var map = L.map('map', { center:[40.5888,-98.3910], zoom:14, zoomControl:true });
+var map = L.map('map', { center:[40.5888,-98.3910], zoom:14, zoomControl:false });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap', maxZoom:19 }).addTo(map);
-map.zoomControl.setPosition('bottomright');
+
+// Zoom control — topleft on mobile so it doesn't overlap Report button
+L.control.zoom({ position: window.innerWidth <= 600 ? 'topleft' : 'bottomright' }).addTo(map);
+
+// Recenter button — always visible top right
+var RecenterControl = L.Control.extend({
+  options: { position:'topright' },
+  onAdd: function() {
+    var btn = L.DomUtil.create('button','');
+    btn.innerHTML = '&#8982;';
+    btn.title = 'Refit to Hastings';
+    btn.style.cssText = 'background:rgba(11,15,26,0.88);color:#e2e8f0;border:1px solid rgba(255,255,255,0.15);border-radius:8px;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);margin-top:4px;';
+    L.DomEvent.on(btn,'click',function(e){ L.DomEvent.stopPropagation(e); map.flyTo([40.5888,-98.3910],14,{duration:0.6}); });
+    L.DomEvent.disableClickPropagation(btn);
+    return btn;
+  }
+});
+new RecenterControl().addTo(map);
+
+// Double-tap map to refit to Hastings — ignores taps on controls
+var lastTap = 0;
+map.getContainer().addEventListener('touchend', function(e) {
+  if (e.target.closest('.leaflet-control') || e.target.closest('.leaflet-control-container')) return;
+  var now = Date.now();
+  if (now - lastTap < 350) { map.flyTo([40.5888,-98.3910],14,{duration:0.6}); }
+  lastTap = now;
+}, { passive:true });
 
 var markerMap = {};
 var tooltip   = document.getElementById('pin-tooltip');
@@ -840,8 +874,6 @@ try {
 PINS.forEach(function(pin) {
   var m = L.marker([pin.lat, pin.lng], { icon:makeIcon(pin), _pin:pin });
   m.on('click', function(e) { hidePinTooltip(); openCard(pin, e.containerPoint); L.DomEvent.stopPropagation(e); });
-  m.on('mouseover', function(e) { showPinTooltip(pin, e.containerPoint); });
-  m.on('mouseout',  function()  { hidePinTooltip(); });
   markerMap[pin.id] = m;
   clusterGroup.addLayer(m);
 });
@@ -949,6 +981,15 @@ function openCard(pin, cp) {
     var mapEl = document.getElementById('map-container');
     var mw = mapEl.offsetWidth, mh = mapEl.offsetHeight;
     var MARGIN=14, TAIL_H=12;
+    // On mobile, center the card horizontally and place near top
+    if (mw <= 600) {
+      card.style.left = Math.max(MARGIN, (mw - cw) / 2) + 'px';
+      card.style.top  = (MARGIN + 10) + 'px';
+      tail.className  = '';
+      card.style.visibility = '';
+      card.className = 'open';
+      return;
+    }
     var px = cp.x, py = cp.y;
     var top, tailDir;
     if (py - ch - TAIL_H - MARGIN >= 0) { top = py - ch - TAIL_H; tailDir = 'tail-down'; }
@@ -991,8 +1032,8 @@ function setMapFilter(name) {
     var marker = markerMap[pin.id];
     if (!marker) return;
     var show = name === 'all' || pin.dept === DEPT_MAP[name];
-    marker.getElement ? (marker.getElement() ? marker.getElement().style.opacity = show ? '' : '0.12' : null) : null;
-    try { marker._icon && (marker._icon.style.opacity = show ? '' : '0.12'); } catch(e) {}
+    marker.setOpacity(show ? 1 : 0);
+    if (marker._icon) marker._icon.style.pointerEvents = show ? 'auto' : 'none';
   });
 }
 
@@ -1045,10 +1086,9 @@ function submitReport() {
   var newPin = { id:newId, lat:droppedLatLng ? droppedLatLng.lat : 40.5888, lng:droppedLatLng ? droppedLatLng.lng : -98.3910, status:'reported', statusLabel:'Reported', tag:'reported', queueStatus:'active', workStatus:'active', actionStatus:'assigned', progress:0, priority:'ok', warn:false, deadline:'Just now', title:desc.length > 50 ? desc.slice(0,48)+'\u2026' : desc, desc:desc, dept:'Pending Assignment', time:'Just now', category:'general', escalate:false, photo:photoSrc, isNew:true, severity:30, noticeCount:0, grants:[], log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'Just now'}] };
   var m = L.marker([newPin.lat, newPin.lng], { icon:makeIcon(newPin), zIndexOffset:900, _pin:newPin });
   m.on('click', function(ev) { hidePinTooltip(); openCard(newPin, ev.containerPoint); L.DomEvent.stopPropagation(ev); });
-  m.on('mouseover', function(ev) { showPinTooltip(newPin, ev.containerPoint); });
-  m.on('mouseout',  function()   { hidePinTooltip(); });
   PINS.push(newPin); markerMap[newPin.id] = m; clusterGroup.addLayer(m);
   if (heatActive) buildHeatCanvas();
+  updateQueueBadge(); renderAdminLog();
   document.getElementById('report-overlay').classList.remove('open');
   document.getElementById('report-desc').value = '';
   document.getElementById('btn-report').style.display = '';
@@ -1680,6 +1720,18 @@ function setDeptMobSection(section) {
     if (btns[i]) btns[i].classList.toggle('active', s === section);
     if (cols[i]) cols[i].style.display = s === section ? 'flex' : 'none';
   });
+}
+var legendCollapsed = false;
+function toggleLegend() {
+  legendCollapsed = !legendCollapsed;
+  var body = document.getElementById('legend-body');
+  var btn  = document.getElementById('legend-toggle');
+  if (body) body.style.display = legendCollapsed ? 'none' : '';
+  if (btn)  btn.innerHTML = legendCollapsed ? '&#43;' : '&#8722;';
+}
+// Auto-collapse legend on mobile
+if (window.innerWidth <= 600) { 
+  document.addEventListener('DOMContentLoaded', function() { toggleLegend(); });
 }
 function applyMobileLayout() {
   var mobile = isMobile();
