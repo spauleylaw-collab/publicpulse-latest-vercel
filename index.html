@@ -1371,6 +1371,45 @@ function selectAdminById(id, isAdvancing) {
     return '<div class="tl-chip ' + (selectedTimeline === t ? 'active' : '') + '" onclick="setTimeline(\'' + t + '\')">' + t + '</div>';
   }).join('');
 
+  // State-based button logic
+  var isReported  = issue.tag === 'reported';
+  var isReview    = issue.tag === 'review';
+  var isAssigned  = issue.tag === 'assigned' || issue.tag === 'progress' || issue.status === 'progress' || issue.status === 'review';
+  var isHighNotice = (issue.noticeCount||0) >= 5;
+
+  // Recommended next step
+  var nextStep = '';
+  if (isReported) {
+    nextStep = 'Review this issue to begin the workflow';
+  } else if (isReview && (!issue.dept || issue.dept === 'Pending Assignment')) {
+    nextStep = 'Assign to appropriate department';
+  } else if (isReview && issue.dept && issue.dept !== 'Pending Assignment') {
+    nextStep = isHighNotice ? 'High resident activity — consider escalating or prioritizing' : 'Assign to ' + issue.dept + ' or complete if resolved';
+  } else if (issue.tag === 'assigned' || issue.status === 'progress') {
+    nextStep = 'Monitor progress — complete when work is resolved';
+  } else if (issue.escalate) {
+    nextStep = 'Escalated — assign immediately or complete';
+  }
+
+  // Button states
+  var reviewBtn, completeBtn, escalateBtn;
+
+  if (isReported) {
+    // Primary: Review. Complete muted.
+    reviewBtn   = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')" style="flex:1;min-width:110px">&#10003; Mark Reviewed</button>';
+    completeBtn = '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;opacity:.4;border-color:var(--border);color:var(--muted)" title="Review first">&#10003; Complete</button>';
+  } else if (isReview) {
+    // Review done (faded checkmark). Primary: Complete.
+    reviewBtn   = '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.35;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>';
+    completeBtn = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;background:var(--green);border-color:var(--green);color:#fff">&#10003; Complete</button>';
+  } else {
+    // In progress / assigned — reviewed done, complete primary
+    reviewBtn   = '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.35;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>';
+    completeBtn = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;background:var(--green);border-color:var(--green);color:#fff">&#10003; Complete</button>';
+  }
+
+  escalateBtn = '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="flex:none">&#9888; Escalate</button>';
+
   panel.innerHTML =
     '<div class="action-id">' + issue.id + '</div>' +
     '<div class="action-title">' + issue.title + '</div>' +
@@ -1385,13 +1424,10 @@ function selectAdminById(id, isAdvancing) {
     renderGrantBadge(issue.grants) +
     (!isDone ?
       '<div class="section-title">Actions</div>' +
+      // Recommended next step hint
+      (nextStep ? '<div style="font-size:11px;color:var(--accent);margin-bottom:8px;padding:6px 10px;background:rgba(61,142,248,0.08);border-radius:6px;border-left:3px solid var(--accent)">&#9654; Recommended: ' + nextStep + '</div>' : '') +
       '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">' +
-        (issue.tag === 'reported'
-          ? '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')" style="flex:1;min-width:110px">&#10003; Mark Reviewed</button>'
-          : '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.3;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>'
-        ) +
-        '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;border-color:rgba(34,197,94,.3);color:var(--green)">&#10003; Complete</button>' +
-        '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="flex:none">&#9888; Escalate</button>' +
+        reviewBtn + completeBtn + escalateBtn +
       '</div>' +
       '<div class="assign-row" style="margin-bottom:10px">' +
         '<select class="dept-select" id="dept-assign-select">' +
@@ -1400,7 +1436,7 @@ function selectAdminById(id, isAdvancing) {
           '<option ' + (issue.dept === 'Hastings Police'        ? 'selected' : '') + '>Hastings Police</option>' +
           '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
         '</select>' +
-        '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
+        '<button class="btn-assign" id="btn-assign-action" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
       '</div>' +
       '<div style="display:flex;gap:6px;margin-bottom:14px;align-items:flex-start">' +
         '<textarea class="update-input" id="update-text" rows="2" placeholder="Post a public update&#8230;" style="flex:1;margin-bottom:0"></textarea>' +
@@ -1555,6 +1591,20 @@ function adminAction(id, actionType) {
   var issue = getIssueById(id);
   if (!issue) return;
   var now = 'Just now';
+
+  // Instant visual feedback on the clicked button
+  (function flashBtn() {
+    var btns = document.querySelectorAll('.action-btn, .btn-assign');
+    btns.forEach(function(b) {
+      if (b.onclick && b.onclick.toString().indexOf(actionType) > -1) {
+        b.style.background = 'var(--accent)';
+        b.style.borderColor = 'var(--accent)';
+        b.style.color = '#fff';
+        b.disabled = true;
+      }
+    });
+  })();
+
   if (actionType === 'review') {
     issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review';
     issue.log.push({ type:'review', body:'Marked as Reviewed by City Admin', time:now });
@@ -1566,7 +1616,17 @@ function adminAction(id, actionType) {
   } else if (actionType === 'assign') {
     var sel = document.getElementById('dept-assign-select');
     var dept = sel ? sel.value : issue.dept;
+    // Routing feedback
+    var assignBtn = document.getElementById('btn-assign-action');
+    if (assignBtn) {
+      assignBtn.textContent = 'Routing to ' + dept.split(' ')[0] + '...';
+      assignBtn.style.background = 'var(--accent)';
+      assignBtn.style.borderColor = 'var(--accent)';
+      assignBtn.style.color = '#fff';
+      assignBtn.disabled = true;
+    }
     issue.dept = dept; issue.status = 'review'; issue.statusLabel = 'Assigned'; issue.tag = 'assigned';
+    issue.workStatus = 'active'; issue.actionStatus = 'assigned';
     issue.log.push({ type:'assign', body:'Assigned to ' + dept + ' by City Admin', time:now });
   } else if (actionType === 'public') {
     var el2 = document.getElementById('update-text');
@@ -1608,7 +1668,9 @@ function adminAction(id, actionType) {
   syncMapPin(issue);
   var logEl = document.getElementById('admin-log');
   if (logEl) logEl.innerHTML = renderLog(issue.log);
-  renderAdminQueue(); renderAdminLog(); selectAdminById(id);
+  renderAdminQueue(); renderAdminLog();
+  // Re-render panel after short delay to show updated state
+  setTimeout(function() { selectAdminById(id); }, 180);
 }
 
 var removeMicActive = false, removeMicRecognition = null;
