@@ -388,8 +388,9 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   /* Action buttons row wraps nicely */
   .action-btns { gap: 6px; }
 }
-/* Leaflet zoom buttons — bigger tap targets */
+/* Leaflet zoom buttons — bigger tap targets, topleft on all sizes */
 .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 20px !important; }
+.leaflet-top.leaflet-left { top: 52px !important; }
 @media (max-width: 768px) {
   .leaflet-bar a { width: 46px !important; height: 46px !important; line-height: 46px !important; font-size: 24px !important; }
   .leaflet-top.leaflet-left { top: 88px !important; }
@@ -811,8 +812,8 @@ function makeIcon(pin) {
 var map = L.map('map', { center:[40.5888,-98.3910], zoom:14, zoomControl:false });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap', maxZoom:19 }).addTo(map);
 
-// Zoom control — topleft on mobile so it doesn't overlap Report button
-L.control.zoom({ position: window.innerWidth <= 600 ? 'topleft' : 'bottomright' }).addTo(map);
+// Zoom control — topleft on all sizes so it never overlaps Report Issue button
+L.control.zoom({ position: 'topleft' }).addTo(map);
 
 // Recenter button — always visible top right
 var RecenterControl = L.Control.extend({
