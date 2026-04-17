@@ -56,7 +56,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .leaflet-popup { display: none !important; }
 .leaflet-popup-pane { display: none !important; }
 
-#banner { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 500; background: rgba(11,15,26,0.92); backdrop-filter: blur(18px); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; min-width: 340px; max-width: 520px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); pointer-events: none; }
+#banner { position: absolute; top: 78px; left: 50%; transform: translateX(-50%); z-index: 500; background: rgba(11,15,26,0.92); backdrop-filter: blur(18px); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; min-width: 340px; max-width: 520px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); pointer-events: none; }
 .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); flex-shrink: 0; animation: pulse-dot 2s ease-in-out infinite; }
 @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
 #banner-text { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.4s; }
@@ -346,7 +346,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   .mob-section-tab { flex: 1; padding: 11px 4px; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--font-body); text-align: center; transition: all 0.15s; }
   .mob-section-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   /* Banner — compact */
-  #banner { top: 48px; min-width: 0; max-width: calc(100vw - 32px); font-size: 11px; padding: 8px 14px; }
+  #banner { top: 72px; min-width: 0; max-width: calc(100vw - 32px); font-size: 11px; padding: 8px 14px; }
   /* Report Issue button — bottom right, above safe area */
   #btn-report { bottom: 76px; right: 14px; font-size: 13px; padding: 11px 16px; z-index: 1001; }
   /* Legend — collapsible on mobile */
@@ -388,12 +388,22 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   /* Action buttons row wraps nicely */
   .action-btns { gap: 6px; }
 }
+/* Map metrics bar */
+.map-metric { font-family:var(--font-display); font-size:11px; font-weight:700; color:rgba(232,234,240,0.75); white-space:nowrap; letter-spacing:0.02em; }
+.map-metric-red { color:#ff6b6b; }
+.map-metric-gold { color:#F59E0B; }
+.map-metric-sep { color:rgba(255,255,255,0.25); padding:0 6px; font-size:11px; }
+@media (max-width: 768px) {
+  .map-metric { font-size:10px; }
+  .map-metric-sep { padding:0 4px; }
+  #map-metrics { padding:0 10px 8px; }
+}
 /* Leaflet zoom buttons — bigger tap targets, topleft on all sizes */
 .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 20px !important; }
-.leaflet-top.leaflet-left { top: 52px !important; }
+.leaflet-top.leaflet-left { top: 72px !important; }
 @media (max-width: 768px) {
   .leaflet-bar a { width: 46px !important; height: 46px !important; line-height: 46px !important; font-size: 24px !important; }
-  .leaflet-top.leaflet-left { top: 88px !important; }
+  .leaflet-top.leaflet-left { top: 110px !important; }
 }
 .map-filter-chip { padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(11,15,26,0.88); color: var(--muted); font-family: var(--font-body); transition: all 0.15s; backdrop-filter: blur(8px); white-space: nowrap; }
 .map-filter-chip:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
@@ -415,9 +425,22 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 </nav>
 
 <div id="view-public" class="view active">
-  <div id="map-header" style="position:absolute;top:0;left:0;right:0;z-index:600;padding:10px 20px 8px;pointer-events:none;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(5,8,18,0.85) 0%,rgba(5,8,18,0) 100%)">
-    <div style="width:8px;height:8px;border-radius:50%;background:#00E5B0;box-shadow:0 0 10px #00E5B0;flex-shrink:0;animation:pulse-dot 1.5s ease-in-out infinite"></div>
-    <div style="font-family:var(--font-display);font-size:15px;font-weight:800;color:#ffffff;letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,0.8)">What's happening in Hastings right now</div>
+  <div id="map-header" style="position:absolute;top:0;left:0;right:0;z-index:600;pointer-events:none;background:linear-gradient(180deg,rgba(5,8,18,0.92) 0%,rgba(5,8,18,0.0) 100%)">
+    <!-- Row 1: What's happening -->
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 20px 6px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#00E5B0;box-shadow:0 0 10px #00E5B0;flex-shrink:0;animation:pulse-dot 1.5s ease-in-out infinite"></div>
+      <div style="font-family:var(--font-display);font-size:15px;font-weight:800;color:#ffffff;letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,0.8)">What's happening in Hastings right now</div>
+    </div>
+    <!-- Row 2: Live metrics -->
+    <div id="map-metrics" style="display:flex;align-items:center;gap:0;padding:0 16px 10px;flex-wrap:nowrap;overflow:hidden">
+      <div class="map-metric" id="mm-active"></div>
+      <div class="map-metric-sep">·</div>
+      <div class="map-metric map-metric-red" id="mm-escalated"></div>
+      <div class="map-metric-sep">·</div>
+      <div class="map-metric map-metric-gold" id="mm-grants"></div>
+      <div class="map-metric-sep">·</div>
+      <div class="map-metric" id="mm-depts"></div>
+    </div>
   </div>
   <div id="map-container">
     <div id="map"></div>
@@ -800,12 +823,15 @@ function makeIcon(pin) {
   var labelColor = pin.status === 'done' ? '#6b7280' : color;
   var showLabel = pin.status !== 'done' && (typeof map !== 'undefined' ? map.getZoom() >= 15 : true);
   var labelEl = showLabel ? '<div style="position:absolute;top:' + (h+4) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,8,18,0.95);border:1px solid ' + labelColor + '88;border-radius:6px;padding:3px 9px;font-family:system-ui,sans-serif;font-size:12px;font-weight:700;color:#ffffff;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.7);letter-spacing:0.01em">' + label + '</div>' : '';
-  // Notice count badge — visible without clicking
+  // Notice count badge
   var notices = pin.noticeCount || 0;
   var badgeEl = (notices > 0 && pin.status !== 'done') ? '<div style="position:absolute;top:' + (pulseRoom) + 'px;right:' + (pulseRoom) + 'px;min-width:16px;height:16px;background:#3D8EF8;border:2px solid rgba(5,8,18,0.95);border-radius:100px;font-family:system-ui,sans-serif;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 3px;pointer-events:none;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,0.6)">' + notices + '</div>' : '';
+  // Grant badge — gold $ on pins with grant opportunities
+  var hasGrants = pin.grants && pin.grants.length > 0 && pin.status !== 'done';
+  var grantBadgeEl = hasGrants ? '<div style="position:absolute;bottom:' + (tail+2) + 'px;right:' + (pulseRoom-2) + 'px;width:14px;height:14px;background:#F59E0B;border:2px solid rgba(5,8,18,0.95);border-radius:100px;font-family:system-ui,sans-serif;font-size:9px;font-weight:900;color:#000;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,0.6)">$</div>' : '';
   // Urgency label — only on escalated pins
   var urgencyEl = pin.escalate && pin.status !== 'done' ? '<div style="position:absolute;top:' + (pulseRoom - 18) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#ff0a3c;border-radius:4px;padding:2px 7px;font-family:system-ui,sans-serif;font-size:9px;font-weight:800;color:#fff;pointer-events:none;letter-spacing:0.06em;text-transform:uppercase;box-shadow:0 2px 8px rgba(255,10,60,0.5)">NEEDS ATTENTION</div>' : '';
-  var wrapper = '<div style="position:relative;width:' + w + 'px;height:' + h + 'px">' + urgencyEl + labelEl + badgeEl + rings + svg + '</div>';
+  var wrapper = '<div style="position:relative;width:' + w + 'px;height:' + h + 'px">' + urgencyEl + labelEl + badgeEl + grantBadgeEl + rings + svg + '</div>';
   return L.divIcon({ html:wrapper, className:'', iconSize:[w,h], iconAnchor:[cx, cy+r+tail], popupAnchor:[0,-cy] });
 }
 
@@ -1272,6 +1298,29 @@ function setQueueTab(tab) {
   document.getElementById('action-panel').style.display = 'none';
   renderAdminQueue();
 }
+function updateMapMetrics() {
+  var active    = PINS.filter(function(p){ return p.queueStatus === 'active'; }).length;
+  var escalated = PINS.filter(function(p){ return p.escalate && p.status !== 'done'; }).length;
+  var grantPins = PINS.filter(function(p){ return p.grants && p.grants.length > 0 && p.status !== 'done'; });
+  // Calculate total grant potential
+  var grantTotal = 0;
+  grantPins.forEach(function(p){
+    p.grants.forEach(function(g){
+      var m = g.range.match(/\$(\d+(?:\.\d+)?)([KM])/);
+      if (m) { var n = parseFloat(m[1]); grantTotal += m[2]==='M' ? n*1000000 : n*1000; }
+    });
+  });
+  var grantStr = grantTotal >= 1000000 ? '$' + (grantTotal/1000000).toFixed(1) + 'M' : '$' + (grantTotal/1000).toFixed(0) + 'K';
+  var depts = new Set(PINS.filter(function(p){ return p.queueStatus==='active'; }).map(function(p){ return p.dept; })).size;
+  var el = function(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; };
+  el('mm-active',    active + ' active issues');
+  el('mm-escalated', escalated + ' escalated');
+  el('mm-grants',    grantStr + ' in grants identified');
+  el('mm-depts',     depts + ' depts responding');
+}
+updateMapMetrics();
+setInterval(updateMapMetrics, 10000);
+
 function updateQueueBadge() {
   var n = ISSUES.filter(function(i) { return i.queueStatus === 'active'; }).length;
   var el = document.getElementById('queue-badge');
