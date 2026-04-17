@@ -1393,12 +1393,7 @@ function selectAdminById(id, isAdvancing) {
         '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;border-color:rgba(34,197,94,.3);color:var(--green)">&#10003; Complete</button>' +
         '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="flex:none">&#9888; Escalate</button>' +
       '</div>' +
-      '<div style="display:flex;gap:6px;margin-bottom:14px;align-items:flex-start">' +
-        '<textarea class="update-input" id="update-text" rows="2" placeholder="Post a public update&#8230;" style="flex:1;margin-bottom:0"></textarea>' +
-        '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'public\')" style="white-space:nowrap;align-self:stretch;padding:0 14px">Post Update</button>' +
-      '</div>' +
-      '<div class="section-title">Assign Department</div>' +
-      '<div class="assign-row">' +
+      '<div class="assign-row" style="margin-bottom:10px">' +
         '<select class="dept-select" id="dept-assign-select">' +
           '<option ' + (issue.dept === 'Street Department'      ? 'selected' : '') + '>Street Department</option>' +
           '<option ' + (issue.dept === 'Hastings Utilities'     ? 'selected' : '') + '>Hastings Utilities</option>' +
@@ -1406,6 +1401,10 @@ function selectAdminById(id, isAdvancing) {
           '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
         '</select>' +
         '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:14px;align-items:flex-start">' +
+        '<textarea class="update-input" id="update-text" rows="2" placeholder="Post a public update&#8230;" style="flex:1;margin-bottom:0"></textarea>' +
+        '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'public\')" style="white-space:nowrap;align-self:stretch;padding:0 14px">Post Update</button>' +
       '</div>' +
       '<div class="section-title">Escalation Deadline</div>' +
       '<div class="tl-chips" style="margin-bottom:14px">' + tlChips + '</div>' +
