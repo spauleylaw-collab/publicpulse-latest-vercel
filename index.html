@@ -738,8 +738,8 @@ var ISSUES = [
 ];
 
 var PINS = ISSUES;
-var STATUS_LABELS = { reported:'Just reported \u2014 under review', review:'City is investigating', progress:'City crews are working on this now', done:'Resolved \u2014 work complete' };
-var STATUS_CLASS  = { reported:'s-reported', review:'s-review', progress:'s-progress', done:'s-done' };
+var STATUS_LABELS = { reported:'Just reported \u2014 under review', review:'City is investigating', assigned:'Assigned to department \u2014 work pending', progress:'City crews are working on this now', done:'Resolved \u2014 work complete' };
+var STATUS_CLASS  = { reported:'s-reported', review:'s-review', assigned:'s-review', progress:'s-progress', done:'s-done' };
 
 function getIssueById(id) { return ISSUES.find(function(i){ return i.id === id; }); }
 
@@ -1267,7 +1267,10 @@ function toggleQueueFilter(name) {
   renderAdminQueue();
 }
 function getSortedAdminQueue(tab) {
-  return ISSUES.filter(function(i) { return i.queueStatus === tab; })
+  // Admin active queue = only reported + review (not yet assigned to dept)
+  // Admin completed queue = completed
+  var qFilter = tab === 'active' ? ['active'] : [tab];
+  return ISSUES.filter(function(i) { return qFilter.indexOf(i.queueStatus) > -1; })
     .sort(function(a,b) { if (a.escalate !== b.escalate) return b.escalate ? 1 : -1; return (b.severity||0)-(a.severity||0); });
 }
 function getFilteredAdminQueue(tab) {
@@ -1299,10 +1302,10 @@ function setQueueTab(tab) {
   renderAdminQueue();
 }
 function updateMapMetrics() {
-  var active    = PINS.filter(function(p){ return p.queueStatus === 'active'; }).length;
+  // active = reported+review (needs admin), assigned = with dept, both count as open
+  var active    = PINS.filter(function(p){ return p.queueStatus === 'active' || p.queueStatus === 'assigned'; }).length;
   var escalated = PINS.filter(function(p){ return p.escalate && p.status !== 'done'; }).length;
   var grantPins = PINS.filter(function(p){ return p.grants && p.grants.length > 0 && p.status !== 'done'; });
-  // Calculate total grant potential
   var grantTotal = 0;
   grantPins.forEach(function(p){
     p.grants.forEach(function(g){
@@ -1311,7 +1314,7 @@ function updateMapMetrics() {
     });
   });
   var grantStr = grantTotal >= 1000000 ? '$' + (grantTotal/1000000).toFixed(1) + 'M' : '$' + (grantTotal/1000).toFixed(0) + 'K';
-  var depts = new Set(PINS.filter(function(p){ return p.queueStatus==='active'; }).map(function(p){ return p.dept; })).size;
+  var depts = new Set(PINS.filter(function(p){ return p.queueStatus==='active'||p.queueStatus==='assigned'; }).map(function(p){ return p.dept; })).size;
   var el = function(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; };
   el('mm-active',    active + ' active issues');
   el('mm-escalated', escalated + ' escalated');
@@ -1323,6 +1326,7 @@ setInterval(updateMapMetrics, 10000);
 
 function updateQueueBadge() {
   var n = ISSUES.filter(function(i) { return i.queueStatus === 'active'; }).length;
+  // Admin queue badge = items needing admin attention (reported + review only)
   var el = document.getElementById('queue-badge');
   if (el) el.textContent = n + ' active';
 }
@@ -1374,7 +1378,7 @@ function selectAdminById(id, isAdvancing) {
   // State-based button logic
   var isReported  = issue.tag === 'reported';
   var isReview    = issue.tag === 'review';
-  var isAssigned  = issue.tag === 'assigned' || issue.tag === 'progress' || issue.status === 'progress' || issue.status === 'review';
+  var isAssigned  = issue.tag === 'assigned' || issue.tag === 'progress' || issue.status === 'assigned' || issue.status === 'progress';
   var isHighNotice = (issue.noticeCount||0) >= 5;
 
   // Recommended next step
@@ -1383,32 +1387,30 @@ function selectAdminById(id, isAdvancing) {
     nextStep = 'Review this issue to begin the workflow';
   } else if (isReview && (!issue.dept || issue.dept === 'Pending Assignment')) {
     nextStep = 'Assign to appropriate department';
-  } else if (isReview && issue.dept && issue.dept !== 'Pending Assignment') {
+  } else if (isReview) {
     nextStep = isHighNotice ? 'High resident activity — consider escalating or prioritizing' : 'Assign to ' + issue.dept + ' or complete if resolved';
-  } else if (issue.tag === 'assigned' || issue.status === 'progress') {
-    nextStep = 'Monitor progress — complete when work is resolved';
+  } else if (isAssigned) {
+    nextStep = 'Assigned to ' + issue.dept + ' — monitor progress or complete when resolved';
   } else if (issue.escalate) {
     nextStep = 'Escalated — assign immediately or complete';
   }
 
   // Button states
-  var reviewBtn, completeBtn, escalateBtn;
+  var reviewBtn, completeBtn;
 
   if (isReported) {
     // Primary: Review. Complete muted.
     reviewBtn   = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')" style="flex:1;min-width:110px">&#10003; Mark Reviewed</button>';
     completeBtn = '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;opacity:.4;border-color:var(--border);color:var(--muted)" title="Review first">&#10003; Complete</button>';
   } else if (isReview) {
-    // Review done (faded checkmark). Primary: Complete.
+    // Review done. Primary: Complete.
     reviewBtn   = '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.35;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>';
     completeBtn = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;background:var(--green);border-color:var(--green);color:#fff">&#10003; Complete</button>';
   } else {
-    // In progress / assigned — reviewed done, complete primary
+    // Assigned / In Progress — reviewed + assigned done, complete primary
     reviewBtn   = '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.35;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>';
     completeBtn = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;background:var(--green);border-color:var(--green);color:#fff">&#10003; Complete</button>';
   }
-
-  escalateBtn = '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="flex:none">&#9888; Escalate</button>';
 
   panel.innerHTML =
     '<div class="action-id">' + issue.id + '</div>' +
@@ -1427,7 +1429,7 @@ function selectAdminById(id, isAdvancing) {
       // Recommended next step hint
       (nextStep ? '<div style="font-size:11px;color:var(--accent);margin-bottom:8px;padding:6px 10px;background:rgba(61,142,248,0.08);border-radius:6px;border-left:3px solid var(--accent)">&#9654; Recommended: ' + nextStep + '</div>' : '') +
       '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">' +
-        reviewBtn + completeBtn + escalateBtn +
+        reviewBtn + completeBtn + '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="flex:none">&#9888; Escalate</button>' +
       '</div>' +
       '<div class="assign-row" style="margin-bottom:10px">' +
         '<select class="dept-select" id="dept-assign-select">' +
@@ -1480,8 +1482,8 @@ function renderLog(log) {
 
 function renderAdminLog() {
   // Update live metrics
-  var escalated = ISSUES.filter(function(i){ return i.escalate && i.queueStatus === 'active'; }).length;
-  var open      = ISSUES.filter(function(i){ return i.queueStatus === 'active'; }).length;
+  var escalated = ISSUES.filter(function(i){ return i.escalate && i.status !== 'done'; }).length;
+  var open      = ISSUES.filter(function(i){ return i.queueStatus === 'active' || i.queueStatus === 'assigned'; }).length;
   var closed    = ISSUES.filter(function(i){ return i.queueStatus === 'completed'; }).length;
   var me = document.getElementById('metric-escalated'); if (me) me.textContent = escalated;
   var mo = document.getElementById('metric-open');      if (mo) mo.textContent = open;
@@ -1592,51 +1594,79 @@ function adminAction(id, actionType) {
   if (!issue) return;
   var now = 'Just now';
 
-  // Instant visual feedback on the clicked button
-  (function flashBtn() {
-    var btns = document.querySelectorAll('.action-btn, .btn-assign');
-    btns.forEach(function(b) {
-      if (b.onclick && b.onclick.toString().indexOf(actionType) > -1) {
-        b.style.background = 'var(--accent)';
-        b.style.borderColor = 'var(--accent)';
-        b.style.color = '#fff';
-        b.disabled = true;
-      }
-    });
-  })();
+  // Reliable direct button feedback — keyed by actionType, not onclick inspection
+  var btnMap = {
+    review:   document.querySelector('.action-btn.primary'),
+    complete: document.querySelector('.action-btn[style*="green"]') || document.querySelector('.action-btn.primary'),
+    escalate: document.querySelector('.action-btn.danger'),
+    assign:   document.getElementById('btn-assign-action'),
+  };
+  var fb = btnMap[actionType];
+  if (fb && actionType !== 'public' && actionType !== 'remove') {
+    fb.style.background = 'var(--accent)';
+    fb.style.borderColor = 'var(--accent)';
+    fb.style.color = '#fff';
+    fb.disabled = true;
+    fb.style.opacity = '1';
+  }
 
   if (actionType === 'review') {
     issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review';
+    issue.queueStatus = 'active'; issue.workStatus = 'active';
     issue.log.push({ type:'review', body:'Marked as Reviewed by City Admin', time:now });
+
   } else if (actionType === 'escalate') {
     issue.escalate = true;
-    if (issue.status === 'reported') { issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review'; }
+    if (issue.status === 'reported') {
+      issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review';
+      issue.queueStatus = 'active'; issue.workStatus = 'active';
+    }
     issue.log.push({ type:'escalate', body:'Escalated to Department Director by City Admin', time:now });
     setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 350);
+
   } else if (actionType === 'assign') {
     var sel = document.getElementById('dept-assign-select');
     var dept = sel ? sel.value : issue.dept;
-    // Routing feedback
+    // Routing feedback on button
     var assignBtn = document.getElementById('btn-assign-action');
     if (assignBtn) {
       assignBtn.textContent = 'Routing to ' + dept.split(' ')[0] + '...';
-      assignBtn.style.background = 'var(--accent)';
-      assignBtn.style.borderColor = 'var(--accent)';
-      assignBtn.style.color = '#fff';
       assignBtn.disabled = true;
     }
-    issue.dept = dept; issue.status = 'review'; issue.statusLabel = 'Assigned'; issue.tag = 'assigned';
-    issue.workStatus = 'active'; issue.actionStatus = 'assigned';
+    // Clean consistent assigned state everywhere
+    issue.dept = dept;
+    issue.status = 'assigned';
+    issue.statusLabel = 'Assigned';
+    issue.tag = 'assigned';
+    issue.queueStatus = 'assigned';   // leaves admin active queue
+    issue.workStatus = 'active';       // appears in dept active queue
+    issue.actionStatus = 'assigned';
+    issue.progress = Math.max(issue.progress || 0, 5);
     issue.log.push({ type:'assign', body:'Assigned to ' + dept + ' by City Admin', time:now });
+    syncMapPin(issue);
+    // Exit admin queue, show next item
+    var panel = document.getElementById('action-panel');
+    if (panel) panel.style.opacity = '0';
+    var qel = document.getElementById('qi-' + id);
+    if (qel) { qel.classList.add('exiting'); setTimeout(function() { renderAdminQueue(); if (panel) panel.style.opacity = ''; advanceAdminQueue(id); }, 360); }
+    else { renderAdminQueue(); if (panel) panel.style.opacity = ''; advanceAdminQueue(id); }
+    updateQueueBadge(); renderDeptAccountability(); renderAdminLog();
+    return;
+
   } else if (actionType === 'public') {
     var el2 = document.getElementById('update-text');
     var msg = (el2 ? el2.value.trim() : '') || 'Status update posted';
     issue.log.push({ type:'public', body:'Public update posted: "' + msg + '"', time:now });
-    if (issue.status === 'reported') { issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review'; }
+    if (issue.status === 'reported') {
+      issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review';
+      issue.queueStatus = 'active'; issue.workStatus = 'active';
+    }
     if (el2) el2.value = '';
+
   } else if (actionType === 'complete') {
-    issue.statusLabel = 'Completed'; issue.tag = 'done'; issue.queueStatus = 'completed';
-    issue.status = 'done'; issue.workStatus = 'completed'; issue.actionStatus = 'completed'; issue.progress = 100; issue.priority = 'done';
+    issue.status = 'done'; issue.statusLabel = 'Completed'; issue.tag = 'done';
+    issue.queueStatus = 'completed'; issue.workStatus = 'completed';
+    issue.actionStatus = 'completed'; issue.progress = 100; issue.priority = 'done';
     issue.log.push({ type:'complete', body:'Marked as Completed by City Admin', time:now });
     syncMapPin(issue);
     var panel = document.getElementById('action-panel');
@@ -1646,6 +1676,7 @@ function adminAction(id, actionType) {
     else { renderAdminQueue(); if (panel) panel.style.opacity = ''; }
     updateQueueBadge(); renderDeptAccountability(); renderAdminLog(); advanceAdminQueue(id);
     return;
+
   } else if (actionType === 'remove') {
     var reasonEl = document.getElementById('remove-reason');
     var noteEl   = document.getElementById('remove-note');
@@ -1665,11 +1696,11 @@ function adminAction(id, actionType) {
     if (qelR) { qelR.classList.add('exiting'); setTimeout(function() { renderAdminQueue(); selectedAdminId = null; document.getElementById('action-empty').style.display = 'flex'; if (panelR) { panelR.style.display='none'; panelR.style.opacity=''; } updateQueueBadge(); renderAdminLog(); }, 360); }
     return;
   }
+
   syncMapPin(issue);
   var logEl = document.getElementById('admin-log');
   if (logEl) logEl.innerHTML = renderLog(issue.log);
   renderAdminQueue(); renderAdminLog();
-  // Re-render panel after short delay to show updated state
   setTimeout(function() { selectAdminById(id); }, 180);
 }
 
@@ -1722,11 +1753,23 @@ function setActiveDept(dept) {
   document.getElementById('dept-panel').style.display = 'none';
   renderDeptQueue(); renderDeptAccountability(); renderDeptPriority();
 }
-function getDeptIssues() { return ISSUES.filter(function(i) { return i.workStatus !== undefined && i.dept === activeDept; }); }
+function getDeptIssues() {
+  return ISSUES.filter(function(i) {
+    return i.dept === activeDept && (i.workStatus !== undefined);
+  });
+}
 function getDeptSorted(tab) {
   var order = { late:0, warn:1, ok:2, done:3 };
-  return getDeptIssues().filter(function(i) { return i.workStatus === tab; })
-    .sort(function(a,b) { return (order[a.priority]||2)-(order[b.priority]||2); });
+  // Dept active tab: workStatus=active OR queueStatus=assigned
+  var items;
+  if (tab === 'active') {
+    items = getDeptIssues().filter(function(i) {
+      return i.workStatus === 'active' || i.queueStatus === 'assigned';
+    });
+  } else {
+    items = getDeptIssues().filter(function(i) { return i.workStatus === tab; });
+  }
+  return items.sort(function(a,b) { return (order[a.priority]||2)-(order[b.priority]||2); });
 }
 function setDeptTab(tab) {
   currentDeptTab = tab;
