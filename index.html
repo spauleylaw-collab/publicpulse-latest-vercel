@@ -410,7 +410,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .map-filter-chip { padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(11,15,26,0.88); color: var(--muted); font-family: var(--font-body); transition: all 0.15s; backdrop-filter: blur(8px); white-space: nowrap; }
 .map-filter-chip:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
 .map-filter-chip.active { background: rgba(61,142,248,0.18); border-color: rgba(61,142,248,0.45); color: var(--accent); }
-#map-filter { position: absolute; bottom: 28px; left: 200px; z-index: 500; display: flex; gap: 5px; flex-wrap: wrap; max-width: 520px; }
+#map-filter { position: absolute; bottom: 28px; left: 10px; right: 10px; z-index: 500; display: flex; gap: 5px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
 /* Mobile text wrapping and overflow fixes */
 @media (max-width: 768px) {
   .card-title, .card-desc, .action-title, .action-desc,
