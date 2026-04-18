@@ -62,7 +62,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 #banner-text { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.4s; }
 #banner-text.fading { opacity: 0; }
 
-#drop-hint { display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 500; background: rgba(11,15,26,0.92); border: 1px solid rgba(61,142,248,0.4); border-radius: 100px; padding: 10px 10px 10px 20px; font-size: 13px; color: var(--accent); font-weight: 600; align-items: center; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: hint-blink 1.5s ease-in-out infinite; white-space: nowrap; }
+#drop-hint { display: none; position: absolute; top: 72px; left: 0; transform: none; z-index: 600; background: rgba(11,15,26,0.92); border: 1px solid rgba(61,142,248,0.4); border-radius: 100px; padding: 10px 10px 10px 20px; font-size: 13px; color: var(--accent); font-weight: 600; align-items: center; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: hint-blink 1.5s ease-in-out infinite; white-space: nowrap; }
 #drop-hint.active { display: flex; }
 #drop-cancel { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: var(--muted); border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; flex-shrink: 0; }
 #drop-cancel:hover { color: var(--text); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.1); }
@@ -171,14 +171,15 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .col-body::-webkit-scrollbar { width: 3px; }
 .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-.queue-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; position: relative; overflow: visible; }
+.queue-item { background: #131829; color: #ffffff; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px 12px 14px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s, border-color 0.15s; position: relative; overflow: visible; }
 .queue-item:hover    { border-color: rgba(255,255,255,.12); background: var(--surface2); }
+@media (hover: none) { .queue-item:hover { background: var(--surface); border-color: var(--border); } }
 .queue-item.selected { border-color: var(--accent); background: rgba(61,142,248,.06); }
 .queue-item.escalated { border-left: 3px solid var(--danger); }
 .queue-item.warning   { border-left: 3px solid var(--warn); }
 .qi-top   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .qi-time  { font-size: 11px; color: var(--muted); }
-.qi-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.5; overflow: visible; }
+.qi-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.5; overflow: visible; color: #ffffff; }
 .qi-dept  { font-size: 11px; color: var(--muted); }
 .qi-badge { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 100px; }
 .qi-badge.reported { background: rgba(245,166,35,.15); color: var(--warn); }
@@ -191,16 +192,16 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .action-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 10px; }
 .action-empty-icon { font-size: 36px; opacity: .25; }
 .action-empty-text { font-size: 14px; }
-.action-panel { padding: 22px; flex: 1; overflow-y: auto; }
+.action-panel { padding: 22px; flex: 1; overflow-y: auto; color: #ffffff; background: #131829; }
 .action-panel::-webkit-scrollbar { width: 3px; }
 .action-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .action-id    { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-.action-title { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
-.action-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+.action-title { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; color: #ffffff; }
+.action-desc  { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 14px; }
 .action-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { font-size: 11px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; }
 .chip strong { color: var(--text); }
-.section-title { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin: 20px 0 10px; }
+.section-title { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin: 20px 0 10px; }
 .action-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .action-btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--font-body); transition: all 0.15s; }
 .action-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -332,10 +333,10 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 
 .mob-section-tabs { display: none; }
 @media (max-width: 768px) {
-  :root { --nav-h: 50px; }
+  :root { --nav-h: 56px; }
   .nav-logo { font-size: 14px; }
   /* Shrink nav tabs so all 3 fit without clipping */
-  .nav-tab { padding: 5px 7px; font-size: 10px; white-space: nowrap; }
+  .nav-tab { padding: 8px 10px; font-size: 11px; white-space: nowrap; }
   .nav-city { display: none; }
   /* Admin/Dept single-column scroll */
   #view-admin, #view-dept { flex-direction: column; overflow-y: auto; }
@@ -374,7 +375,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   #map-filter::-webkit-scrollbar { display: none; }
   .map-filter-chip { font-size: 10px !important; padding: 5px 10px !important; flex-shrink: 0 !important; }
   /* Pin card — full width */
-  #map-card { width: calc(100vw - 20px); max-width: 380px; }
+  #map-card { width: calc(100vw - 20px); max-width: 380px; max-height: calc(100vh - 290px); overflow-y: auto; }
   /* Action panel */
   .action-panel { padding: 12px; }
   .action-btn { font-size: 12px; padding: 8px 10px; }
@@ -394,21 +395,33 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .map-metric-gold { color:#F59E0B; }
 .map-metric-sep { color:rgba(255,255,255,0.25); padding:0 6px; font-size:11px; }
 @media (max-width: 768px) {
-  .map-metric { font-size:10px; }
-  .map-metric-sep { padding:0 4px; }
-  #map-metrics { padding:0 10px 8px; }
+  .map-metric { font-size:9px; }
+  .map-metric-sep { padding:0 3px; }
+  #map-metrics { padding:0 8px 8px; }
 }
 /* Leaflet zoom buttons — bigger tap targets, topleft on all sizes */
 .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 20px !important; }
-.leaflet-top.leaflet-left { top: 72px !important; }
+.leaflet-top.leaflet-left { top: 72px !important; transition: opacity 0.25s ease; }
+.leaflet-zoom-hidden { opacity: 0 !important; pointer-events: none !important; }
 @media (max-width: 768px) {
-  .leaflet-bar a { width: 46px !important; height: 46px !important; line-height: 46px !important; font-size: 24px !important; }
-  .leaflet-top.leaflet-left { top: 110px !important; }
+  .leaflet-bar a { width: 32px !important; height: 32px !important; line-height: 32px !important; font-size: 18px !important; }
+  .leaflet-top.leaflet-left { top: 110px !important; left: 0 !important; }
 }
 .map-filter-chip { padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(11,15,26,0.88); color: var(--muted); font-family: var(--font-body); transition: all 0.15s; backdrop-filter: blur(8px); white-space: nowrap; }
 .map-filter-chip:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
 .map-filter-chip.active { background: rgba(61,142,248,0.18); border-color: rgba(61,142,248,0.45); color: var(--accent); }
-#map-filter { position: absolute; bottom: 28px; left: 200px; z-index: 500; display: flex; gap: 5px; flex-wrap: wrap; max-width: 380px; }
+#map-filter { position: absolute; bottom: 28px; left: 200px; z-index: 500; display: flex; gap: 5px; flex-wrap: wrap; max-width: 520px; }
+/* Mobile text wrapping and overflow fixes */
+@media (max-width: 768px) {
+  .card-title, .card-desc, .action-title, .action-desc,
+  .log-body, .section-title, .assign-row, .action-chips { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
+  .qi-title { white-space: normal; word-break: break-word; overflow-wrap: anywhere; color: #ffffff !important; font-weight: 700 !important; }
+  .qi-dept  { white-space: normal; word-break: break-word; }
+  .queue-item { background: #131829 !important; color: #ffffff !important; }
+  .card-body, .action-panel { overflow-y: auto; }
+  .action-btn, .btn-assign { min-width: 0; }
+  .chip { max-width: 100%; overflow: visible; }
+}
 </style>
 </head>
 <body>
@@ -432,13 +445,13 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
       <div style="font-family:var(--font-display);font-size:15px;font-weight:800;color:#ffffff;letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,0.8)">What's happening in Hastings right now</div>
     </div>
     <!-- Row 2: Live metrics -->
-    <div id="map-metrics" style="display:flex;align-items:center;gap:0;padding:0 16px 10px;flex-wrap:nowrap;overflow:hidden">
+    <div id="map-metrics" style="display:flex;align-items:center;gap:0;padding:0 16px 10px;flex-wrap:nowrap;overflow:visible">
       <div class="map-metric" id="mm-active"></div>
-      <div class="map-metric-sep">·</div>
+      <div class="map-metric-sep" id="mm-sep1">·</div>
       <div class="map-metric map-metric-red" id="mm-escalated"></div>
-      <div class="map-metric-sep">·</div>
+      <div class="map-metric-sep" id="mm-sep2">·</div>
       <div class="map-metric map-metric-gold" id="mm-grants"></div>
-      <div class="map-metric-sep">·</div>
+      <div class="map-metric-sep" id="mm-sep3">·</div>
       <div class="map-metric" id="mm-depts"></div>
     </div>
   </div>
@@ -491,6 +504,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
       <button class="map-filter-chip" id="mf-utilities">&#x26A1; Utilities</button>
       <button class="map-filter-chip" id="mf-police">&#x1F46E; Police</button>
       <button class="map-filter-chip" id="mf-fire">&#x1F692; Fire</button>
+      <button class="map-filter-chip" id="mf-resolved" style="border-color:rgba(107,114,128,0.4);color:#6b7280">&#10003; Resolved</button>
     </div>
     <div id="legend">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -498,12 +512,12 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
         <button id="legend-toggle" onclick="toggleLegend()" style="display:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0;line-height:1">&#8722;</button>
       </div>
       <div id="legend-body">
-        <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Critical — Escalated</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Escalated</div>
         <div class="legend-row"><div class="legend-dot" style="background:#ef4444;box-shadow:0 0 7px rgba(239,68,68,.6)"></div>Urgent</div>
         <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5)"></div>Moderate</div>
         <div class="legend-row"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.4)"></div>Low</div>
         <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><div class="legend-dot" style="background:#6b7280;opacity:.7"></div>Resolved</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Larger, brighter pins reflect<br>urgency and resident activity</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4">Brighter pins reflect higher urgency<br>and community impact</div>
       </div>
     </div>
     <div id="report-overlay" onclick="handleOverlayClick(event)">
@@ -710,7 +724,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 <script>
 var ISSUES = [
   { id:'PP-0241', lat:40.5870, lng:-98.3878, title:'Pothole \u2014 Burlington Ave & W 2nd St', desc:'Large pothole at Burlington Ave and W 2nd St intersection. Multiple reports since spring thaw. Vehicle damage risk.', dept:'Street Department', time:'18 min ago', category:'infrastructure', severity:78, noticeCount:11, grants:[{name:'DOT RAISE',range:'$1M\u2013$25M',note:'Burlington Ave corridor multimodal eligible'},{name:'EDA Public Works',range:'$300K\u2013$3M',note:'Economic distress infrastructure'}], status:'reported', escalate:true, statusLabel:'Reported', tag:'reported', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'assigned', progress:0, deadline:'48h overdue', priority:'late', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'18 min ago'},{type:'system',body:'Routed to Street Department by PublicPulse',time:'18 min ago'},{type:'escalate',body:'Auto-escalated \u2014 no activity within 12h SLA',time:'5 min ago'}] },
-  { id:'PP-0235', lat:40.5862, lng:-98.3782, title:'Gas Odor \u2014 E 3rd St & N Hastings Ave', desc:'Resident reports faint gas odor near E 3rd St intersection. Hastings Utilities crew dispatched to investigate.', dept:'Hastings Utilities', time:'30 min ago', category:'safety', severity:92, noticeCount:8, grants:[], status:'review', escalate:true, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'assigned', progress:0, deadline:'Immediate', priority:'late', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'30 min ago'},{type:'escalate',body:'Auto-escalated \u2014 critical safety category',time:'28 min ago'}] },
+  { id:'PP-0235', lat:40.5862, lng:-98.3782, title:'Gas Odor \u2014 E 3rd St & N Hastings Ave', desc:'Resident reports faint gas odor near E 3rd St intersection. Possible gas line issue.', dept:'Hastings Utilities', time:'30 min ago', category:'safety', severity:92, noticeCount:8, grants:[], status:'review', escalate:true, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'none', progress:0, deadline:'Immediate', priority:'late', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'30 min ago'},{type:'escalate',body:'Auto-escalated \u2014 critical safety category',time:'28 min ago'}] },
   { id:'PP-0240', lat:40.5922, lng:-98.3888, title:'Storm Sewer Backup \u2014 N Kansas Ave', desc:'Storm sewer overflowing on N Kansas Ave. Hastings Utilities crews assessing pipe capacity before next rain.', dept:'Hastings Utilities', time:'2 hrs ago', category:'utility', severity:65, noticeCount:6, grants:[{name:'FEMA BRIC',range:'$500K\u2013$2M',note:'Stormwater resilience \u2014 N Kansas Ave sewer directly eligible'},{name:'EPA Clean Water SRF',range:'$500K\u2013$3M',note:'Storm sewer / water quality improvement'},{name:'USDA Community Facilities',range:'$250K\u2013$5M',note:'Rural water/sewer infrastructure'}], status:'progress', escalate:false, statusLabel:'In Progress', tag:'progress', queueStatus:'assigned', warn:true, workStatus:'active', actionStatus:'in-progress', progress:35, deadline:'Due in 12h', priority:'warn', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'2 hrs ago'},{type:'assign',body:'Assigned to Hastings Utilities by City Admin',time:'1 hr 45 min ago'},{type:'ack',body:'Assignment acknowledged by Hastings Utilities',time:'1 hr 45 min ago'},{type:'start',body:'Work started \u2014 crew on site at N Kansas Ave',time:'1 hr ago'},{type:'public',body:'Public update posted: "Crew assessing drainage capacity"',time:'45 min ago'}] },
   { id:'PP-0238', lat:40.5832, lng:-98.3958, title:'Abandoned Vehicle \u2014 W 9th St & N Denver Ave', desc:'Vehicle parked on W 9th St near N Denver Ave for over 72 hours. No registration visible.', dept:'Hastings Police', time:'45 min ago', category:'police', severity:35, noticeCount:3, grants:[], status:'reported', escalate:false, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 24h', priority:'ok', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'45 min ago'},{type:'review',body:'Marked as Reviewed \u2014 officer dispatched to assess',time:'30 min ago'}] },
   { id:'PP-0236', lat:40.5845, lng:-98.4012, title:'Sidewalk Heave \u2014 W 7th St & N Colorado Ave', desc:'Tree roots causing concrete heave near W 7th and N Colorado Ave. Significant trip hazard for pedestrians.', dept:'Street Department', time:'1 hr ago', category:'infrastructure', severity:48, noticeCount:5, grants:[{name:'CDBG (NE DED)',range:'$200K\u2013$750K',note:'ADA sidewalk / low-income area infrastructure eligible'}], status:'reported', escalate:false, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Due in 8h', priority:'warn', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 hr ago'},{type:'ack',body:'Assignment acknowledged \u2014 crew scheduled for afternoon',time:'45 min ago'}] },
@@ -733,12 +747,49 @@ var ISSUES = [
   { id:'PP-0214', lat:40.5812, lng:-98.3935, title:'Broken Playground Equipment \u2014 Caldwell Park', desc:'Swing set chain broken at Caldwell Park. Safety hazard for children.', dept:'Street Department', time:'2 weeks ago', category:'park', severity:35, noticeCount:11, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 1 week ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'2 weeks ago'},{type:'complete',body:'Marked as Completed \u2014 chain replaced and inspected',time:'1 week ago'}] },
   { id:'PP-0213', lat:40.5952, lng:-98.3910, title:'Dead Tree Hazard \u2014 W 16th St', desc:'Large dead tree leaning toward power line on W 16th St. Wind risk.', dept:'Street Department', time:'3 weeks ago', category:'road', severity:62, noticeCount:7, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 2 weeks ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'3 weeks ago'},{type:'complete',body:'Tree removed and area cleared',time:'2 weeks ago'}] },
   { id:'PP-0212', lat:40.5832, lng:-98.3995, title:'Broken Water Meter \u2014 Highland Subdivision', desc:'Water meter showing erratic readings in Highland subdivision. Several homes affected.', dept:'Hastings Utilities', time:'1 month ago', category:'utility', severity:45, noticeCount:6, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 3 weeks ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 month ago'},{type:'complete',body:'Marked as Completed \u2014 all meters verified',time:'3 weeks ago'}] },
-  { id:'PP-0211', lat:40.5905, lng:-98.3855, title:'Gas Leak Suspected \u2014 W 11th St & N Kansas Ave', desc:'Resident reported strong gas odor near W 11th St and N Kansas Ave intersection. Fire & Rescue dispatched for gas investigation and safety sweep.', dept:'Hastings Fire & Rescue', time:'1 hr ago', category:'safety', severity:88, noticeCount:6, grants:[], status:'assigned', escalate:true, statusLabel:'Assigned', tag:'assigned', queueStatus:'assigned', warn:false, workStatus:'active', actionStatus:'acknowledged', progress:10, deadline:'Immediate', priority:'late', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 hr ago'},{type:'escalate',body:'Auto-escalated \u2014 potential gas emergency',time:'58 min ago'},{type:'ack',body:'Assignment acknowledged \u2014 Engine 1 dispatched',time:'55 min ago'}] },
+  { id:'PP-0211', lat:40.5905, lng:-98.3855, title:'Gas Leak Suspected \u2014 W 11th St & N Kansas Ave', desc:'Resident reported strong gas odor near W 11th St and N Kansas Ave intersection. Fire & Rescue dispatched for gas investigation and safety sweep.', dept:'Hastings Utilities', time:'1 hr ago', category:'safety', severity:88, noticeCount:6, grants:[], status:'review', escalate:true, statusLabel:'Under Review', tag:'review', queueStatus:'active', warn:false, workStatus:'active', actionStatus:'none', progress:0, deadline:'Immediate', priority:'late', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'1 hr ago'},{type:'escalate',body:'Auto-escalated \u2014 potential gas emergency',time:'58 min ago'}] },
   { id:'PP-0210', lat:40.5865, lng:-98.3920, title:'Carbon Monoxide Alarm \u2014 W 5th St Residence', desc:'Resident called in CO alarm activation at a W 5th St address. Fire & Rescue crew cleared the building and identified faulty furnace. Resident safely relocated.', dept:'Hastings Fire & Rescue', time:'2 days ago', category:'safety', severity:20, noticeCount:0, grants:[], status:'done', escalate:false, statusLabel:'Completed', tag:'done', queueStatus:'completed', warn:false, workStatus:'completed', actionStatus:'completed', progress:100, deadline:'Closed 2 days ago', priority:'done', log:[{type:'system',body:'Issue submitted by resident via PublicPulse',time:'2 days ago'},{type:'ack',body:'Assignment acknowledged \u2014 crew dispatched',time:'2 days ago'},{type:'start',body:'Work started \u2014 Fire & Rescue on scene',time:'2 days ago'},{type:'complete',body:'Building cleared \u2014 faulty furnace identified and tagged',time:'2 days ago'}] }
 ];
 
 var PINS = ISSUES;
 var STATUS_LABELS = { reported:'Just reported \u2014 under review', review:'City is investigating', assigned:'Assigned to department \u2014 work pending', progress:'City crews are working on this now', done:'Resolved \u2014 work complete' };
+
+function statusNarrative(issue) {
+  var lines = [];
+  var log = issue.log || [];
+  var hasReview   = log.some(function(e){ return e.type === 'review'; });
+  var hasAssign   = log.some(function(e){ return e.type === 'assign'; });
+  var hasStart    = log.some(function(e){ return e.type === 'start'; });
+  var hasPublic   = log.filter(function(e){ return e.type === 'public' || e.type === 'update'; });
+  var hasComplete = log.some(function(e){ return e.type === 'complete'; });
+
+  if (issue.status === 'reported' && !hasReview) {
+    lines.push('Received by city \u2014 pending review.');
+  }
+  if (hasReview || issue.tag === 'review' || isAssigned_check(issue)) {
+    lines.push('Reviewed by City Admin.');
+  }
+  if (hasAssign || isAssigned_check(issue)) {
+    lines.push('Assigned to ' + issue.dept + '.');
+  }
+  if (hasStart || issue.status === 'progress') {
+    lines.push(issue.dept + ' has begun work.');
+  }
+  if (hasPublic.length) {
+    var last = hasPublic[hasPublic.length - 1];
+    lines.push('Latest update: \u201c' + last.body.replace('Public update posted: ', '').replace(/^"|"$/g,'').replace(/^"/,'').replace(/"$/,'') + '\u201d');
+  }
+  if (hasComplete) {
+    lines.push('Issue resolved and closed.');
+  }
+  if (issue.escalate) {
+    lines.push('\u26a0 Escalated \u2014 priority response required.');
+  }
+  return lines.join(' ');
+}
+function isAssigned_check(issue) {
+  return issue.tag === 'assigned' || issue.tag === 'progress' || issue.status === 'assigned' || issue.status === 'progress';
+}
 var STATUS_CLASS  = { reported:'s-reported', review:'s-review', assigned:'s-review', progress:'s-progress', done:'s-done' };
 
 function getIssueById(id) { return ISSUES.find(function(i){ return i.id === id; }); }
@@ -791,9 +842,9 @@ function pinStyle(pin) {
 function makeIcon(pin) {
   var ps = pinStyle(pin);
   var color = ps.color, r = ps.r;
-  // Boost the single most dominant issue
+  // Single dominant issue — unmistakably largest, strongest pulse
   if (window._dominantId && pin.id === window._dominantId) {
-    r = Math.round(r * 1.25);
+    r = Math.round(r * 1.45);
   }
   var score = calcScore(pin);
   var spreadMult = pin.status === 'done' ? 0 : score < 31 ? 2.2 : score < 61 ? 2.8 : 3.5;
@@ -802,7 +853,7 @@ function makeIcon(pin) {
   var w = (r + pad + pulseRoom) * 2;
   var h = w + tail;
   var cx = w/2, cy = r + pad + pulseRoom;
-  var dur = pin.status === 'done' ? 0 : pin.escalate ? 3.2 : score < 31 ? 7.5 : score < 61 ? 6.0 : 4.8;
+  var dur = pin.status === 'done' ? 0 : (window._dominantId && pin.id === window._dominantId) ? 1.8 : pin.escalate ? 3.2 : score < 31 ? 7.5 : score < 61 ? 6.0 : 4.8;
   var family = pin.status === 'done' ? null : pin.escalate ? 'critical' : score < 31 ? 'green' : score < 61 ? 'amber' : 'red';
   var rs = r * 2;
   var rTop = cy - r, rLeft = cx - r;
@@ -822,7 +873,7 @@ function makeIcon(pin) {
   var label = rawLabel.length > 22 ? rawLabel.slice(0,20) + '\u2026' : rawLabel;
   var labelColor = pin.status === 'done' ? '#6b7280' : color;
   var showLabel = pin.status !== 'done' && (typeof map !== 'undefined' ? map.getZoom() >= 15 : true);
-  var labelEl = showLabel ? '<div style="position:absolute;top:' + (h+4) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,8,18,0.95);border:1px solid ' + labelColor + '88;border-radius:6px;padding:3px 9px;font-family:system-ui,sans-serif;font-size:12px;font-weight:700;color:#ffffff;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.7);letter-spacing:0.01em">' + label + '</div>' : '';
+  var labelEl = showLabel ? '<div style="position:absolute;top:' + (cy+r+tail+2) + 'px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,8,18,0.95);border:1px solid ' + labelColor + '88;border-radius:6px;padding:3px 9px;font-family:system-ui,sans-serif;font-size:11px;font-weight:700;color:#ffffff;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,0.7);letter-spacing:0.01em">' + label + '</div>' : '';
   // Notice count badge
   var notices = pin.noticeCount || 0;
   var badgeEl = (notices > 0 && pin.status !== 'done') ? '<div style="position:absolute;top:' + (pulseRoom) + 'px;right:' + (pulseRoom) + 'px;min-width:16px;height:16px;background:#3D8EF8;border:2px solid rgba(5,8,18,0.95);border-radius:100px;font-family:system-ui,sans-serif;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 3px;pointer-events:none;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,0.6)">' + notices + '</div>' : '';
@@ -839,7 +890,8 @@ var map = L.map('map', { center:[40.5888,-98.3910], zoom:14, zoomControl:false }
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap', maxZoom:19 }).addTo(map);
 
 // Zoom control — topleft on all sizes so it never overlaps Report Issue button
-L.control.zoom({ position: 'topleft' }).addTo(map);
+var zoomControl = L.control.zoom({ position: 'topleft' }).addTo(map);
+var zoomEl = zoomControl.getContainer();
 
 // Recenter button — always visible top right
 var RecenterControl = L.Control.extend({
@@ -879,7 +931,7 @@ var ttSummary = document.getElementById('tt-summary');
 function showPinTooltip(pin, containerPoint) {
   var isEsc = pin.escalate && pin.status !== 'done';
   var statusColor = isEsc ? '#ff0a3c' : pin.status === 'done' ? 'var(--green)' : pin.status === 'progress' ? 'var(--accent)' : pin.status === 'review' ? 'var(--accent)' : 'var(--warn)';
-  ttStatus.textContent = isEsc ? '\u26a0 Critical \u2014 Escalated' : STATUS_LABELS[pin.status];
+  ttStatus.textContent = isEsc ? '\u26a0 Escalated' : STATUS_LABELS[pin.status];
   ttStatus.style.color = statusColor;
   ttTitle.textContent  = pin.title;
   var summary = pin.desc.length > 80 ? pin.desc.slice(0,78) + '\u2026' : pin.desc;
@@ -1006,13 +1058,20 @@ function toggleHeatmap() {
   if (heatActive) { buildHeatCanvas(); btn.classList.add('active'); btn.textContent = '\u{1F321} Heat Map: ON'; }
   else { if (heatCanvas) { heatCanvas.remove(); heatCanvas = null; } btn.classList.remove('active'); btn.textContent = '\u{1F321} Heat Map'; }
 }
-map.on('moveend zoomend', function() {
+var _zoomDebounce = null;
+map.on('zoomend', function() {
   if (heatActive) buildHeatCanvas();
-  // Refresh labels — show at zoom 15+, hide below
-  PINS.forEach(function(pin) {
-    var marker = markerMap[pin.id];
-    if (marker) marker.setIcon(makeIcon(pin));
-  });
+  // Debounce icon rebuild so it runs after zoom animation fully settles
+  clearTimeout(_zoomDebounce);
+  _zoomDebounce = setTimeout(function() {
+    PINS.forEach(function(pin) {
+      var marker = markerMap[pin.id];
+      if (marker) marker.setIcon(makeIcon(pin));
+    });
+  }, 120);
+});
+map.on('moveend', function() {
+  if (heatActive) buildHeatCanvas();
 });
 
 var activePin = null;
@@ -1021,7 +1080,7 @@ function openCard(pin, cp) {
   var card = document.getElementById('map-card');
   var tail = document.getElementById('card-tail');
   var statusEl = document.getElementById('card-status');
-  var escalatedLabel = pin.escalate && pin.status !== 'done' ? '\u26a0 Critical \u2014 Escalated' : STATUS_LABELS[pin.status];
+  var escalatedLabel = pin.escalate && pin.status !== 'done' ? '\u26a0 Escalated' : STATUS_LABELS[pin.status];
   statusEl.textContent = escalatedLabel;
   statusEl.className   = 'card-status ' + (pin.escalate && pin.status !== 'done' ? 's-escalated' : STATUS_CLASS[pin.status]);
   document.getElementById('card-title').textContent = pin.title;
@@ -1055,7 +1114,10 @@ function openCard(pin, cp) {
     lastActionEl.style.display = 'none';
   }
   var chips = document.getElementById('card-chips');
-  chips.innerHTML = '<div class="card-chip">&#127970; ' + pin.dept + '</div><div class="card-chip">&#128336; ' + (pin.isNew ? 'Just submitted' : pin.time) + '</div>' +
+  var deptChip = (pin.queueStatus === 'assigned' || pin.queueStatus === 'completed') && pin.dept !== 'Pending Assignment'
+    ? '<div class="card-chip">\uD83C\uDFD8 ' + pin.dept + '</div>' : '';
+  chips.innerHTML = deptChip +
+    '<div class="card-chip">&#128336; ' + (pin.isNew ? 'Just submitted' : pin.time) + '</div>' +
     (pin.escalate && pin.status !== 'done' ? '<div class="card-chip" style="color:var(--danger);border-color:rgba(255,10,60,.3)">\u26a0 Escalated</div>' : '');
   var noticedBtn = document.getElementById('card-noticed');
   noticedBtn.className = pin.noticed ? 'card-noticed confirmed' : 'card-noticed';
@@ -1073,13 +1135,16 @@ function openCard(pin, cp) {
     var mapEl = document.getElementById('map-container');
     var mw = mapEl.offsetWidth, mh = mapEl.offsetHeight;
     var MARGIN=14, TAIL_H=12;
-    // On mobile, center the card horizontally and place near top
+    // On mobile, center the card horizontally, below header+zoom controls
     if (mw <= 600) {
       card.style.left = Math.max(MARGIN, (mw - cw) / 2) + 'px';
-      card.style.top  = (MARGIN + 10) + 'px';
+      card.style.top  = '215px';
       tail.className  = '';
       card.style.visibility = '';
       card.className = 'open';
+      document.getElementById('btn-report').style.display = 'none';
+      // Hide zoom controls so they don't overlap the card
+      if (zoomEl) { zoomEl.style.opacity = '0'; zoomEl.style.pointerEvents = 'none'; }
       return;
     }
     var px = cp.x, py = cp.y;
@@ -1094,6 +1159,7 @@ function openCard(pin, cp) {
     card.style.left = left + 'px'; card.style.top = top + 'px';
     card.style.visibility = '';
     card.className = 'open';
+    document.getElementById('btn-report').style.display = 'none';
   });
 }
 function triggerCardPhoto() { var i = document.getElementById('card-photo-input'); if (i) i.click(); }
@@ -1109,23 +1175,42 @@ function handleCardPhoto(e) {
   };
   reader.readAsDataURL(file);
 }
-function closeCard() { document.getElementById('map-card').className = ''; document.getElementById('map-card').style.display = 'none'; activePin = null; }
+function closeCard() {
+  document.getElementById('map-card').className = '';
+  document.getElementById('map-card').style.display = 'none';
+  activePin = null;
+  document.getElementById('btn-report').style.display = '';
+  // Restore zoom controls
+  if (zoomEl) { zoomEl.style.opacity = ''; zoomEl.style.pointerEvents = ''; }
+}
 
 /* MAP FILTER */
 var activeMapFilter = 'all';
 var DEPT_MAP = { street:'Street Department', utilities:'Hastings Utilities', police:'Hastings Police', fire:'Hastings Fire & Rescue' };
 function setMapFilter(name) {
   activeMapFilter = name;
-  ['all','street','utilities','police','fire'].forEach(function(n) {
+  ['all','street','utilities','police','fire','resolved'].forEach(function(n) {
     var btn = document.getElementById('mf-' + n);
     if (btn) btn.classList.toggle('active', n === name);
   });
   PINS.forEach(function(pin) {
     var marker = markerMap[pin.id];
     if (!marker) return;
-    var show = name === 'all' || pin.dept === DEPT_MAP[name];
-    marker.setOpacity(show ? 1 : 0);
-    if (marker._icon) marker._icon.style.pointerEvents = show ? 'auto' : 'none';
+    var show;
+    if (name === 'resolved') {
+      show = pin.status === 'done';
+    } else if (name === 'all') {
+      show = true;
+    } else {
+      show = pin.dept === DEPT_MAP[name];
+    }
+    if (show) {
+      if (!clusterGroup.hasLayer(marker)) clusterGroup.addLayer(marker);
+      marker.setOpacity(1);
+      if (marker._icon) marker._icon.style.pointerEvents = 'auto';
+    } else {
+      clusterGroup.removeLayer(marker);
+    }
   });
 }
 
@@ -1141,6 +1226,7 @@ function startReport() {
   document.getElementById('banner').style.display = 'none';
   var hdr = document.getElementById('map-header'); if (hdr) hdr.style.display = 'none';
   document.getElementById('drop-hint').classList.add('active');
+  if (zoomEl) { zoomEl.style.opacity = '0'; zoomEl.style.pointerEvents = 'none'; }
   closeCard();
 }
 function cancelReport() {
@@ -1154,6 +1240,7 @@ function cancelReport() {
   document.getElementById('btn-report').style.display = '';
   document.getElementById('banner').style.display = '';
   var hdr = document.getElementById('map-header'); if (hdr) hdr.style.display = '';
+  if (zoomEl) { zoomEl.style.opacity = ''; zoomEl.style.pointerEvents = ''; }
 }
 function handleOverlayClick(e) { if (e.target === document.getElementById('report-overlay')) cancelReport(); }
 map.on('click', function(e) {
@@ -1187,6 +1274,8 @@ function submitReport() {
   document.getElementById('report-desc').value = '';
   document.getElementById('btn-report').style.display = '';
   document.getElementById('banner').style.display = '';
+  var hdrEl = document.getElementById('map-header'); if (hdrEl) hdrEl.style.display = '';
+  if (zoomEl) { zoomEl.style.opacity = ''; zoomEl.style.pointerEvents = ''; }
   removePhoto(); setMicStatus(false); droppedLatLng = null;
   showToast();
 }
@@ -1210,12 +1299,12 @@ function noticeThis() {
 }
 
 var BANNERS = [
-  { text:'Pothole reported on Burlington Ave \u2014 18 minutes ago',    id:'PP-0241' },
-  { text:'Gas odor near E 3rd St \u2014 Hastings Utilities dispatched', id:'PP-0235' },
-  { text:'Abandoned vehicle on W 9th St \u2014 Police notified',         id:'PP-0238' },
-  { text:'Storm sewer backup on N Kansas Ave \u2014 under review',       id:'PP-0240' },
-  { text:'Road resurfacing on W 12th St in progress',                    id:'PP-0237' },
-  { text:'3 new issues reported in Hastings today',                      id:null },
+  { text:'Pothole repair needed \u2014 Burlington Ave (reported 18 min ago)',    id:'PP-0241' },
+  { text:'Gas odor investigation active \u2014 E 3rd St & N Hastings Ave',       id:'PP-0235' },
+  { text:'Abandoned vehicle flagged \u2014 W 9th St, Police en route',           id:'PP-0238' },
+  { text:'Storm sewer crew deployed \u2014 N Kansas Ave under assessment',       id:'PP-0240' },
+  { text:'Road resurfacing underway \u2014 W 12th St, expect delays',            id:'PP-0237' },
+  { text:'19 issues active across Hastings right now',                           id:null },
 ];
 var bannerIdx = 0;
 var _bannerHighlight = null;
@@ -1272,11 +1361,12 @@ function toggleQueueFilter(name) {
   renderAdminQueue();
 }
 function getSortedAdminQueue(tab) {
-  // Admin active queue = only reported + review (not yet assigned to dept)
-  // Admin completed queue = completed
-  var qFilter = tab === 'active' ? ['active'] : [tab];
-  return ISSUES.filter(function(i) { return qFilter.indexOf(i.queueStatus) > -1; })
-    .sort(function(a,b) { if (a.escalate !== b.escalate) return b.escalate ? 1 : -1; return (b.severity||0)-(a.severity||0); });
+  // Admin active = everything except completed
+  // Admin completed = completed only
+  return ISSUES.filter(function(i) {
+    if (tab === 'active') return i.queueStatus !== 'completed' && i.queueStatus !== 'removed';
+    return i.queueStatus === tab;
+  }).sort(function(a,b) { if (a.escalate !== b.escalate) return b.escalate ? 1 : -1; return (b.severity||0)-(a.severity||0); });
 }
 function getFilteredAdminQueue(tab) {
   var items = getSortedAdminQueue(tab);
@@ -1319,12 +1409,24 @@ function updateMapMetrics() {
     });
   });
   var grantStr = grantTotal >= 1000000 ? '$' + (grantTotal/1000000).toFixed(1) + 'M' : '$' + (grantTotal/1000).toFixed(0) + 'K';
-  var depts = new Set(PINS.filter(function(p){ return p.queueStatus==='active'||p.queueStatus==='assigned'; }).map(function(p){ return p.dept; })).size;
+  var depts = new Set(PINS.filter(function(p){ return p.queueStatus==='assigned'; }).map(function(p){ return p.dept; })).size;
+  var isMob = window.innerWidth <= 600;
   var el = function(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; };
-  el('mm-active',    active + ' active issues');
-  el('mm-escalated', escalated + ' escalated');
-  el('mm-grants',    grantStr + ' in grants identified');
-  el('mm-depts',     depts + ' depts responding');
+  var vis = function(id, show) { var e = document.getElementById(id); if (e) e.style.display = show ? '' : 'none'; };
+  if (isMob) {
+    el('mm-active',    active + ' active');
+    el('mm-escalated', escalated + ' escalated');
+    el('mm-grants',    grantStr + ' grants');
+    el('mm-depts',     depts + ' depts');
+    vis('mm-sep1', true); vis('mm-sep2', true); vis('mm-sep3', true);
+  } else {
+    var sentence = depts > 0
+      ? 'Crews responding to ' + active + ' issue' + (active !== 1 ? 's' : '') + ' across Hastings' + (escalated > 0 ? '. ' + escalated + ' require' + (escalated === 1 ? 's' : '') + ' immediate attention.' : '.') + ' ' + grantStr + ' in federal grants identified.'
+      : active + ' issue' + (active !== 1 ? 's' : '') + ' reported across Hastings' + (escalated > 0 ? '. ' + escalated + ' escalated.' : '.') + ' ' + grantStr + ' in federal grants identified.';
+    el('mm-active', sentence);
+    el('mm-escalated', ''); el('mm-grants', ''); el('mm-depts', '');
+    vis('mm-sep1', false); vis('mm-sep2', false); vis('mm-sep3', false);
+  }
 }
 updateMapMetrics();
 setInterval(updateMapMetrics, 10000);
@@ -1341,10 +1443,25 @@ function renderAdminQueue() {
   var qel = document.getElementById('admin-queue');
   if (!items.length) { qel.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' + (currentQueueTab === 'active' ? 'No matching issues' : 'No completed issues yet') + '</div>'; return; }
   qel.innerHTML = items.map(function(issue) {
-    return '<div class="queue-item ' + (issue.escalate ? 'escalated' : issue.warn ? 'warning' : '') + ' ' + (selectedAdminId === issue.id ? 'selected' : '') + '" id="qi-' + issue.id + '" onclick="selectAdminById(\'' + issue.id + '\')">' +
+    // Color coding
+    var borderColor = '', bgColor = '', titleColor = 'var(--text)';
+    if (issue.escalate || issue.priority === 'late') {
+      borderColor = 'border-left:3px solid var(--danger)';
+      bgColor = 'background:rgba(255,10,60,0.04)';
+    } else if (issue.priority === 'warn') {
+      borderColor = 'border-left:3px solid var(--warn)';
+      bgColor = 'background:rgba(245,158,11,0.04)';
+    } else if (issue.queueStatus === 'assigned' || issue.queueStatus === 'active' && issue.tag !== 'reported') {
+      borderColor = 'border-left:3px solid var(--green)';
+      bgColor = 'background:rgba(34,197,94,0.04)';
+    }
+    var styles = [borderColor, bgColor].filter(Boolean).join(';');
+    return '<div class="queue-item ' + (selectedAdminId === issue.id ? 'selected' : '') + '" id="qi-' + issue.id + '" style="' + styles + '" onclick="selectAdminById(\'' + issue.id + '\')">' +
       (issue.escalate ? '<div class="escalate-pill">Escalated</div>' : '') +
       '<div class="qi-top"><span class="qi-badge ' + issue.tag + '">' + issue.statusLabel + '</span><span class="qi-time">' + issue.time + '</span></div>' +
-      '<div class="qi-title">' + issue.title + '</div><div class="qi-dept">' + issue.dept + '</div></div>';
+      '<div class="qi-title" style="color:#e8eaf0;font-weight:700">' + issue.title + '</div>' +
+      (issue.queueStatus === 'assigned' ? '<div class="qi-dept" style="color:#22c55e;font-size:11px">' + issue.dept + ' responding</div>' : '') +
+      '</div>';
   }).join('');
 }
 
@@ -1383,84 +1500,142 @@ function selectAdminById(id, isAdvancing) {
   // State-based button logic
   var isReported  = issue.tag === 'reported';
   var isReview    = issue.tag === 'review';
-  var isAssigned  = issue.tag === 'assigned' || issue.tag === 'progress' || issue.status === 'assigned' || issue.status === 'progress';
+  var isAssigned  = isAssigned_check(issue);
   var isHighNotice = (issue.noticeCount||0) >= 5;
 
-  // Recommended next step
+  // Recommended next step — only show dept after formally assigned
   var nextStep = '';
   if (isReported) {
     nextStep = 'Review this issue to begin the workflow';
-  } else if (isReview && (!issue.dept || issue.dept === 'Pending Assignment')) {
-    nextStep = 'Assign to appropriate department';
   } else if (isReview) {
-    nextStep = isHighNotice ? 'High resident activity — consider escalating or prioritizing' : 'Assign to ' + issue.dept + ' or complete if resolved';
+    nextStep = isHighNotice ? 'High resident activity \u2014 prioritize or escalate' : 'Assign to a department';
   } else if (isAssigned) {
-    nextStep = 'Assigned to ' + issue.dept + ' — monitor progress or complete when resolved';
-  } else if (issue.escalate) {
-    nextStep = 'Escalated — assign immediately or complete';
+    nextStep = 'Assigned to ' + issue.dept + ' \u2014 complete when resolved';
   }
 
-  // Button states
+  // Button states — green only on Complete, no primary class conflict
   var reviewBtn, completeBtn;
 
   if (isReported) {
-    // Primary: Review. Complete muted.
-    reviewBtn   = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')" style="flex:1;min-width:110px">&#10003; Mark Reviewed</button>';
-    completeBtn = '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;opacity:.4;border-color:var(--border);color:var(--muted)" title="Review first">&#10003; Complete</button>';
+    reviewBtn   = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')" style="flex:1">\u2713 Mark Reviewed</button>';
+    completeBtn = '<button class="action-btn" disabled style="flex:1;opacity:.3;cursor:default;border-color:var(--border);color:var(--muted)">\u2713 Complete</button>';
   } else if (isReview) {
-    // Review done. Primary: Complete.
-    reviewBtn   = '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.35;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>';
-    completeBtn = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;background:var(--green);border-color:var(--green);color:#fff">&#10003; Complete</button>';
+    reviewBtn   = '<button class="action-btn" disabled style="flex:1;opacity:.3;cursor:default;border-color:var(--border);color:var(--muted)">\u2713 Reviewed</button>';
+    completeBtn = '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;background:var(--green);border-color:var(--green);color:#fff">\u2713 Complete</button>';
   } else {
-    // Assigned / In Progress — reviewed + assigned done, complete primary
-    reviewBtn   = '<button class="action-btn" disabled style="flex:1;min-width:110px;opacity:.35;cursor:default;border-color:var(--border);color:var(--muted)">&#10003; Reviewed</button>';
-    completeBtn = '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;min-width:110px;background:var(--green);border-color:var(--green);color:#fff">&#10003; Complete</button>';
+    reviewBtn   = '<button class="action-btn" disabled style="flex:1;opacity:.3;cursor:default;border-color:var(--border);color:var(--muted)">\u2713 Reviewed</button>';
+    completeBtn = '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="flex:1;background:var(--green);border-color:var(--green);color:#fff">\u2713 Complete</button>';
   }
 
   panel.innerHTML =
+    // Header
     '<div class="action-id">' + issue.id + '</div>' +
     '<div class="action-title">' + issue.title + '</div>' +
-    '<div style="margin-bottom:12px"><span class="action-status-badge ' + sc + '" id="action-status-badge">' + issue.statusLabel + '</span>' +
-    (issue.escalate ? '<span style="font-size:11px;color:var(--danger);margin-left:8px">Escalated</span>' : '') + '</div>' +
+    '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">' +
+      '<span class="action-status-badge ' + sc + '" id="action-status-badge">' + issue.statusLabel + '</span>' +
+      (issue.escalate ? '<span style="font-size:11px;font-weight:700;color:var(--danger)">\u26a0 Escalated</span>' : '') +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px;padding:8px 10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--border)">' + statusNarrative(issue) + '</div>' +
     '<div class="action-desc">' + issue.desc + '</div>' +
-    '<div class="action-chips" style="margin-bottom:4px">' +
-      '<div class="chip"><strong>Dept:</strong> ' + issue.dept + '</div>' +
-      '<div class="chip"><strong>Reported:</strong> ' + issue.time + '</div>' +
-      '<div class="chip"><strong>Notices:</strong> ' + (issue.noticeCount||0) + ' residents</div>' +
+    '<div class="action-chips" style="margin-bottom:14px">' +
+      '<div class="chip">\u23F0 ' + issue.time + '</div>' +
+      '<div class="chip">\uD83D\uDC41 ' + (issue.noticeCount||0) + ' noticed</div>' +
     '</div>' +
     renderGrantBadge(issue.grants) +
+
     (!isDone ?
-      '<div class="section-title">Actions</div>' +
-      // Recommended next step hint
-      (nextStep ? '<div style="font-size:11px;color:var(--accent);margin-bottom:8px;padding:6px 10px;background:rgba(61,142,248,0.08);border-radius:6px;border-left:3px solid var(--accent)">&#9654; Recommended: ' + nextStep + '</div>' : '') +
-      '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">' +
-        reviewBtn + completeBtn + '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="flex:none">&#9888; Escalate</button>' +
+      // ── STEP 1: REVIEW ──────────────────────────────────
+      '<div style="margin-bottom:14px">' +
+        '<div class="section-title" style="margin-bottom:8px">Step 1 — Review</div>' +
+        (isReported
+          ? '<button class="action-btn primary" onclick="adminAction(\'' + id + '\',\'review\')" style="width:100%">\u2713 Mark as Reviewed</button>'
+          : '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:8px;font-size:12px;color:var(--green)">\u2713 Reviewed</div>') +
       '</div>' +
-      '<div class="assign-row" style="margin-bottom:10px">' +
-        '<select class="dept-select" id="dept-assign-select">' +
-          '<option ' + (issue.dept === 'Street Department'      ? 'selected' : '') + '>Street Department</option>' +
-          '<option ' + (issue.dept === 'Hastings Utilities'     ? 'selected' : '') + '>Hastings Utilities</option>' +
-          '<option ' + (issue.dept === 'Hastings Police'        ? 'selected' : '') + '>Hastings Police</option>' +
-          '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
-        '</select>' +
-        '<button class="btn-assign" id="btn-assign-action" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
-      '</div>' +
-      '<div style="display:flex;gap:6px;margin-bottom:14px;align-items:flex-start">' +
-        '<textarea class="update-input" id="update-text" rows="2" placeholder="Post a public update&#8230;" style="flex:1;margin-bottom:0"></textarea>' +
-        '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'public\')" style="white-space:nowrap;align-self:stretch;padding:0 14px">Post Update</button>' +
-      '</div>' +
-      '<div class="section-title">Escalation Deadline</div>' +
-      '<div class="tl-chips" style="margin-bottom:14px">' + tlChips + '</div>' +
-      '<div class="section-title">Remove Issue</div>' +
-      '<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px">' +
-        '<select class="dept-select" id="remove-reason" style="margin-bottom:8px"><option value="">Select reason&#8230;</option><option>Duplicate report</option><option>Not city responsibility</option><option>Spam or test submission</option><option>Cannot locate issue</option><option>Resolved before assignment</option></select>' +
-        '<div style="display:flex;gap:6px;align-items:center">' +
-          '<textarea class="update-input" id="remove-note" rows="1" placeholder="Optional note&#8230;" style="flex:1;margin-bottom:0;font-size:12px"></textarea>' +
-          '<button class="btn-mic" id="btn-remove-mic" onclick="toggleRemoveMic()" title="Voice note" style="flex-shrink:0;font-size:14px;padding:8px 10px">&#127908;</button>' +
-          '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'remove\')" style="flex-shrink:0;white-space:nowrap">Remove</button>' +
+
+      // ── STEP 2: ASSIGN ──────────────────────────────────
+      '<div style="margin-bottom:14px;' + (isReported ? 'opacity:.45;pointer-events:none;' : '') + '">' +
+        '<div class="section-title" style="margin-bottom:8px">Step 2 — Assign Department</div>' +
+        (isAssigned
+          // Already assigned — show confirmation + reassign only
+          ? '<div style="padding:8px 12px;background:rgba(0,229,176,.07);border:1px solid rgba(0,229,176,.2);border-radius:8px;margin-bottom:10px">' +
+              '<div style="font-size:12px;color:var(--accent2);margin-bottom:6px">\u2192 Assigned to ' + issue.dept + '</div>' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+                '<select class="dept-select" id="dept-assign-select" style="flex:1">' +
+                  '<option ' + (issue.dept === 'Street Department'      ? 'selected' : '') + '>Street Department</option>' +
+                  '<option ' + (issue.dept === 'Hastings Utilities'     ? 'selected' : '') + '>Hastings Utilities</option>' +
+                  '<option ' + (issue.dept === 'Hastings Police'        ? 'selected' : '') + '>Hastings Police</option>' +
+                  '<option ' + (issue.dept === 'Hastings Fire & Rescue' ? 'selected' : '') + '>Hastings Fire &amp; Rescue</option>' +
+                '</select>' +
+                '<button class="btn-assign" id="btn-assign-action" onclick="adminAction(\'' + id + '\',\'assign\')" style="background:transparent;color:var(--muted);border-color:var(--border);white-space:nowrap">Reassign</button>' +
+              '</div>' +
+            '</div>'
+          // Not yet assigned — full assign UI
+          : '<div class="assign-row" style="margin-bottom:8px">' +
+              '<select class="dept-select" id="dept-assign-select">' +
+                '<option value="" disabled selected>Select department\u2026</option>' +
+                '<option>Street Department</option>' +
+                '<option>Hastings Utilities</option>' +
+                '<option>Hastings Police</option>' +
+                '<option>Hastings Fire &amp; Rescue</option>' +
+              '</select>' +
+              '<button class="btn-assign" id="btn-assign-action" onclick="adminAction(\'' + id + '\',\'assign\')">Assign</button>' +
+            '</div>') +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:0">' +
+          '<span style="font-size:11px;color:var(--muted)">Complete within:</span>' +
+          '<div class="tl-chips" style="margin:0">' + tlChips + '</div>' +
         '</div>' +
-      '</div>'
+      '</div>' +
+
+      // ── STEP 3: UPDATE / COMPLETE ─────────────────────
+      (function() {
+        // Check if dept sent a message needing admin response
+        var deptMsg = '';
+        if (issue.log) {
+          var escEntries = issue.log.filter(function(e){ return e.type === 'escalate' && e.body.indexOf('Notified City Admin') > -1; });
+          if (escEntries.length) deptMsg = escEntries[escEntries.length - 1].body;
+        }
+        return '<div style="margin-bottom:14px;' + (isReported ? 'opacity:.45;pointer-events:none;' : '') + '">' +
+          '<div class="section-title" style="margin-bottom:8px">Step 3 — Update &amp; Close</div>' +
+          (deptMsg ? '<div style="background:rgba(255,10,60,0.08);border:1px solid rgba(255,10,60,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px">' +
+            '<div style="font-size:10px;font-weight:800;color:var(--danger);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">\u26a0 Department Request</div>' +
+            '<div style="font-size:12px;color:#e8eaf0;margin-bottom:8px">' + deptMsg + '</div>' +
+            '<div style="font-size:11px;color:var(--muted)">Respond below to inform the department of next steps.</div>' +
+          '</div>' : '') +
+          '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-start">' +
+            '<textarea class="update-input" id="update-text" rows="2" placeholder="' + (deptMsg ? 'Type your response\u2026' : 'Type an update\u2026') + '" style="flex:1;margin-bottom:0"></textarea>' +
+            '<button class="btn-mic" data-target="update-text" onclick="toggleMicFor(this.dataset.target,this)" title="Voice input" style="flex-shrink:0;font-size:14px;padding:8px 10px">\uD83C\uDFA4</button>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">' +
+            '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'public\')" style="flex:1;white-space:nowrap" title="Visible to residents on map">\uD83D\uDCE2 Post Public Update</button>' +
+            '<button class="btn-assign" onclick="adminAction(\'' + id + '\',\'internal\')" style="flex:1;white-space:nowrap;background:var(--surface2);color:var(--muted);border-color:var(--border)" title="Only visible to city staff">\uD83D\uDD12 Send to Dept Only</button>' +
+          '</div>' +
+          (deptMsg ? '<button class="action-btn" onclick="adminDraftPublicResponse(\'' + id + '\')" style="width:100%;margin-bottom:8px;border-color:rgba(61,142,248,.4);color:var(--accent)">\u2728 AI Draft Public Response</button>' : '') +
+          '<button class="action-btn" onclick="adminAction(\'' + id + '\',\'complete\')" style="width:100%;background:var(--green);border-color:var(--green);color:#fff">\u2713 Mark as Completed</button>' +
+        '</div>';
+      })() +
+
+      // ── ESCALATE (secondary, collapsed) ───────────────
+      '<details style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">' +
+        '<summary style="font-size:11px;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px;padding:2px 0">\u26a0 Escalate this issue</summary>' +
+        '<div style="margin-top:10px">' +
+          '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'escalate\')" style="width:100%">Mark Escalated — Priority Response Required</button>' +
+        '</div>' +
+      '</details>' +
+
+      // ── REMOVE (secondary, collapsed) ─────────────────
+      '<details style="border-top:1px solid var(--border);padding-top:10px">' +
+        '<summary style="font-size:11px;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px;padding:2px 0">\u2715 Remove issue</summary>' +
+        '<div style="margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px">' +
+          '<select class="dept-select" id="remove-reason" style="margin-bottom:8px"><option value="">Select reason\u2026</option><option>Duplicate report</option><option>Not city responsibility</option><option>Spam or test submission</option><option>Cannot locate issue</option><option>Resolved before assignment</option></select>' +
+          '<div style="display:flex;gap:6px;align-items:center">' +
+            '<textarea class="update-input" id="remove-note" rows="1" placeholder="Optional note\u2026" style="flex:1;margin-bottom:0;font-size:12px"></textarea>' +
+            '<button class="btn-mic" data-target="remove-note" onclick="toggleMicFor(this.dataset.target,this)" title="Voice note" style="flex-shrink:0;font-size:14px;padding:8px 10px">\uD83C\uDFA4</button>' +
+            '<button class="action-btn danger" onclick="adminAction(\'' + id + '\',\'remove\')" style="flex-shrink:0;white-space:nowrap">Remove</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>'
     : '') +
+
     '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
     '<div class="activity-log" id="admin-log">' + renderLog(issue.log) + '</div>';
 
@@ -1478,6 +1653,7 @@ function renderLog(log) {
     public:   { cls:'log-public',   dot:'var(--accent)',  pre:'\uD83D\uDCE2 ' },
     complete: { cls:'log-complete', dot:'var(--green)',   pre:'\u2705 ' },
     escalate: { cls:'log-escalate', dot:'var(--danger)',  pre:'\uD83D\uDD34 ' },
+    internal: { cls:'',             dot:'#f59e0b',           pre:'\uD83D\uDD12 ' },
   };
   return log.slice().reverse().map(function(e) {
     var t = tmap[e.type] || tmap.system;
@@ -1511,6 +1687,7 @@ function renderAdminLog() {
     public:   { dot:'var(--accent)',  pre:'\uD83D\uDCE2 ' },
     complete: { dot:'var(--green)',   pre:'\u2705 ' },
     escalate: { dot:'var(--danger)',  pre:'\uD83D\uDD34 ' },
+    internal: { dot:'#f59e0b',        pre:'\uD83D\uDD12 ' },
   };
   el.innerHTML = evts.slice(0,20).map(function(e) {
     var t = tmap[e.type] || tmap.system;
@@ -1552,6 +1729,34 @@ function renderInsightItems(items, targetId) {
   }).join('');
 }
 
+async function adminDraftPublicResponse(id) {
+  var issue = getIssueById(id);
+  if (!issue) return;
+  var btn = document.querySelector('[onclick*="adminDraftPublicResponse"]');
+  if (btn) { btn.textContent = '\u2728 Drafting\u2026'; btn.disabled = true; }
+  // Find dept message
+  var deptMsg = '';
+  if (issue.log) {
+    var esc = issue.log.filter(function(e){ return e.type === 'escalate' && e.body.indexOf('Notified City Admin') > -1; });
+    if (esc.length) deptMsg = esc[esc.length-1].body;
+  }
+  try {
+    var resp = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      model:'claude-sonnet-4-20250514', max_tokens:120,
+      system:'You write brief, professional public updates for city infrastructure issues. Plain language. No operational jargon. 1-2 sentences max. Do not mention specific staff names or internal reasons.',
+      messages:[{ role:'user', content:'Issue: ' + issue.title + '\nDept message: ' + deptMsg + '\nWrite a public-facing resident update explaining work is delayed without revealing internal details.' }]
+    })});
+    var data = await resp.json();
+    var draft = (data.content||[]).map(function(b){ return b.text||''; }).join('').trim();
+    var ta = document.getElementById('update-text');
+    if (ta) ta.value = draft;
+  } catch(e) {
+    var ta = document.getElementById('update-text');
+    if (ta) ta.value = 'Work on this issue is taking longer than expected. We appreciate your patience and will provide an update as soon as possible.';
+  }
+  if (btn) { btn.textContent = '\u2728 AI Draft Public Response'; btn.disabled = false; }
+}
+
 async function fetchInsights(systemPrompt, userPrompt) {
   try {
     var response = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600, system:systemPrompt, messages:[{ role:'user', content:userPrompt }] }) });
@@ -1589,9 +1794,17 @@ function syncMapPin(issue) {
 }
 
 function advanceAdminQueue(completedId) {
-  var remaining = getSortedAdminQueue('active').filter(function(i) { return i.id !== completedId; });
-  if (remaining.length) { setTimeout(function() { selectAdminById(remaining[0].id, true); }, 500); }
-  else { setTimeout(function() { selectedAdminId = null; document.getElementById('action-empty').style.display = 'flex'; document.getElementById('action-panel').style.display = 'none'; }, 500); }
+  // Use displayed (filtered) queue order so we cycle sequentially, not just escalated
+  var all = getFilteredAdminQueue('active');
+  var prevIdx = all.findIndex(function(i) { return i.id === completedId; });
+  var remaining = all.filter(function(i) { return i.id !== completedId; });
+  if (!remaining.length) {
+    setTimeout(function() { selectedAdminId = null; document.getElementById('action-empty').style.display = 'flex'; document.getElementById('action-panel').style.display = 'none'; }, 1800);
+    return;
+  }
+  // Pick the item that was directly below — or last item if we were at the end
+  var next = remaining[Math.min(prevIdx, remaining.length - 1)];
+  setTimeout(function() { selectAdminById(next.id, true); }, 1800);
 }
 
 function adminAction(id, actionType) {
@@ -1619,6 +1832,9 @@ function adminAction(id, actionType) {
     issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review';
     issue.queueStatus = 'active'; issue.workStatus = 'active';
     issue.log.push({ type:'review', body:'Marked as Reviewed by City Admin', time:now });
+    syncMapPin(issue); renderAdminQueue(); renderAdminLog();
+    showAdminConfirmation('\u2713 Reviewed', 'Moving to next issue\u2026', id);
+    return;
 
   } else if (actionType === 'escalate') {
     issue.escalate = true;
@@ -1627,35 +1843,48 @@ function adminAction(id, actionType) {
       issue.queueStatus = 'active'; issue.workStatus = 'active';
     }
     issue.log.push({ type:'escalate', body:'Escalated to Department Director by City Admin', time:now });
-    setTimeout(function() { renderAdminQueue(); selectAdminById(id); }, 350);
+    syncMapPin(issue); renderAdminQueue(); renderAdminLog();
+    showAdminConfirmation('\u26a0 Escalated', 'Issue flagged for priority response', id);
+    return;
 
   } else if (actionType === 'assign') {
     var sel = document.getElementById('dept-assign-select');
     var dept = sel ? sel.value : issue.dept;
-    // Routing feedback on button
-    var assignBtn = document.getElementById('btn-assign-action');
-    if (assignBtn) {
-      assignBtn.textContent = 'Routing to ' + dept.split(' ')[0] + '...';
-      assignBtn.disabled = true;
+    // If placeholder "Select department..." is still selected, use first real option
+    if (!dept || dept === '') {
+      if (sel && sel.options.length > 1) {
+        dept = sel.options[1].value || sel.options[1].text;
+      }
     }
-    // Clean consistent assigned state everywhere
+    if (!dept) return;
+    // Map timeline chip to human-readable deadline
+    var deadlineMap = { '24h':'Due in 24h', '48h':'Due in 48h', '72h':'Due in 3 days', '5d':'Due in 5 days', '7d':'Due in 7 days' };
+    var priorityMap  = { '24h':'warn', '48h':'ok', '72h':'ok', '5d':'ok', '7d':'ok' };
+    // Clean consistent assigned state
     issue.dept = dept;
     issue.status = 'assigned';
     issue.statusLabel = 'Assigned';
     issue.tag = 'assigned';
-    issue.queueStatus = 'assigned';   // leaves admin active queue
-    issue.workStatus = 'active';       // appears in dept active queue
+    issue.queueStatus = 'assigned';
+    issue.workStatus = 'active';
     issue.actionStatus = 'assigned';
+    issue.deadline = deadlineMap[selectedTimeline] || 'Due in 48h';
+    issue.priority  = priorityMap[selectedTimeline]  || 'ok';
     issue.progress = Math.max(issue.progress || 0, 5);
     issue.log.push({ type:'assign', body:'Assigned to ' + dept + ' by City Admin', time:now });
     syncMapPin(issue);
-    // Exit admin queue, show next item
+    renderAdminQueue(); renderAdminLog(); updateQueueBadge(); renderDeptAccountability();
+    // Show brief confirmation in panel then advance
     var panel = document.getElementById('action-panel');
-    if (panel) panel.style.opacity = '0';
-    var qel = document.getElementById('qi-' + id);
-    if (qel) { qel.classList.add('exiting'); setTimeout(function() { renderAdminQueue(); if (panel) panel.style.opacity = ''; advanceAdminQueue(id); }, 360); }
-    else { renderAdminQueue(); if (panel) panel.style.opacity = ''; advanceAdminQueue(id); }
-    updateQueueBadge(); renderDeptAccountability(); renderAdminLog();
+    if (panel) {
+      panel.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;gap:12px">' +
+        '<div style="font-size:32px">&#10003;</div>' +
+        '<div style="font-size:15px;font-weight:700;color:var(--accent2)">Assigned to ' + dept + '</div>' +
+        '<div style="font-size:12px;color:var(--muted)">Loading next issue&hellip;</div>' +
+        (isMobile() ? '<button onclick="setAdminMobSection(\'queue\')" style="margin-top:8px;padding:8px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;cursor:pointer;font-family:var(--font-body)">\u2190 Back to Queue</button>' : '') +
+      '</div>';
+    }
+    setTimeout(function() { advanceAdminQueue(id); if (isMobile()) setAdminMobSection('queue'); }, 1800);
     return;
 
   } else if (actionType === 'public') {
@@ -1667,19 +1896,26 @@ function adminAction(id, actionType) {
       issue.queueStatus = 'active'; issue.workStatus = 'active';
     }
     if (el2) el2.value = '';
+    syncMapPin(issue); renderAdminQueue(); renderAdminLog();
+    showAdminConfirmation('\uD83D\uDCE2 Update Posted', 'Residents will see this on the map', id);
+    return;
+
+  } else if (actionType === 'internal') {
+    var el3 = document.getElementById('update-text');
+    var msg3 = (el3 ? el3.value.trim() : '') || 'Internal note added';
+    issue.log.push({ type:'internal', body:'\uD83D\uDD12 Internal \u2014 ' + msg3, time:now });
+    if (el3) el3.value = '';
+    syncMapPin(issue); renderAdminQueue(); renderAdminLog();
+    showAdminConfirmation('\uD83D\uDD12 Sent to Dept', 'Department has been notified', id);
+    return;
 
   } else if (actionType === 'complete') {
     issue.status = 'done'; issue.statusLabel = 'Completed'; issue.tag = 'done';
     issue.queueStatus = 'completed'; issue.workStatus = 'completed';
     issue.actionStatus = 'completed'; issue.progress = 100; issue.priority = 'done';
     issue.log.push({ type:'complete', body:'Marked as Completed by City Admin', time:now });
-    syncMapPin(issue);
-    var panel = document.getElementById('action-panel');
-    if (panel) panel.style.opacity = '0';
-    var qel = document.getElementById('qi-' + id);
-    if (qel) { qel.classList.add('exiting'); setTimeout(function() { renderAdminQueue(); if (panel) panel.style.opacity = ''; }, 360); }
-    else { renderAdminQueue(); if (panel) panel.style.opacity = ''; }
-    updateQueueBadge(); renderDeptAccountability(); renderAdminLog(); advanceAdminQueue(id);
+    syncMapPin(issue); renderAdminQueue(); renderAdminLog(); updateQueueBadge(); renderDeptAccountability();
+    showAdminConfirmation('\u2713 Completed', 'Issue resolved \u2014 pin updated on map', id);
     return;
 
   } else if (actionType === 'remove') {
@@ -1707,6 +1943,22 @@ function adminAction(id, actionType) {
   if (logEl) logEl.innerHTML = renderLog(issue.log);
   renderAdminQueue(); renderAdminLog();
   setTimeout(function() { selectAdminById(id); }, 180);
+}
+
+function showAdminConfirmation(title, subtitle, id) {
+  var panel = document.getElementById('action-panel');
+  if (!panel) return;
+  var color = title.indexOf('Completed') > -1 ? 'var(--green)' :
+              title.indexOf('Escalated') > -1 ? 'var(--danger)' :
+              title.indexOf('Dept') > -1 || title.indexOf('Internal') > -1 ? '#f59e0b' :
+              title.indexOf('Posted') > -1 ? 'var(--accent)' : 'var(--accent2)';
+  panel.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;gap:12px">' +
+    '<div style="font-size:36px">' + title.split(' ')[0] + '</div>' +
+    '<div style="font-size:16px;font-weight:700;color:' + color + '">' + title.split(' ').slice(1).join(' ') + '</div>' +
+    '<div style="font-size:12px;color:var(--muted)">' + subtitle + '</div>' +
+    (isMobile() ? '<button onclick="setAdminMobSection(\'queue\')" style="margin-top:8px;padding:8px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;cursor:pointer;font-family:var(--font-body)">\u2190 Back to Queue</button>' : '') +
+  '</div>';
+  setTimeout(function() { advanceAdminQueue(id); if (isMobile()) setAdminMobSection('queue'); }, 1800);
 }
 
 var removeMicActive = false, removeMicRecognition = null;
@@ -1834,19 +2086,27 @@ function renderDeptPanel(id) {
     '<div class="action-title">' + issue.title + '</div>' +
     '<div style="margin-bottom:10px"><span class="action-status-badge ' + sl.cls + '" id="dept-status-badge">' + sl.text + '</span></div>' +
     '<div class="action-desc">' + issue.desc + '</div>' +
-    '<div class="action-chips" style="margin-bottom:4px"><div class="chip"><strong>Dept:</strong> ' + issue.dept + '</div><div class="chip"><strong>Deadline:</strong> ' + (issue.deadline||'') + '</div></div>' +
-    renderGrantBadge(issue.grants) +
+    '<div class="action-chips" style="margin-bottom:12px"><div class="chip"><strong>Deadline:</strong> ' + (issue.deadline||'') + '</div></div>' +
     (!isDone ?
       '<div class="section-title">Work Actions</div>' +
       '<div class="action-btns" style="margin-bottom:16px">' +
-        (issue.actionStatus === 'assigned'     ? '<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'ack\')">Acknowledge Assignment</button>' : '') +
+        (issue.actionStatus === 'assigned'     ? '<button class="action-btn primary" style="width:100%" onclick="deptAction(\'' + id + '\',\'ack\')">Acknowledge Assignment</button>' : '') +
         (issue.actionStatus === 'acknowledged' ? '<button class="action-btn primary" onclick="deptAction(\'' + id + '\',\'start\')">Start Work</button>' : '') +
-        (issue.actionStatus === 'in-progress'  ? '<button class="action-btn primary" style="background:var(--green);border-color:var(--green)" onclick="deptAction(\'' + id + '\',\'complete\')">Mark as Completed</button>' : '') +
-        '<button class="action-btn danger" onclick="deptAction(\'' + id + '\',\'escalate\')" style="margin-left:auto">Escalate</button>' +
+        (issue.actionStatus === 'acknowledged' || issue.actionStatus === 'in-progress'
+          ? '<button class="action-btn" style="background:var(--green);border-color:var(--green);color:#fff;' + (issue.actionStatus === 'acknowledged' ? 'margin-left:8px' : 'width:100%') + '" onclick="deptAction(\'' + id + '\',\'complete\')">&#10003; Mark as Completed</button>' : '') +
       '</div>' +
       '<div class="section-title">Post Public Update</div>' +
-      '<textarea class="update-input" id="dept-update-text" rows="2" placeholder="Describe crew status, materials, schedule..."></textarea>' +
-      '<button class="action-btn" onclick="deptAction(\'' + id + '\',\'update\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Update</button>'
+      '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:flex-start">' +
+        '<textarea class="update-input" id="dept-update-text" rows="2" placeholder="Describe crew status, materials, schedule..." style="flex:1;margin-bottom:0"></textarea>' +
+        '<button class="btn-mic" data-target="dept-update-text" onclick="toggleMicFor(this.dataset.target,this)" title="Voice input" style="flex-shrink:0;font-size:14px;padding:8px 10px">\uD83C\uDFA4</button>' +
+      '</div>' +
+      '<button class="action-btn" onclick="deptAction(\'' + id + '\',\'update\')" style="width:100%;border-color:rgba(61,142,248,.3);color:var(--accent);margin-bottom:16px">Post Update</button>' +
+      '<div class="section-title">Cannot Meet Deadline?</div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:flex-start">' +
+        '<textarea class="update-input" id="dept-escalate-text" rows="2" placeholder="Explain why (crew unavailable, parts needed, scope larger than expected...)" style="flex:1;margin-bottom:0"></textarea>' +
+        '<button class="btn-mic" data-target="dept-escalate-text" onclick="toggleMicFor(this.dataset.target,this)" title="Voice input" style="flex-shrink:0;font-size:14px;padding:8px 10px">\uD83C\uDFA4</button>' +
+      '</div>' +
+      '<button class="action-btn danger" onclick="deptAction(\'' + id + '\',\'escalate\')" style="width:100%;margin-top:4px">Notify City Admin — Need More Time or Resources</button>'
     : '') +
     '<div class="section-title">Progress</div>' +
     '<div class="progress-bar" style="height:9px;border-radius:5px;margin-bottom:6px"><div class="progress-fill ' + fc + '" id="dept-prog-bar" style="width:' + (issue.progress||0) + '%;transition:width .7s cubic-bezier(.4,0,.2,1)"></div></div>' +
@@ -1854,55 +2114,86 @@ function renderDeptPanel(id) {
     '<div class="section-title" style="margin-top:18px">Activity Log</div>' +
     '<div class="activity-log" id="dept-log">' + renderLog(issue.log) + '</div>';
 }
+function showDeptConfirmation(emoji, title, subtitle, id) {
+  var panel = document.getElementById('dept-panel');
+  if (!panel) return;
+  var color = title.indexOf('Completed') > -1 ? 'var(--green)' :
+              title.indexOf('Admin') > -1 ? 'var(--danger)' :
+              title.indexOf('Started') > -1 ? 'var(--accent2)' : 'var(--accent)';
+  panel.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;gap:12px">' +
+    '<div style="font-size:36px">' + emoji + '</div>' +
+    '<div style="font-size:16px;font-weight:700;color:' + color + '">' + title + '</div>' +
+    '<div style="font-size:12px;color:var(--muted)">' + subtitle + '</div>' +
+    (isMobile() ? '<button onclick="setDeptMobSection(\'queue\')" style="margin-top:8px;padding:8px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;cursor:pointer;font-family:var(--font-body)">\u2190 Back to Queue</button>' : '') +
+  '</div>';
+  setTimeout(function() { if (id) renderDeptPanel(id); }, 1800);
+}
+
 function deptAction(id, actionType) {
   var issue = getIssueById(id);
   if (!issue) return;
   var now = 'Just now';
+
   if (actionType === 'ack') {
     issue.actionStatus = 'acknowledged';
     if (issue.status === 'reported') issue.status = 'review';
     issue.progress = Math.max(issue.progress||0, ACTION_PROGRESS.ack);
     issue.log.push({ type:'ack', body:'Assignment acknowledged \u2014 crew being scheduled', time:now });
-    syncMapPin(issue);
+    syncMapPin(issue); renderDeptQueue(); renderAdminQueue();
+    showDeptConfirmation('\u2713', 'Acknowledged', 'Crew is being scheduled', id);
+    return;
+
   } else if (actionType === 'start') {
     issue.actionStatus = 'in-progress'; issue.status = 'progress';
     issue.progress = Math.max(issue.progress||0, ACTION_PROGRESS.start);
     issue.log.push({ type:'start', body:'Work started \u2014 ' + issue.dept + ' crew on site', time:now });
-    syncMapPin(issue);
+    syncMapPin(issue); renderDeptQueue(); renderAdminQueue();
+    showDeptConfirmation('\u25B6', 'Work Started', 'Crew is on site', id);
+    return;
+
   } else if (actionType === 'update') {
     var ta = document.getElementById('dept-update-text');
     var msg = (ta ? ta.value.trim() : '') || 'Status update posted';
     issue.progress = Math.min(85, (issue.progress||0) + ACTION_PROGRESS.update);
     issue.log.push({ type:'update', body:'Public update posted: "' + msg + '"', time:now });
     if (ta) ta.value = '';
+    syncMapPin(issue); renderDeptQueue(); renderAdminQueue();
+    showDeptConfirmation('\uD83D\uDCE2', 'Update Posted', 'Residents can see this on the map', id);
+    return;
+
   } else if (actionType === 'escalate') {
+    var escTA = document.getElementById('dept-escalate-text');
+    var escMsg = (escTA ? escTA.value.trim() : '') || 'Cannot meet deadline \u2014 city admin notified';
     issue.priority = 'late'; issue.escalate = true;
-    issue.log.push({ type:'escalate', body:'Escalated \u2014 deadline at risk, supervisor notified', time:now });
+    issue.log.push({ type:'escalate', body:'Notified City Admin: "' + escMsg + '"', time:now });
+    if (escTA) escTA.value = '';
+    syncMapPin(issue); renderDeptQueue(); renderAdminQueue();
+    showDeptConfirmation('\u26a0', 'Admin Notified', 'City Admin has been alerted', id);
+    return;
+
   } else if (actionType === 'complete') {
     issue.actionStatus = 'completed'; issue.workStatus = 'completed'; issue.queueStatus = 'completed';
     issue.status = 'done'; issue.priority = 'done'; issue.progress = 100;
     issue.statusLabel = 'Completed'; issue.tag = 'done';
     issue.log.push({ type:'complete', body:'Marked as Completed \u2014 work inspected and signed off', time:now });
-    syncMapPin(issue);
-    var el3 = document.getElementById('dqi-' + id);
-    if (el3) { el3.classList.add('exiting'); setTimeout(function() { renderDeptQueue(); document.getElementById('dept-empty').style.display = 'flex'; document.getElementById('dept-panel').style.display = 'none'; selectedDeptId = null; }, 360); }
-    else { renderDeptQueue(); document.getElementById('dept-empty').style.display = 'flex'; document.getElementById('dept-panel').style.display = 'none'; selectedDeptId = null; }
-    renderDeptAccountability(); renderDeptPriority(); renderAdminQueue(); renderAdminLog();
+    syncMapPin(issue); renderAdminQueue(); renderAdminLog(); renderDeptAccountability(); renderDeptPriority();
+    var panel = document.getElementById('dept-panel');
+    if (panel) {
+      panel.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;gap:12px">' +
+        '<div style="font-size:36px">\u2705</div>' +
+        '<div style="font-size:16px;font-weight:700;color:var(--green)">Work Completed</div>' +
+        '<div style="font-size:12px;color:var(--muted)">Issue resolved \u2014 pin updated on map</div>' +
+      '</div>';
+    }
+    setTimeout(function() {
+      renderDeptQueue();
+      document.getElementById('dept-empty').style.display = 'flex';
+      document.getElementById('dept-panel').style.display = 'none';
+      selectedDeptId = null;
+      if (isMobile()) setDeptMobSection('queue');
+    }, 1800);
     return;
   }
-  var logEl = document.getElementById('dept-log');
-  if (logEl) logEl.innerHTML = renderLog(issue.log);
-  var bar = document.getElementById('dept-prog-bar'), lbl = document.getElementById('dept-prog-label');
-  if (bar) bar.style.width = (issue.progress||0) + '%';
-  if (lbl) lbl.textContent = (issue.progress||0) + '% complete';
-  var badge = document.getElementById('dept-status-badge');
-  if (badge) {
-    var lm = { assigned:'Assigned', acknowledged:'Acknowledged', 'in-progress':'In Progress', completed:'Completed' };
-    var cm = { assigned:'asb-assigned', acknowledged:'asb-review', 'in-progress':'asb-progress', completed:'asb-done' };
-    badge.textContent = lm[issue.actionStatus] || '';
-    badge.className = 'action-status-badge ' + (cm[issue.actionStatus]||'');
-  }
-  renderDeptPanel(id); renderDeptQueue();
 }
 function renderDeptAccountability() {
   var el = document.getElementById('drtab-panel-overview');
@@ -2019,7 +2310,23 @@ function switchView(name) {
   document.getElementById('view-' + name).classList.add('active');
   var hb = document.getElementById('btn-heatmap');
   if (hb) hb.style.display = name === 'public' ? '' : 'none';
-  if (name === 'public') { setTimeout(function() { map.invalidateSize(); }, 50); setMapFilter('all'); }
+  if (name === 'public') {
+    setTimeout(function() { map.invalidateSize(); }, 50);
+    // Rebuild filter chips fresh to prevent any duplication
+    var mf = document.getElementById('map-filter');
+    if (mf) mf.innerHTML =
+      '<button class="map-filter-chip active" id="mf-all">All</button>' +
+      '<button class="map-filter-chip" id="mf-street">\uD83D\uDEA7 Street</button>' +
+      '<button class="map-filter-chip" id="mf-utilities">\u26A1 Utilities</button>' +
+      '<button class="map-filter-chip" id="mf-police">\uD83D\uDC6E Police</button>' +
+      '<button class="map-filter-chip" id="mf-fire">\uD83D\uDE92 Fire</button>' +
+      '<button class="map-filter-chip" id="mf-resolved" style="border-color:rgba(107,114,128,0.4);color:#6b7280">\u2713 Resolved</button>';
+    ['all','street','utilities','police','fire','resolved'].forEach(function(n) {
+      var btn = document.getElementById('mf-' + n);
+      if (btn) btn.addEventListener('click', function() { setMapFilter(n); });
+    });
+    setMapFilter('all');
+  }
   if (name === 'admin') { var qs = document.getElementById('queue-search'); if (qs) qs.value = ''; activeQueueFilters.clear(); document.querySelectorAll('.queue-filter-chip').forEach(function(c){c.classList.remove('active');}); renderAdminQueue(); renderAdminLog(); try { if (!adminInsightsCache) refreshAdminInsights(); else renderInsightItems(adminInsightsCache, 'admin-insights-body'); } catch(e) { console.warn('insights:', e); } }
   if (name === 'dept')  { renderDeptQueue(); renderDeptAccountability(); renderDeptPriority(); try { if (!deptInsightsCache) refreshDeptInsights(); else renderInsightItems(deptInsightsCache, 'dept-insights-body'); } catch(e) { console.warn('dept insights:', e); } }
   applyMobileLayout();
@@ -2027,6 +2334,44 @@ function switchView(name) {
 }
 
 var recognition = null, micActive = false;
+var activeMicBtn = null, activeMicTA = null;
+
+function toggleMicFor(textareaId, btnEl) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice input not supported in this browser.'); return; }
+  if (micActive && activeMicBtn === btnEl) { stopMicFor(); return; }
+  if (micActive) stopMicFor();
+  var textarea = document.getElementById(textareaId);
+  if (!textarea) { alert('Could not find text field: ' + textareaId); return; }
+  activeMicBtn = btnEl; activeMicTA = textarea;
+  try {
+    recognition = new SR();
+    recognition.lang = 'en-US'; recognition.continuous = false; recognition.interimResults = true;
+    var baseText = textarea.value;
+    recognition.onstart = function() {
+      micActive = true;
+      btnEl.textContent = '\u23F9'; btnEl.style.borderColor = 'var(--danger)'; btnEl.style.color = 'var(--danger)';
+    };
+    recognition.onresult = function(e) {
+      var interim = '', final = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t; else interim += t;
+      }
+      var sep = baseText.trim() ? ' ' : '';
+      textarea.value = baseText + sep + (final || interim).trim();
+    };
+    recognition.onerror = function(e) { alert('Mic error: ' + e.error); stopMicFor(); };
+    recognition.onend = function() { stopMicFor(); };
+    recognition.start();
+  } catch(e) { alert('Mic failed: ' + e.message); stopMicFor(); }
+}
+function stopMicFor() {
+  micActive = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  if (activeMicBtn) { activeMicBtn.textContent = '\uD83C\uDFA4'; activeMicBtn.style.borderColor = ''; activeMicBtn.style.color = ''; }
+  activeMicBtn = null; activeMicTA = null;
+}
 function setMicStatus(visible, msg, isError) {
   var el = document.getElementById('mic-status'), dot = document.getElementById('mic-dot'), lbl = document.getElementById('mic-label');
   if (!el) return;
@@ -2337,10 +2682,10 @@ applyMobileLayout();
 var heatBtn = document.getElementById('btn-heatmap');
 if (heatBtn) { heatBtn.style.display = ''; heatBtn.addEventListener('click', toggleHeatmap); }
 
-// Wire map filter chips
-['all','street','utilities','police','fire'].forEach(function(name) {
-  var btn = document.getElementById('mf-' + name);
-  if (btn) btn.addEventListener('click', function() { setMapFilter(name); });
+// Map filter chips wired in switchView to prevent duplication
+['all','street','utilities','police','fire','resolved'].forEach(function(n) {
+  var btn = document.getElementById('mf-' + n);
+  if (btn) btn.addEventListener('click', function() { setMapFilter(n); });
 });
 </script>
 </body>
