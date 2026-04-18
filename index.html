@@ -856,9 +856,14 @@ var RecenterControl = L.Control.extend({
 });
 new RecenterControl().addTo(map);
 
-// Double-tap map to refit to Hastings — ignores taps on controls
+// Double-tap map to refit to Hastings — single finger only, ignores pinch and controls
 var lastTap = 0;
+var lastTouchCount = 0;
+map.getContainer().addEventListener('touchstart', function(e) {
+  lastTouchCount = e.touches.length;
+}, { passive: true });
 map.getContainer().addEventListener('touchend', function(e) {
+  if (lastTouchCount > 1) return; // pinch zoom — ignore
   if (e.target.closest('.leaflet-control') || e.target.closest('.leaflet-control-container')) return;
   var now = Date.now();
   if (now - lastTap < 350) { map.flyTo([40.5888,-98.3910],14,{duration:0.6}); }
