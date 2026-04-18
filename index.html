@@ -507,9 +507,9 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
       <button class="map-filter-chip" id="mf-resolved" style="border-color:rgba(107,114,128,0.4);color:#6b7280">&#10003; Resolved</button>
     </div>
     <div id="legend">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer" onclick="toggleLegend()">
         <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Issue Priority</div>
-        <button id="legend-toggle" onclick="toggleLegend()" style="display:none;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0;line-height:1">&#8722;</button>
+        <button id="legend-toggle" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0;line-height:1">&#8722;</button>
       </div>
       <div id="legend-body">
         <div class="legend-row"><div class="legend-dot" style="background:#ff0a3c;box-shadow:0 0 9px rgba(255,10,60,.8);animation:pulse-dot 1.2s ease-in-out infinite"></div>Escalated</div>
@@ -1144,7 +1144,7 @@ function openCard(pin, cp) {
       card.className = 'open';
       document.getElementById('btn-report').style.display = 'none';
       // Hide zoom controls so they don't overlap the card
-      if (zoomEl) { zoomEl.style.opacity = '0'; zoomEl.style.pointerEvents = 'none'; }
+      if (zoomEl) { zoomEl.style.display = 'none'; }
       return;
     }
     var px = cp.x, py = cp.y;
@@ -1181,7 +1181,7 @@ function closeCard() {
   activePin = null;
   document.getElementById('btn-report').style.display = '';
   // Restore zoom controls
-  if (zoomEl) { zoomEl.style.opacity = ''; zoomEl.style.pointerEvents = ''; }
+  if (zoomEl) { zoomEl.style.display = ''; }
 }
 
 /* MAP FILTER */
@@ -1226,7 +1226,7 @@ function startReport() {
   document.getElementById('banner').style.display = 'none';
   var hdr = document.getElementById('map-header'); if (hdr) hdr.style.display = 'none';
   document.getElementById('drop-hint').classList.add('active');
-  if (zoomEl) { zoomEl.style.opacity = '0'; zoomEl.style.pointerEvents = 'none'; }
+  if (zoomEl) { zoomEl.style.display = 'none'; }
   closeCard();
 }
 function cancelReport() {
@@ -1240,7 +1240,7 @@ function cancelReport() {
   document.getElementById('btn-report').style.display = '';
   document.getElementById('banner').style.display = '';
   var hdr = document.getElementById('map-header'); if (hdr) hdr.style.display = '';
-  if (zoomEl) { zoomEl.style.opacity = ''; zoomEl.style.pointerEvents = ''; }
+  if (zoomEl) { zoomEl.style.display = ''; }
 }
 function handleOverlayClick(e) { if (e.target === document.getElementById('report-overlay')) cancelReport(); }
 map.on('click', function(e) {
@@ -1275,7 +1275,7 @@ function submitReport() {
   document.getElementById('btn-report').style.display = '';
   document.getElementById('banner').style.display = '';
   var hdrEl = document.getElementById('map-header'); if (hdrEl) hdrEl.style.display = '';
-  if (zoomEl) { zoomEl.style.opacity = ''; zoomEl.style.pointerEvents = ''; }
+  if (zoomEl) { zoomEl.style.display = ''; }
   removePhoto(); setMicStatus(false); droppedLatLng = null;
   showToast();
 }
