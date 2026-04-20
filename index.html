@@ -31,7 +31,8 @@
   --nav-h: 52px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-body); background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; user-select: none; }
+html, body { overscroll-behavior: none; touch-action: manipulation; }
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; user-select: none; -webkit-overflow-scrolling: touch; }
 
 #nav { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: var(--nav-h); background: rgba(11,15,26,0.97); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
 .nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
@@ -47,12 +48,15 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 
 #view-public { flex-direction: column; }
 #map-container { flex: 1; position: relative; overflow: hidden; }
-#map { width: 100%; height: 100%; touch-action: pan-x pan-y; }
+#map { width: 100%; height: 100%; touch-action: none; }
 .leaflet-tile { filter: brightness(0.72) saturate(0.55) hue-rotate(195deg); }
 .leaflet-map-pane { overflow: visible; }
 .leaflet-marker-pane, .leaflet-shadow-pane { overflow: visible; }
 #map { overflow: hidden; }
-.leaflet-container { background: #0d1520; overflow: hidden; }
+.leaflet-container { background: #0d1520; overflow: hidden; touch-action: none; }
+/* When user is interacting with map, freeze pin animations to keep pan smooth */
+.leaflet-drag-target .pring, .leaflet-drag-target [style*="animation"],
+.leaflet-interactive-pause .pring { animation-play-state: paused !important; }
 .leaflet-popup { display: none !important; }
 .leaflet-popup-pane { display: none !important; }
 
@@ -343,7 +347,8 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   .admin-col { width: 100% !important; flex-shrink: 0; border-right: none !important; border-left: none !important; border-bottom: 1px solid var(--border); min-height: 0; }
   .col-left, .col-mid, .col-right { width: 100% !important; flex: none; }
   .col-body { overflow-y: visible; }
-  .mob-section-tabs { display: flex; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; position: sticky; top: 0; z-index: 20; }
+  .mob-section-tabs { display: flex; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 999; }
+  #view-admin, #view-dept { padding-top: 44px; }
   .mob-section-tab { flex: 1; padding: 11px 4px; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--font-body); text-align: center; transition: all 0.15s; }
   .mob-section-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   /* Banner — compact */
@@ -355,7 +360,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   #legend-toggle { display: block !important; }
   #legend-body { font-size: 11px; }
   .legend-row { font-size: 11px; margin-bottom: 4px; }
-  /* Filter chips — full-width scrollable bottom bar */
+  /* Filter chips — horizontally scrollable bar that does not block map pan */
   #map-filter {
     bottom: 14px !important;
     left: 0 !important;
@@ -366,11 +371,16 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     gap: 6px !important;
     box-sizing: border-box !important;
     flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
     justify-content: flex-start !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
+    touch-action: none !important;
+    pointer-events: none !important;
+  }
+  #map-filter::-webkit-scrollbar { display: none; }
+  #map-filter .map-filter-chip {
+    pointer-events: auto;
+    touch-action: manipulation;
   }
   #map-filter::-webkit-scrollbar { display: none; }
   .map-filter-chip { font-size: 10px !important; padding: 5px 10px !important; flex-shrink: 0 !important; }
@@ -432,13 +442,12 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     <button class="nav-tab active" id="nav-public">Public Map</button>
     <button class="nav-tab" id="nav-admin">City Admin</button>
     <button class="nav-tab" id="nav-dept">Dept. View</button>
-    <button class="nav-tab" id="btn-heatmap" style="display:none">&#127777; Heat Map</button>
   </div>
   <div class="nav-city">Hastings, NE</div>
 </nav>
 
 <div id="view-public" class="view active">
-  <div id="map-header" style="position:absolute;top:0;left:0;right:0;z-index:600;pointer-events:none;background:linear-gradient(180deg,rgba(5,8,18,0.92) 0%,rgba(5,8,18,0.0) 100%)">
+  <div id="map-header" style="position:absolute;top:0;left:0;right:0;z-index:600;pointer-events:none;background:linear-gradient(180deg,rgba(5,8,18,0.92) 0%,rgba(5,8,18,0.0) 100%);height:auto;max-height:60px">
     <!-- Row 1: What's happening -->
     <div style="display:flex;align-items:center;gap:12px;padding:10px 20px 6px">
       <div style="width:8px;height:8px;border-radius:50%;background:#00E5B0;box-shadow:0 0 10px #00E5B0;flex-shrink:0;animation:pulse-dot 1.5s ease-in-out infinite"></div>
@@ -483,11 +492,7 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
         <div id="card-title" class="card-title"></div>
         <div id="card-desc"  class="card-desc"></div>
         <div id="card-timeline-wrap"></div>
-        <div id="card-last-action" class="card-last-action" style="display:none">
-          <div class="card-last-action-label">Last City Action</div>
-          <div id="card-last-action-text" class="card-last-action-text"></div>
-          <div id="card-last-action-time" class="card-last-action-time"></div>
-        </div>
+        <div id="card-updates-wrap"></div>
         <div id="card-chips" class="card-chips"></div>
         <button id="card-noticed" class="card-noticed" onclick="noticeThis()">👁 I noticed this too</button>
         <div id="card-noticed-count" class="card-noticed-count"></div>
@@ -971,11 +976,18 @@ function makeIcon(pin) {
   var rs = r * 2;
   var rTop = cy - r, rLeft = cx - r;
   var ease = 'cubic-bezier(0.22,0.61,0.36,1)';
+  // On mobile at zoom >= 16, use only 1 ring to keep panning smooth
+  var isMob = window.innerWidth <= 768;
+  var currentZoom = typeof map !== 'undefined' ? map.getZoom() : 14;
+  var reducedRings = isMob && currentZoom >= 16;
   var rings = (pin.status !== 'done' && family) ?
-    '<div class="pring" style="width:' + (rs*1.6) + 'px;height:' + (rs*1.6) + 'px;top:' + (cy-r*1.6) + 'px;left:' + (cx-r*1.6) + 'px;background:radial-gradient(circle,' + color + '22 0%,transparent 70%);border:none;animation:aura-pulse ' + (dur*0.9) + 's ease-in-out infinite"></div>' +
-    '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:2.5px solid ' + color + ';animation:wave-' + family + '-1 ' + dur + 's ' + ease + ' infinite"></div>' +
-    '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:1.8px solid ' + color + ';animation:wave-' + family + '-2 ' + dur + 's ' + ease + ' ' + (dur*0.33).toFixed(2) + 's infinite"></div>' +
-    '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:1.2px solid ' + color + ';animation:wave-' + family + '-3 ' + dur + 's ' + ease + ' ' + (dur*0.66).toFixed(2) + 's infinite"></div>' : '';
+    (reducedRings
+      ? '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:2px solid ' + color + ';animation:wave-' + family + '-1 ' + dur + 's ' + ease + ' infinite"></div>'
+      : '<div class="pring" style="width:' + (rs*1.6) + 'px;height:' + (rs*1.6) + 'px;top:' + (cy-r*1.6) + 'px;left:' + (cx-r*1.6) + 'px;background:radial-gradient(circle,' + color + '22 0%,transparent 70%);border:none;animation:aura-pulse ' + (dur*0.9) + 's ease-in-out infinite"></div>' +
+        '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:2.5px solid ' + color + ';animation:wave-' + family + '-1 ' + dur + 's ' + ease + ' infinite"></div>' +
+        '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:1.8px solid ' + color + ';animation:wave-' + family + '-2 ' + dur + 's ' + ease + ' ' + (dur*0.33).toFixed(2) + 's infinite"></div>' +
+        '<div class="pring" style="width:' + rs + 'px;height:' + rs + 'px;top:' + rTop + 'px;left:' + rLeft + 'px;border:1.2px solid ' + color + ';animation:wave-' + family + '-3 ' + dur + 's ' + ease + ' ' + (dur*0.66).toFixed(2) + 's infinite"></div>')
+    : '';
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" style="position:absolute;top:0;left:0;overflow:visible">' +
     '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r+5) + '" fill="' + color + '" fill-opacity="0.12"/>' +
     '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + color + '" stroke="white" stroke-opacity="0.45" stroke-width="2"/>' +
@@ -999,7 +1011,43 @@ function makeIcon(pin) {
   return L.divIcon({ html:wrapper, className:'', iconSize:[w,h], iconAnchor:[cx, cy+r+tail], popupAnchor:[0,-cy] });
 }
 
-var map = L.map('map', { center:[40.5888,-98.3910], zoom:14, zoomControl:false });
+var map = L.map('map', { center:[40.5888,-98.3910], zoom:14, zoomControl:false, dragging:true, touchZoom:true, tap:true, bounceAtZoomLimits:false, inertia:true });
+
+// Block iOS Safari pinch zoom so nav stays locked at top
+document.addEventListener('gesturestart',  function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gestureend',    function(e) { e.preventDefault(); }, { passive: false });
+
+// Force-prevent the browser from interpreting vertical swipes as pull-to-refresh
+// or address bar toggle. Any touchmove inside public view must be claimed.
+(function forceMapTouch() {
+  var el = document.getElementById('view-public');
+  if (!el) return;
+  el.addEventListener('touchmove', function(e) {
+    var t = e.target;
+    if (t.closest && (t.closest('.map-filter-chip') || t.closest('#btn-report') || t.closest('#map-card') || t.closest('.leaflet-control') || t.closest('#nav') || t.closest('#legend'))) return;
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+})();
+
+// Header overlay has pointer-events:none but on some mobile browsers touches that
+// START inside its box still get lost. Forward them manually to the map pane.
+(function bridgeHeaderTouches() {
+  var header = document.getElementById('map-header');
+  var mapPane = document.querySelector('.leaflet-container');
+  if (!header || !mapPane) return;
+  ['touchstart','touchmove','touchend','touchcancel'].forEach(function(type) {
+    header.addEventListener(type, function(e) {
+      if (e.target !== header && e.target.closest('#map-header') !== header) return;
+      // Forward event to the map pane
+      try {
+        var init = { bubbles:true, cancelable:true, touches:e.touches, targetTouches:e.targetTouches, changedTouches:e.changedTouches };
+        var fwd = new TouchEvent(type, init);
+        mapPane.dispatchEvent(fwd);
+      } catch(err) {}
+    }, { passive: false });
+  });
+})();
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap', maxZoom:19 }).addTo(map);
 
 // Zoom control — topleft on all sizes so it never overlaps Report Issue button
@@ -1020,6 +1068,22 @@ var RecenterControl = L.Control.extend({
   }
 });
 new RecenterControl().addTo(map);
+
+// Heat Map toggle — floating control top right, below Recenter
+var HeatmapControl = L.Control.extend({
+  options: { position:'topright' },
+  onAdd: function() {
+    var btn = L.DomUtil.create('button','');
+    btn.id = 'btn-heatmap';
+    btn.innerHTML = '\uD83D\uDD25';
+    btn.title = 'Toggle Heat Map';
+    btn.style.cssText = 'background:rgba(11,15,26,0.88);color:#e2e8f0;border:1px solid rgba(255,255,255,0.15);border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);margin-top:4px;';
+    L.DomEvent.on(btn,'click',function(e){ L.DomEvent.stopPropagation(e); toggleHeatmap(); });
+    L.DomEvent.disableClickPropagation(btn);
+    return btn;
+  }
+});
+new HeatmapControl().addTo(map);
 
 // Double-tap map to refit to Hastings — single finger only, ignores pinch and controls
 var lastTap = 0;
@@ -1105,7 +1169,23 @@ map.addLayer(clusterGroup);
 
 // Visual hierarchy — reduce opacity of low-priority and resolved pins
 var _isZooming = false;
-map.on('zoomstart', function() { _isZooming = true; });
+var _mapEl = document.getElementById('map');
+
+// Pause pin animations during any map interaction for smooth pan/zoom
+map.on('movestart zoomstart', function() {
+  if (_mapEl) _mapEl.classList.add('leaflet-interactive-pause');
+});
+map.on('moveend zoomend', function() {
+  if (_mapEl) _mapEl.classList.remove('leaflet-interactive-pause');
+});
+
+map.on('zoomstart', function() {
+  _isZooming = true;
+  if (heatCanvas) heatCanvas.style.visibility = 'hidden';
+});
+map.on('zoomend', function() {
+  if (heatCanvas) heatCanvas.style.visibility = '';
+});
 
 map.on('layeradd layerremove', function() {
   if (_isZooming) return; // suppress during zoom
@@ -1172,16 +1252,21 @@ function buildHeatCanvas() {
 function toggleHeatmap() {
   heatActive = !heatActive;
   var btn = document.getElementById('btn-heatmap');
-  if (heatActive) { buildHeatCanvas(); btn.classList.add('active'); btn.textContent = '\u{1F321} Heat Map: ON'; }
-  else { if (heatCanvas) { heatCanvas.remove(); heatCanvas = null; } btn.classList.remove('active'); btn.textContent = '\u{1F321} Heat Map'; }
+  if (heatActive) {
+    buildHeatCanvas();
+    if (btn) { btn.style.background = 'rgba(245,158,11,0.85)'; btn.style.borderColor = 'rgba(245,158,11,1)'; }
+  } else {
+    if (heatCanvas) { heatCanvas.remove(); heatCanvas = null; }
+    if (btn) { btn.style.background = 'rgba(11,15,26,0.88)'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
+  }
 }
 var _zoomDebounce = null;
 map.on('zoomend', function() {
-  if (heatActive) buildHeatCanvas();
   clearTimeout(_zoomDebounce);
-  var delay = isMobile() ? 300 : 120;
+  var delay = isMobile() ? 350 : 140;
   _zoomDebounce = setTimeout(function() {
     _isZooming = false;
+    if (heatActive) buildHeatCanvas();
     PINS.forEach(function(pin) {
       var marker = markerMap[pin.id];
       if (marker) marker.setIcon(makeIcon(pin));
@@ -1197,7 +1282,7 @@ map.on('zoomend', function() {
   }, delay);
 });
 map.on('moveend', function() {
-  if (heatActive) buildHeatCanvas();
+  if (heatActive && !_isZooming) buildHeatCanvas();
 });
 
 var activePin = null;
@@ -1219,26 +1304,8 @@ function openCard(pin, cp) {
   } else {
     strip.innerHTML = '<div class="card-photo-empty"><span>&#128247;</span>No photo attached</div>';
   }
-  var lastActionEl   = document.getElementById('card-last-action');
-  var lastActionText = document.getElementById('card-last-action-text');
-  var lastActionTime = document.getElementById('card-last-action-time');
-  var showableTypes = ['complete','start','update','public','ack','review','assign','escalate'];
-  var lastAction = pin.log ? pin.log.slice().reverse().find(function(e) { return showableTypes.indexOf(e.type) > -1; }) : null;
-  var hasRealAction = lastAction && !(lastAction.type === 'assign' && pin.status === 'reported' && pin.log.filter(function(e) { return showableTypes.indexOf(e.type) > -1; }).length <= 1);
-  if (hasRealAction) {
-    lastActionEl.style.display = 'block';
-    var actionCopy = {
-      complete:'Work completed and verified', start:'City crews are on site',
-      update: lastAction.body.replace(/^Public update posted:\s*["\u201c]?/i,'').replace(/["\u201d]$/,''),
-      public: lastAction.body.replace(/^Public update posted:\s*["\u201c]?/i,'').replace(/["\u201d]$/,''),
-      ack:'Crew scheduled \u2014 work beginning soon', review:'City staff reviewing the report',
-      assign:'Assigned to ' + pin.dept, escalate:'Escalated \u2014 priority response activated'
-    };
-    lastActionText.textContent = actionCopy[lastAction.type] || lastAction.body;
-    lastActionTime.textContent = lastAction.time;
-  } else {
-    lastActionEl.style.display = 'none';
-  }
+  var updatesWrap = document.getElementById('card-updates-wrap');
+  if (updatesWrap) updatesWrap.innerHTML = buildCardUpdates(pin);
   var chips = document.getElementById('card-chips');
   var deptChip = (pin.queueStatus === 'assigned' || pin.queueStatus === 'completed') && pin.dept !== 'Pending Assignment'
     ? '<div class="card-chip">\uD83C\uDFD8 ' + pin.dept + '</div>' : '';
@@ -1319,6 +1386,10 @@ function setMapFilter(name) {
     var btn = document.getElementById('mf-' + n);
     if (btn) btn.classList.toggle('active', n === name);
   });
+  // Hide heatmap on resolved view — heat represents active issue density
+  if (heatCanvas) {
+    heatCanvas.style.display = (name === 'resolved') ? 'none' : '';
+  }
   PINS.forEach(function(pin) {
     var marker = markerMap[pin.id];
     if (!marker) return;
@@ -1383,6 +1454,28 @@ map.on('click', function(e) {
   }
   closeCard();
 });
+
+// In report mode, cluster clicks drop a pin at cluster location instead of zooming
+if (clusterGroup && clusterGroup.on) {
+  clusterGroup.on('clusterclick', function(e) {
+    if (pinMode) {
+      e.originalEvent.preventDefault();
+      e.originalEvent.stopPropagation();
+      L.DomEvent.stopPropagation(e);
+      pinMode = false; map.getContainer().style.cursor = '';
+      document.getElementById('drop-hint').classList.remove('active');
+      var ll = e.layer.getLatLng();
+      droppedLatLng = ll;
+      if (previewMarker) map.removeLayer(previewMarker);
+      previewMarker = L.marker([ll.lat, ll.lng], { icon:makePreviewIcon(), zIndexOffset:1000 }).addTo(map);
+      map.panBy([0,-30], { animate:true, duration:0.25 });
+      setTimeout(function() { map.panBy([0,30], { animate:true, duration:0.25 }); }, 260);
+      setTimeout(function() { document.getElementById('report-overlay').classList.add('open'); }, 320);
+      return false;
+    }
+  });
+}
+
 function submitReport() {
   var desc = document.getElementById('report-desc').value.trim();
   if (!desc) { document.getElementById('report-desc').focus(); return; }
@@ -2006,6 +2099,16 @@ function syncMapPin(issue) {
   var marker = markerMap[issue.id];
   if (marker) { marker.setIcon(makeIcon(issue)); if (clusterGroup) clusterGroup.refreshClusters(marker); }
   if (heatActive) buildHeatCanvas();
+  // If the pin card is currently open for this issue, refresh its content
+  if (activePin && activePin.id === issue.id) {
+    var card = document.getElementById('map-card');
+    if (card && card.classList.contains('open')) {
+      var tlWrap = document.getElementById('card-timeline-wrap');
+      if (tlWrap) tlWrap.innerHTML = buildCardTimeline(issue);
+      var updWrap = document.getElementById('card-updates-wrap');
+      if (updWrap) updWrap.innerHTML = buildCardUpdates(issue);
+    }
+  }
 }
 
 function adminPostAndAdvance(id) {
@@ -2014,8 +2117,8 @@ function adminPostAndAdvance(id) {
   var now = 'Just now';
   var pub  = (document.getElementById('assign-public-text') || {}).value;
   var dept = (document.getElementById('assign-dept-text')   || {}).value;
-  if (pub  && pub.trim())  issue.log.push({ type:'public',   body:'Public update posted: "' + pub.trim() + '"', time:now });
-  if (dept && dept.trim()) issue.log.push({ type:'internal', body:'\uD83D\uDD12 Internal \u2014 ' + dept.trim(), time:now });
+  if (pub  && pub.trim())  issue.log.push({ type:'public',   body:'Public update posted: "' + pub.trim() + '"', time:now, source:'City Admin' });
+  if (dept && dept.trim()) issue.log.push({ type:'internal', body:'\uD83D\uDD12 Internal \u2014 ' + dept.trim(), time:now, source:'City Admin' });
   renderAdminLog();
   advanceAdminQueue(id);
   if (isMobile()) setAdminMobSection('queue');
@@ -2111,8 +2214,8 @@ function adminConfirmClose(id) {
   var deptText   = document.getElementById('pcm-dept-text');
   var publicMsg  = publicText && publicText.closest('#pcm-public-field') && publicText.closest('#pcm-public-field').style.display !== 'none' ? publicText.value.trim() : '';
   var deptMsg    = deptText   && deptText.closest('#pcm-dept-field')   && deptText.closest('#pcm-dept-field').style.display   !== 'none' ? deptText.value.trim()   : '';
-  if (publicMsg) issue.log.push({ type:'public',   body:'Public update posted: "' + publicMsg + '"', time:now });
-  if (deptMsg)   issue.log.push({ type:'internal', body:'\uD83D\uDD12 Internal \u2014 ' + deptMsg, time:now });
+  if (publicMsg) issue.log.push({ type:'public',   body:'Public update posted: "' + publicMsg + '"', time:now, source:'City Admin' });
+  if (deptMsg)   issue.log.push({ type:'internal', body:'\uD83D\uDD12 Internal \u2014 ' + deptMsg, time:now, source:'City Admin' });
   var modal = document.getElementById('preclose-modal');
   if (modal) modal.remove();
   adminAction(id, 'complete');
@@ -2229,7 +2332,7 @@ function adminAction(id, actionType) {
   } else if (actionType === 'public') {
     var el2 = document.getElementById('update-text');
     var msg = (el2 ? el2.value.trim() : '') || 'Status update posted';
-    issue.log.push({ type:'public', body:'Public update posted: "' + msg + '"', time:now });
+    issue.log.push({ type:'public', body:'Public update posted: "' + msg + '"', time:now, source:'City Admin' });
     if (issue.status === 'reported') {
       issue.status = 'review'; issue.statusLabel = 'Under Review'; issue.tag = 'review';
       issue.queueStatus = 'active'; issue.workStatus = 'active';
@@ -2504,7 +2607,7 @@ function deptAction(id, actionType) {
     var ta = document.getElementById('dept-update-text');
     var msg = (ta ? ta.value.trim() : '') || 'Status update posted';
     issue.progress = Math.min(85, (issue.progress||0) + ACTION_PROGRESS.update);
-    issue.log.push({ type:'update', body:'Public update posted: "' + msg + '"', time:now });
+    issue.log.push({ type:'update', body:'Public update posted: "' + msg + '"', time:now, source:issue.dept });
     if (ta) ta.value = '';
     syncMapPin(issue); renderDeptQueue(); renderAdminQueue();
     showDeptConfirmation('\uD83D\uDCE2', 'Update Posted', 'Residents can see this on the map', id);
@@ -2657,8 +2760,6 @@ function switchView(name) {
     if (btn) btn.classList.toggle('active', n === name);
   });
   document.getElementById('view-' + name).classList.add('active');
-  var hb = document.getElementById('btn-heatmap');
-  if (hb) hb.style.display = name === 'public' ? '' : 'none';
   if (name === 'public') {
     setTimeout(function() { map.invalidateSize(); }, 50);
     // Rebuild filter chips fresh to prevent any duplication
@@ -2870,6 +2971,8 @@ function buildTypePicker() {
   }).join('');
 }
 
+var selectedReportType = null, selectedPeriod = null;
+
 function selectReportType(typeId) {
   selectedReportType = REPORT_TYPES.find(function(r) { return r.id === typeId; });
   if (!selectedReportType) return;
@@ -2991,6 +3094,28 @@ function copyReportToClipboard() {
   });
 }
 
+function buildCardUpdates(pin) {
+  if (!pin.log || !pin.log.length) return '';
+  // Find most recent City Admin public post and most recent Dept public post
+  var log = pin.log.slice().reverse();
+  var cityMsg = log.find(function(e) { return e.type === 'public'; });
+  var deptMsg = log.find(function(e) { return e.type === 'update'; });
+  if (!cityMsg && !deptMsg) return '';
+  function block(entry, src, color) {
+    var cleanMsg = entry.body.replace(/^Public update posted:\s*["\u201c]?/i,'').replace(/["\u201d]$/,'');
+    return '<div style="background:rgba(61,142,248,0.07);border:1px solid ' + color + ';border-radius:9px;padding:8px 10px">' +
+      '<div style="font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:3px">\uD83D\uDCE2 Update from ' + src + '</div>' +
+      '<div style="font-size:11px;color:var(--text);line-height:1.4">' + cleanMsg + '</div>' +
+      '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + entry.time + '</div>' +
+    '</div>';
+  }
+  var html = '<div style="margin-bottom:10px;display:flex;flex-direction:column;gap:6px">';
+  if (cityMsg) html += block(cityMsg, cityMsg.source || 'City Admin', 'rgba(61,142,248,0.25)');
+  if (deptMsg) html += block(deptMsg, deptMsg.source || pin.dept, 'rgba(0,229,176,0.25)');
+  html += '</div>';
+  return html;
+}
+
 function buildCardTimeline(pin) {
   var steps = [{ dot:'var(--muted)', label:'Reported', done:true }];
   if (pin.log && pin.log.length) {
@@ -3024,8 +3149,6 @@ applyMobileLayout();
   var btn = document.getElementById('nav-' + name);
   if (btn) btn.addEventListener('click', function() { switchView(name); });
 });
-var heatBtn = document.getElementById('btn-heatmap');
-if (heatBtn) { heatBtn.style.display = ''; heatBtn.addEventListener('click', toggleHeatmap); }
 
 // Map filter chips use onclick attributes — no addEventListener needed
 </script>
